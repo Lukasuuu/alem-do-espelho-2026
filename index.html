@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Além do Espelho 2026 — Além de Mim! · 17 de Outubro, Braga</title>
+  <meta name="description" content="Um dia de imersão para 100 mulheres em Braga. Desenvolvimento pessoal, conexão e uma missão social que chega a 250 mulheres em Angola." />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Além do Espelho 2026 — Além de Mim!" />
+  <meta property="og:description" content="Um dia de imersão para 100 mulheres em Braga. Desenvolvimento pessoal, conexão e uma missão social que chega a 250 mulheres em Angola." />
+  <meta property="og:image" content="https://exemplo.com/assets/evento.jpeg" />
+  <meta property="og:type" content="website" />
+  <meta property="og:locale" content="pt_PT" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="public/assets/logo/favicon-512.png" sizes="512x512" />
+  <link rel="apple-touch-icon" href="public/assets/logo/favicon-512.png" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,500;1,6..96,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Jost:wght@200;300;400;500;600&family=Parisienne&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            rosa: '#CE7A87',
+            salvia: '#5E7565',
+            marsala: '#662E39',
+            floresta: '#24382F',
+            rose: '#B4746A',
+            dourado: '#C2B181',
+            papel: '#F6F3EF',
+            tinta: '#141A16',
+          },
+          fontFamily: {
+            display: ['"Cormorant Garamond"', 'serif'],
+            body: ['Jost', 'sans-serif'],
+            script: ['Parisienne', 'cursive'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- React + Babel + Framer Motion -->
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/framer-motion@11.11.17/dist/framer-motion.js"></script>
+
+  <style>
+    /* --- vidro claro: sobre fotografia / fundos escuros --- */
+    .liquid-glass {
+      background: rgba(255,255,255,0.01);
+      background-blend-mode: luminosity;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      border: none;
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    .liquid-glass::before {
+      content: "";
+      position: absolute; inset: 0;
+      border-radius: inherit;
+      padding: 1.4px;
+      background: linear-gradient(180deg,
+        rgba(255,255,255,0.45) 0%,
+        rgba(255,255,255,0.15) 20%,
+        rgba(255,255,255,0)    40%,
+        rgba(255,255,255,0)    60%,
+        rgba(255,255,255,0.15) 80%,
+        rgba(255,255,255,0.45) 100%);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+              mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    /* --- vidro forte: CTA primário --- */
+    .liquid-glass-strong {
+      background: rgba(255,255,255,0.01);
+      background-blend-mode: luminosity;
+      backdrop-filter: blur(50px);
+      -webkit-backdrop-filter: blur(50px);
+      border: none;
+      box-shadow: 4px 4px 4px rgba(0,0,0,0.05), inset 0 1px 1px rgba(255,255,255,0.15);
+      position: relative;
+      overflow: hidden;
+    }
+    .liquid-glass-strong::before {
+      content: "";
+      position: absolute; inset: 0;
+      border-radius: inherit;
+      padding: 1.4px;
+      background: linear-gradient(180deg,
+        rgba(255,255,255,0.5) 0%,
+        rgba(255,255,255,0.2) 20%,
+        rgba(255,255,255,0)   40%,
+        rgba(255,255,255,0)   60%,
+        rgba(255,255,255,0.2) 80%,
+        rgba(255,255,255,0.5) 100%);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+              mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    /* --- vidro escuro: NOVO, para secções de fundo claro (papel) --- */
+    .liquid-glass-dark {
+      background: rgba(36,56,47,0.03);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border: none;
+      box-shadow: inset 0 1px 1px rgba(36,56,47,0.08);
+      position: relative;
+      overflow: hidden;
+    }
+    .liquid-glass-dark::before {
+      content: "";
+      position: absolute; inset: 0;
+      border-radius: inherit;
+      padding: 1.2px;
+      background: linear-gradient(180deg,
+        rgba(36,56,47,0.28) 0%,
+        rgba(36,56,47,0.10) 20%,
+        rgba(36,56,47,0)    40%,
+        rgba(36,56,47,0)    60%,
+        rgba(36,56,47,0.10) 80%,
+        rgba(36,56,47,0.28) 100%);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+              mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    /* --- deriva Ken Burns --- */
+    @keyframes kenburns {
+      from { transform: scale(1.00) translate3d(0,0,0); }
+      to   { transform: scale(1.08) translate3d(0,-1.2%,0); }
+    }
+    .kenburns { animation: kenburns 18s ease-out forwards; will-change: transform; }
+
+    /* --- título premium: fotografia dentro das letras + brilho espelhado --- */
+    .hero-title {
+      font-family: 'Cormorant Garamond', 'Bodoni Moda', serif;
+      font-weight: 300;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      line-height: 0.72;
+      font-size: clamp(6.2rem, 22vw, 20rem);
+      margin: 0;
+      pointer-events: none;
+      user-select: none;
+
+      color: transparent;
+      background-image:
+        linear-gradient(135deg,
+          rgba(255,255,255,0.55) 0%,
+          rgba(255,255,255,0.18) 25%,
+          rgba(255,255,255,0.42) 45%,
+          rgba(255,255,255,0.14) 65%,
+          rgba(255,255,255,0.52) 100%),
+        url('public/assets/evento.webp');
+      background-size: cover, cover;
+      background-position: center, center;
+      background-attachment: fixed, fixed;
+      background-blend-mode: overlay, normal;
+      -webkit-background-clip: text;
+      background-clip: text;
+
+      -webkit-text-stroke: 2px rgba(246, 243, 239, 0.92);
+      filter: drop-shadow(0 8px 42px rgba(0,0,0,0.55));
+    }
+
+    @media (max-width: 767px) {
+      .hero-title {
+        font-size: clamp(2.9rem, 11vw, 4.2rem);
+        -webkit-text-stroke: 1.3px rgba(246, 243, 239, 0.88);
+        letter-spacing: 0.03em;
+        line-height: 0.76;
+      }
+    }
+
+    /* fallback para dispositivos touch e browsers sem background-clip:text */
+    @media (hover: none) and (pointer: coarse) {
+      .hero-title { background-attachment: scroll; }
+    }
+    @supports not (-webkit-background-clip: text) {
+      .hero-title {
+        color: #F6F3EF;
+        background: none;
+        -webkit-text-stroke: 0;
+        text-shadow: 0 2px 22px rgba(0,0,0,0.55);
+      }
+    }
+
+    /* sobretítulo dourado */
+    .hero-eyebrow {
+      font-family: 'Jost', sans-serif;
+      font-weight: 500;
+      text-transform: uppercase;
+      color: #C2B181;
+      letter-spacing: 0.44em;
+      font-size: clamp(1.12rem, 2.35vw, 1.72rem);
+      text-shadow:
+        0 0 24px rgba(194,177,129,0.35),
+        0 0 48px rgba(194,177,129,0.18),
+        0 2px 28px rgba(20,26,22,0.75);
+    }
+    @media (max-width: 767px) {
+      .hero-eyebrow {
+        font-size: clamp(1.05rem, 3.2vw, 1.25rem);
+        letter-spacing: 0.36em;
+        text-shadow:
+          0 0 18px rgba(194,177,129,0.32),
+          0 0 36px rgba(194,177,129,0.16),
+          0 2px 24px rgba(20,26,22,0.85);
+      }
+    }
+    .hero-eyebrow--small {
+      font-size: clamp(0.7rem, 1.25vw, 0.92rem);
+      letter-spacing: 0.32em;
+    }
+
+    /* remate inferior do herói: filetes + ornamento dourado */
+    .hero-seal {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.25rem;
+    }
+    .hero-seal-line {
+      height: 1px;
+      width: 5rem;
+      background: rgba(194,177,129,0.75);
+    }
+    @media (min-width: 768px) {
+      .hero-seal-line { width: 9rem; }
+    }
+    .hero-seal-ornament {
+      width: 0.75rem;
+      height: 0.75rem;
+      transform: rotate(45deg);
+      border: 1.5px solid #C2B181;
+      position: relative;
+    }
+    .hero-seal-ornament::after {
+      content: '';
+      position: absolute;
+      inset: 3px;
+      border: 1px solid rgba(194,177,129,0.55);
+      transform: rotate(45deg);
+    }
+
+    /* --- acessibilidade --- */
+    @media (prefers-reduced-motion: reduce) {
+      .kenburns { animation: none; }
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+    }
+    :focus-visible { outline: 2px solid #C2B181; outline-offset: 3px; }
+
+    /* --- scrim do espelho --- */
+    .scrim-mirror {
+      background: radial-gradient(ellipse 62% 48% at 50% 46%,
+        rgba(20,26,22,0.62) 0%, rgba(20,26,22,0.28) 55%, rgba(20,26,22,0) 78%);
+    }
+
+    /* --- vinheta radial suave para a hero --- */
+    .bg-radial-vignette {
+      background: radial-gradient(ellipse 75% 60% at 50% 50%,
+        rgba(0,0,0,0) 40%, rgba(0,0,0,0.22) 75%, rgba(0,0,0,0.45) 100%);
+    }
+
+    /* --- superfície da navbar: vidro verde-floresta, nunca transparente --- */
+    .glass-nav {
+      background: linear-gradient(180deg, rgba(36,56,47,0.78) 0%, rgba(20,26,22,0.68) 100%);
+      backdrop-filter: blur(24px) saturate(1.25);
+      -webkit-backdrop-filter: blur(24px) saturate(1.25);
+      border: 1px solid rgba(194,177,129,0.22);
+      box-shadow:
+        inset 0 1px 0 rgba(246,243,239,0.14),
+        0 18px 40px -26px rgba(20,26,22,0.95);
+      position: relative;
+      overflow: hidden;
+    }
+    .glass-nav::before {
+      content: "";
+      position: absolute; inset: 0;
+      border-radius: inherit;
+      padding: 1.2px;
+      background: linear-gradient(180deg,
+        rgba(246,243,239,0.40) 0%,
+        rgba(246,243,239,0.10) 35%,
+        rgba(246,243,239,0)    60%,
+        rgba(194,177,129,0.22) 100%);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+              mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    /* --- painel do menu mobile --- */
+    .glass-panel {
+      background: linear-gradient(180deg, rgba(36,56,47,0.97) 0%, rgba(20,26,22,0.97) 100%);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+    }
+
+    /* --- cartões sobre fotografia: corpo próprio --- */
+    .glass-card {
+      background: rgba(36,56,47,0.34);
+      backdrop-filter: blur(16px) saturate(1.15);
+      -webkit-backdrop-filter: blur(16px) saturate(1.15);
+      border: 1px solid rgba(246,243,239,0.10);
+      box-shadow: inset 0 1px 0 rgba(246,243,239,0.12);
+      position: relative;
+      overflow: hidden;
+    }
+    .glass-card::before {
+      content: "";
+      position: absolute; inset: 0;
+      border-radius: inherit;
+      padding: 1.2px;
+      background: linear-gradient(180deg,
+        rgba(246,243,239,0.34) 0%,
+        rgba(246,243,239,0.08) 30%,
+        rgba(246,243,239,0)    58%,
+        rgba(194,177,129,0.26) 100%);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+              mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    /* --- tratamento fotográfico para secções claras --- */
+    .photo-tinted { filter: saturate(0.82) brightness(0.52) contrast(1.06); }
+    .photo-duotone { filter: grayscale(1) contrast(1.10) brightness(0.92); }
+  </style>
+</head>
+<body class="bg-tinta text-white antialiased">
+  <div id="root"></div>
+
+  <!-- Utility: force Tailwind CDN to generate custom modifiers used in JSX -->
+  <div class="hidden" aria-hidden="true">
+    <span class="to-tinta/90 bg-marsala/15 border-dourado/15 bg-papel/10 border-floresta/10 border-marsala/40 text-marsala/40 sr-only !mb-0"></span>
+  </div>
+
+  <!-- Icons -->
+  <script type="text/babel" src="./src/Icons.jsx?v=20"></script>
+  <!-- Shared components -->
+  <script type="text/babel" src="./src/FadingImage.jsx?v=20"></script>
+  <script type="text/babel" src="./src/Countdown.jsx?v=20"></script>
+  <script type="text/babel" src="./src/Reveal.jsx?v=20"></script>
+  <!-- Shared CTA components (must load before Navbar and Hero) -->
+  <script type="text/babel" src="./src/CTA.jsx?v=20"></script>
+  <!-- Sections -->
+  <script type="text/babel" src="./src/Navbar.jsx?v=20"></script>
+  <script type="text/babel" src="./src/Hero.jsx?v=20"></script>
+  <script type="text/babel" src="./src/CountdownStrip.jsx?v=20"></script>
+  <script type="text/babel" src="./src/Projeto.jsx?v=20"></script>
+  <script type="text/babel" src="./src/Anfitria.jsx?v=20"></script>
+  <script type="text/babel" src="./src/Continentes.jsx?v=20"></script>
+  <script type="text/babel" src="./src/Experiencia.jsx?v=20"></script>
+  <script type="text/babel" src="./src/Angola.jsx?v=20"></script>
+  <script type="text/babel" src="./src/Patrocinios.jsx?v=20"></script>
+  <script type="text/babel" src="./src/Metas.jsx?v=20"></script>
+  <script type="text/babel" src="./src/Inscricao.jsx?v=20"></script>
+  <script type="text/babel" src="./src/App.jsx?v=20"></script>
+</body>
+</html>

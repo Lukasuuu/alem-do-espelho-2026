@@ -1,0 +1,17 @@
+{
+  "name": "alem-do-espelho-2026",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Landing page Além do Espelho 2026 · Além de Mim!",
+  "scripts": {
+    "dev": "npx serve . -l 3000",
+    "build": "node scripts/build.js",
+    "lint": "echo 'No lint configured for static HTML/CSS/JS project'"
+  },
+  "devDependencies": {
+    "serve": "^14.2.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

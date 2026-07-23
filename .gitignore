@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Vercel
+.vercel/
+
+# Logs
+*.log
+server.log
+
+# Environment
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Screenshots and QA artifacts
+*.png
+*.jpg
+*.jpeg
+*.webp
+!public/assets/**/*.png
+!public/assets/**/*.jpg
+!public/assets/**/*.jpeg
+!public/assets/**/*.webp
+
+# Reference / backup materials
+evento-alem-do-espelho/
