@@ -110,15 +110,21 @@ export default function Footer({ abrirModal }: Props) {
             {/* Organização — Conexão Women */}
             <li className="flex flex-col items-center gap-3 sm:items-start">
               <span className="eyebrow text-creme/45">Organização</span>
-              <span className="inline-flex h-24 items-center justify-center rounded-[2px] bg-creme/5 p-3 ring-1 ring-creme/10">
+              <a
+                href="https://www.instagram.com/conexaoexperience.oficial/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Conexão Women no Instagram (abre em nova janela)"
+                className="inline-flex h-24 items-center justify-center rounded-[2px] bg-creme/5 p-3 ring-1 ring-creme/10 opacity-80 transition-opacity duration-300 hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-blush"
+              >
                 <Image
                   src="/brand/conexao.webp"
                   alt="Conexão Women"
                   width={222}
                   height={226}
-                  className="h-full w-auto object-contain"
+                  className="h-full w-auto object-contain grayscale transition-all duration-500 hover:grayscale-0"
                 />
-              </span>
+              </a>
             </li>
 
             {/* Apoio — Organização Atos */}
