@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Camera, Mail, ChevronRight } from "lucide-react";
+import { Camera, Mail, Phone, ChevronRight } from "lucide-react";
 import { site } from "@/lib/site";
 
 type Props = {
@@ -10,7 +10,7 @@ type Props = {
 
 export default function Footer({ abrirModal }: Props) {
   return (
-    <footer className="bg-musgo pt-20 pb-10 sm:pt-24">
+    <footer className="bg-musgo py-14 sm:py-16">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         {/* Colunas: logo+desc | contactos | social | legal */}
         <div className="grid gap-12 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
@@ -36,7 +36,7 @@ export default function Footer({ abrirModal }: Props) {
           </div>
 
           {/* Contactos */}
-          <div>
+          <div id="contactos" className="scroll-mt-28">
             <h3 className="eyebrow text-creme/35">Contactos</h3>
             <ul className="mt-5 space-y-3 text-[0.875rem] text-creme/60">
               <li>
@@ -47,6 +47,16 @@ export default function Footer({ abrirModal }: Props) {
                 >
                   <Mail className="h-4 w-4 shrink-0" />
                   essenceofbeauty.pt@gmail.com
+                </a>
+              </li>
+              <li>
+                <a
+                  href="tel:+351939009874"
+                  className="flex items-center gap-2 transition-colors hover:text-creme/90"
+                  aria-label="Telefone"
+                >
+                  <Phone className="h-4 w-4 shrink-0" />
+                  +351 939 009 874
                 </a>
               </li>
               <li>{site.data.extenso}</li>
@@ -82,71 +92,6 @@ export default function Footer({ abrirModal }: Props) {
               <li>{site.subtitulo} — {site.edicao}</li>
             </ul>
           </div>
-        </div>
-
-        {/* Entidades: Realização → Organização → Apoio */}
-        <div className="mt-16 border-t border-creme/10 pt-8">
-          <ul className="grid grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-6">
-            {/* Realização — Essence of Beauty */}
-            <li className="flex flex-col items-center gap-3 sm:items-start">
-              <span className="eyebrow text-creme/45">Realização</span>
-              <a
-                href="https://www.instagram.com/essenceofbeauty.salon/"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Essence of Beauty no Instagram (abre em nova janela)"
-                className="inline-flex h-24 items-center justify-center opacity-80 transition-opacity duration-300 hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-blush"
-              >
-                <Image
-                  src="/brand/essence.webp"
-                  alt="Essence of Beauty"
-                  width={560}
-                  height={560}
-                  className="h-full w-auto object-contain"
-                />
-              </a>
-            </li>
-
-            {/* Organização — Conexão Women */}
-            <li className="flex flex-col items-center gap-3 sm:items-start">
-              <span className="eyebrow text-creme/45">Organização</span>
-              <a
-                href="https://www.instagram.com/conexaoexperience.oficial/"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Conexão Women no Instagram (abre em nova janela)"
-                className="inline-flex h-24 items-center justify-center opacity-80 transition-opacity duration-300 hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-blush"
-              >
-                <Image
-                  src="/brand/conexao.webp"
-                  alt="Conexão Women"
-                  width={490}
-                  height={490}
-                  className="h-full w-auto object-contain"
-                />
-              </a>
-            </li>
-
-            {/* Apoio — Organização Atos */}
-            <li className="flex flex-col items-center gap-3 sm:items-start">
-              <span className="eyebrow text-creme/45">Apoio</span>
-              <a
-                href="https://organizacaoatos.org/sobre-organizacao-atos/"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Organização Atos (abre em nova janela)"
-                className="inline-flex h-24 items-center justify-center rounded-[2px] bg-creme px-4 py-3 opacity-80 transition-opacity duration-300 hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-blush"
-              >
-                <Image
-                  src="/brand/atos.webp"
-                  alt="Organização Atos"
-                  width={560}
-                  height={558}
-                  className="h-full w-auto object-contain"
-                />
-              </a>
-            </li>
-          </ul>
         </div>
       </div>
     </footer>

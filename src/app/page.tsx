@@ -6,6 +6,7 @@ import Hero from "@/components/Hero";
 import Experience from "@/components/Experience";
 import Anfitria from "@/components/Anfitria";
 import Gallery from "@/components/Gallery";
+import Realizacao from "@/components/Realizacao";
 import Footer from "@/components/Footer";
 import WaitlistModal from "@/components/WaitlistModal";
 import { definirAberturaModal } from "@/lib/modal";
@@ -30,6 +31,7 @@ export default function Page() {
         <Experience />
         <Anfitria />
         <Gallery />
+        <Realizacao />
       </main>
       <Footer abrirModal={abrirModal} />
       <WaitlistModal aberto={modalAberto} fechar={fecharModal} />
