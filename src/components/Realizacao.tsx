@@ -80,12 +80,19 @@ export default function Realizacao() {
       />
 
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
+        {/* ── "Quem faz acontecer" — cabeçalho centrado no topo da secção ── */}
+        <Reveal>
+          <div className="text-center">
+            <h2 className="eyebrow text-rosa">Quem faz acontecer</h2>
+          </div>
+        </Reveal>
+
         {/* ── Zona A: ilustração + missão │ declaração + bandeira ── */}
-        <div className="grid items-center gap-16 lg:grid-cols-2">
+        <div className="mt-[clamp(40px,5vw,64px)] grid items-start gap-16 lg:grid-cols-2">
           {/* Coluna esquerda — ilustração + missão */}
           <div>
             <Reveal>
-              <figure className="mt-20 overflow-hidden rounded-sm bg-white/70 p-3 ring-1 ring-vinho/12">
+              <figure className="overflow-hidden rounded-sm bg-white/70 p-3 ring-1 ring-vinho/12">
                 <Image
                   src="/brand/assets-realizacao/mulheres.webp"
                   alt="Ilustração de mulheres diversas de perfil, em tons suaves de rosa e terre"
@@ -128,8 +135,7 @@ export default function Realizacao() {
           {/* Coluna direita — declaração + bandeira */}
           <div>
             <Reveal>
-              <span className="eyebrow text-rosa">Quem faz acontecer</span>
-              <p className="display mt-6 text-[2rem] uppercase leading-[1.1] text-vinho sm:text-[2.5rem]">
+              <p className="display text-[2rem] uppercase leading-[1.1] text-vinho sm:text-[2.5rem]">
                 Quando uma mulher se transforma,
                 <br />
                 ela transforma o mundo ao seu redor.
