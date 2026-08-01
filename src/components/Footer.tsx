@@ -88,20 +88,36 @@ export default function Footer({ abrirModal }: Props) {
         <div className="mt-16 border-t border-creme/10 pt-8">
           <span className="eyebrow text-creme/25">Realização</span>
           <div className="mt-5 flex flex-wrap items-center gap-8 sm:gap-12">
-            <Image
-              src="/brand/essence-claro.webp"
-              alt="Essence of Beauty"
-              width={420}
-              height={420}
-              className="h-11 w-auto opacity-60 grayscale transition-all duration-500 hover:opacity-100 hover:grayscale-0 sm:h-12"
-            />
-            <Image
-              src="/brand/atos.webp"
-              alt="Atos"
-              width={420}
-              height={418}
-              className="h-11 w-auto opacity-60 grayscale transition-all duration-500 hover:opacity-100 hover:grayscale-0 sm:h-12"
-            />
+            <a
+              href="https://www.instagram.com/essenceofbeauty.salon/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Essence of Beauty no Instagram (abre em nova janela)"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[2px] opacity-80 transition-opacity duration-300 hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-blush"
+            >
+              <Image
+                src="/brand/essence-claro.webp"
+                alt="Essence of Beauty"
+                width={420}
+                height={420}
+                className="h-11 w-auto grayscale transition-all duration-500 hover:grayscale-0 sm:h-12"
+              />
+            </a>
+            <a
+              href="https://organizacaoatos.org/sobre-organizacao-atos/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Organização Atos (abre em nova janela)"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-[2px] opacity-80 transition-opacity duration-300 hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-blush"
+            >
+              <Image
+                src="/brand/atos.webp"
+                alt="Organização Atos"
+                width={420}
+                height={418}
+                className="h-11 w-auto grayscale transition-all duration-500 hover:grayscale-0 sm:h-12"
+              />
+            </a>
           </div>
         </div>
       </div>
