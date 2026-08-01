@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { Camera, Mail, Phone, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
+import { InstagramIcon, MailIcon, WhatsAppIcon } from "./icons";
 import { site } from "@/lib/site";
 
 type Props = {
@@ -42,25 +43,29 @@ export default function Footer({ abrirModal }: Props) {
               <li>
                 <a
                   href="mailto:essenceofbeauty.pt@gmail.com"
-                  className="flex items-center gap-2 transition-colors hover:text-creme/90"
-                  aria-label="Email"
+                  aria-label="Enviar email para essenceofbeauty.pt@gmail.com"
+                  className="group inline-flex min-h-11 items-center gap-3 text-creme/70 transition-colors duration-300 hover:text-creme focus-visible:text-creme"
                 >
-                  <Mail className="h-4 w-4 shrink-0" />
+                  <MailIcon className="h-[1.15rem] w-[1.15rem] shrink-0" />
                   essenceofbeauty.pt@gmail.com
                 </a>
               </li>
               <li>
                 <a
-                  href="tel:+351939009874"
-                  className="flex items-center gap-2 transition-colors hover:text-creme/90"
-                  aria-label="Telefone"
+                  href="https://wa.me/351939009874?text=Ol%C3%A1%20Vit%C3%B3ria!%20Vim%20pela%20p%C3%A1gina%20do%20Al%C3%A9m%20do%20Espelho."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Falar com Vitória Gomes no WhatsApp (abre em nova janela)"
+                  className="group inline-flex min-h-11 items-center gap-3 text-creme/70 transition-colors duration-300 hover:text-creme focus-visible:text-creme"
                 >
-                  <Phone className="h-4 w-4 shrink-0" />
-                  +351 939 009 874
+                  <WhatsAppIcon className="h-[1.15rem] w-[1.15rem] shrink-0" />
+                  Vitória Gomes
                 </a>
               </li>
-              <li>{site.data.extenso}</li>
-              <li>{site.local.nome}, {site.local.cidade}</li>
+              <li className="inline-flex min-h-11 items-center">{site.data.extenso}</li>
+              <li className="inline-flex min-h-11 items-center">
+                {site.local.nome}, {site.local.cidade}
+              </li>
             </ul>
           </div>
 
@@ -73,10 +78,10 @@ export default function Footer({ abrirModal }: Props) {
                   href="https://www.instagram.com/vitaasilva/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 transition-colors hover:text-creme/90"
-                  aria-label="Instagram"
+                  aria-label="Instagram do evento (abre em nova janela)"
+                  className="group inline-flex min-h-11 items-center gap-3 text-creme/70 transition-colors duration-300 hover:text-creme focus-visible:text-creme"
                 >
-                  <Camera className="h-4 w-4 shrink-0" />
+                  <InstagramIcon className="h-[1.15rem] w-[1.15rem] shrink-0" />
                   Instagram
                 </a>
               </li>
