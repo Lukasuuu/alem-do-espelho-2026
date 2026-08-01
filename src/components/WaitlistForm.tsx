@@ -46,7 +46,7 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
     : {
         endpoint: "/api/waitlist",
         botao: "Quero a minha vaga",
-        consentimento: `Autorizo o ${empresa} a contactar-me por email e telemóvel sobre o ${site.nome}. Podes cancelar quando quiseres.`,
+        consentimento: `Autorizo o ${empresa} a contactar-me por email e telemóvel sobre o ${site.nome}.`,
         listaFechada: "As inscrições na lista de espera estão fechadas.",
       };
 
