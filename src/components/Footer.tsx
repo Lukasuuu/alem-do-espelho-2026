@@ -19,8 +19,9 @@ export default function Footer({ abrirModal }: Props) {
   return (
     <footer className="bg-musgo pt-10 pb-5 sm:pt-12">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        {/* Colunas: logo+desc | contactos | social | legal — empilham centradas em mobile */}
-        <div className="grid gap-8 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+        {/* Colunas: logo+desc | contactos | legal — empilham centradas em mobile.
+            Contactos fica mais largo para os 3 links caberem numa linha em desktop. */}
+        <div className="grid gap-8 md:grid-cols-[1.2fr_2fr_1fr]">
           {/* Logo + descrição */}
           <div className="flex flex-col items-center text-center md:items-start md:text-left">
             <Image
@@ -42,10 +43,11 @@ export default function Footer({ abrirModal }: Props) {
             </button>
           </div>
 
-          {/* Contactos — email e WhatsApp, sem data/local (fica mais compacto) */}
+          {/* Contactos — email, WhatsApp e Instagram numa linha quando há espaço;
+              quebram para a linha seguinte em ecrãs mais pequenos (flex-wrap). */}
           <div id="contactos" className="flex scroll-mt-28 flex-col items-center text-center md:items-start md:text-left">
             <h3 className="eyebrow text-creme/35">Contactos</h3>
-            <ul className="mt-3 space-y-1 text-[0.875rem] text-creme/60">
+            <ul className="mt-3 flex flex-wrap justify-center gap-x-6 gap-y-1 text-[0.875rem] text-creme/60 md:justify-start">
               <li>
                 <a
                   href={`mailto:${site.contacto.email}`}
@@ -71,13 +73,6 @@ export default function Footer({ abrirModal }: Props) {
                   Vitória Gomes
                 </a>
               </li>
-            </ul>
-          </div>
-
-          {/* Social */}
-          <div className="flex flex-col items-center text-center md:items-start md:text-left">
-            <h3 className="eyebrow text-creme/35">Social</h3>
-            <ul className="mt-3 space-y-1 text-[0.875rem] text-creme/60">
               <li>
                 <a
                   href="https://www.instagram.com/vitaasilva/"
