@@ -76,12 +76,12 @@ export default function Realizacao() {
         width={680}
         height={548}
         priority={false}
-        className="pointer-events-none absolute -right-16 top-1/2 -z-10 w-[46rem] -translate-y-1/2 opacity-[0.10] select-none"
+        className="pointer-events-none absolute -right-16 top-1/2 -z-10 w-[46rem] -translate-y-1/2 opacity-[0.25] select-none"
       />
 
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
         {/* ── Zona A: ilustração + missão │ declaração + bandeira ── */}
-        <div className="grid items-start gap-16 lg:grid-cols-2">
+        <div className="grid items-center gap-16 lg:grid-cols-2">
           {/* Coluna esquerda — ilustração + missão */}
           <div>
             <Reveal>
@@ -137,7 +137,7 @@ export default function Realizacao() {
             </Reveal>
 
             <Reveal delay={0.1}>
-              <figure className="mt-10 max-w-[34rem]">
+              <figure className="mt-16 max-w-[34rem]">
                 <div className="rounded-[3px] bg-white/70 p-3 ring-1 ring-vinho/12 shadow-[0_24px_60px_-40px_rgba(46,58,51,0.35)]">
                   <Image
                     src="/brand/bandeira.webp"
