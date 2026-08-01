@@ -1,0 +1,294 @@
+@import "tailwindcss";
+
+/* ───────────────────────────────────────────────
+   RECLINE — tipografia oficial Além do Espelho
+   ─────────────────────────────────────────────── */
+@font-face {
+  font-family: "Recline";
+  src: url("/fonts/Recline-Light.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Recline";
+  src: url("/fonts/Recline-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Recline";
+  src: url("/fonts/Recline-Italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Recline";
+  src: url("/fonts/Recline-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Recline";
+  src: url("/fonts/Recline-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ───────────────────────────────────────────────
+   JOST — geométrica utilitária (labels, UI, corpo)
+   Self-hosted: sem pedidos ao Google, sem IPs para fora da UE.
+   ─────────────────────────────────────────────── */
+@font-face {
+  font-family: "Jost";
+  src: url("/fonts/Jost-300.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Jost";
+  src: url("/fonts/Jost-400.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Jost";
+  src: url("/fonts/Jost-500.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Jost";
+  src: url("/fonts/Jost-600.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Jost";
+  src: url("/fonts/Jost-Variable.woff2") format("woff2-variations");
+  font-weight: 300 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ───────────────────────────────────────────────
+   TOKENS — paleta oficial Além do Espelho 2026
+   ─────────────────────────────────────────────── */
+@theme {
+  --color-creme: #f5f0e8;
+  --color-creme-profundo: #efe8dc;
+  --color-blush: #f2cdba;
+  --color-rosa: #c47e8a;
+  --color-rosa-escuro: #ad6672;
+  --color-sage: #657365;
+  --color-musgo: #3d4a40;
+  --color-vinho: #5c323e;
+  --color-vinho-claro: #6b3a48;
+  --color-carvao: #2e3a33;
+  --color-dourado: #d4af37;
+  --color-dourado-claro: #e0c878;
+
+  --font-display: "Recline", "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Jost", "Helvetica Neue", Arial, sans-serif;
+
+  --ease-suave: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ───────────────────────────────────────────────
+   BASE
+   ─────────────────────────────────────────────── */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--color-creme);
+  color: var(--color-carvao);
+  font-family: var(--font-sans);
+  font-feature-settings: "kern" 1;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+::selection {
+  background-color: var(--color-rosa);
+  color: var(--color-creme);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-rosa);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ───────────────────────────────────────────────
+   UTILITÁRIOS DE MARCA
+   ─────────────────────────────────────────────── */
+
+/* Etiqueta miúda em versalete espaçado */
+.eyebrow {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 0.6875rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+}
+
+@media (min-width: 768px) {
+  .eyebrow {
+    font-size: 0.75rem;
+  }
+}
+
+/* Display serifado da marca */
+.display {
+  font-family: var(--font-display);
+  font-weight: 300;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
+
+/* Painel de espelho — vidro fosco com reflexo diagonal */
+.espelho {
+  position: relative;
+  background: linear-gradient(
+    145deg,
+    rgb(255 247 233 / 0.16) 0%,
+    rgb(255 247 233 / 0.07) 38%,
+    rgb(255 247 233 / 0.13) 100%
+  );
+  backdrop-filter: blur(14px) saturate(115%);
+  -webkit-backdrop-filter: blur(14px) saturate(115%);
+  border: 1px solid rgb(255 247 233 / 0.28);
+  box-shadow:
+    0 1px 0 0 rgb(255 247 233 / 0.35) inset,
+    0 30px 90px -30px rgb(46 58 51 / 0.5);
+}
+
+.espelho::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    108deg,
+    transparent 0%,
+    transparent 34%,
+    rgb(255 247 233 / 0.14) 46%,
+    rgb(255 247 233 / 0.02) 58%,
+    transparent 70%
+  );
+}
+
+/* Fio ornamental fino */
+.fio {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    currentColor 22%,
+    currentColor 78%,
+    transparent
+  );
+  opacity: 0.28;
+}
+
+/* Campos do formulário */
+.campo {
+  width: 100%;
+  background: rgb(255 247 233 / 0.06);
+  border: 1px solid rgb(255 247 233 / 0.24);
+  border-radius: 2px;
+  padding: 0.95rem 1rem;
+  color: var(--color-creme);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  transition:
+    border-color 0.25s var(--ease-suave),
+    background-color 0.25s var(--ease-suave);
+}
+
+.campo::placeholder {
+  color: rgb(255 247 233 / 0.42);
+}
+
+.campo:hover {
+  border-color: rgb(255 247 233 / 0.4);
+}
+
+.campo:focus {
+  outline: none;
+  border-color: var(--color-blush);
+  background: rgb(255 247 233 / 0.11);
+}
+
+.campo[aria-invalid="true"] {
+  border-color: #e88b8b;
+  background: rgb(232 139 139 / 0.08);
+}
+
+/* Grão sutil de papel */
+.grao::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: multiply;
+  background-image: radial-gradient(
+      circle at 1px 1px,
+      rgb(90 50 58 / 0.055) 1px,
+      transparent 0
+    );
+  background-size: 4px 4px;
+}
+
+/* Overlay do modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgb(46 58 51 / 0.7);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.modal-content {
+  position: relative;
+  width: 100%;
+  max-width: 32rem;
+  max-height: 90vh;
+  overflow-y: auto;
+  border-radius: 0.125rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
