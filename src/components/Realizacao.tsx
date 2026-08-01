@@ -82,7 +82,7 @@ export default function Realizacao() {
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
         {/* ── "Quem faz acontecer" — cabeçalho centrado no topo da secção ── */}
         <Reveal>
-          <div className="text-center">
+          <div className="mt-[clamp(32px,4vw,56px)]">
             <h2 className="eyebrow text-rosa">Quem faz acontecer</h2>
           </div>
         </Reveal>
