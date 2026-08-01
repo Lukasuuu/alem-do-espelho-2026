@@ -41,12 +41,12 @@ export default function Footer({ abrirModal }: Props) {
             <ul className="mt-5 space-y-3 text-[0.875rem] text-creme/60">
               <li>
                 <a
-                  href="mailto:ola@alemdoespelho.pt"
+                  href="mailto:essenceofbeauty.pt@gmail.com"
                   className="flex items-center gap-2 transition-colors hover:text-creme/90"
                   aria-label="Email"
                 >
                   <Mail className="h-4 w-4 shrink-0" />
-                  ola@alemdoespelho.pt
+                  essenceofbeauty.pt@gmail.com
                 </a>
               </li>
               <li>{site.data.extenso}</li>
@@ -60,7 +60,7 @@ export default function Footer({ abrirModal }: Props) {
             <ul className="mt-5 space-y-3 text-[0.875rem] text-creme/60">
               <li>
                 <a
-                  href="https://instagram.com"
+                  href="https://www.instagram.com/vitaasilva/"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 transition-colors hover:text-creme/90"
