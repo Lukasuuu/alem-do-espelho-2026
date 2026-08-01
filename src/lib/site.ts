@@ -19,10 +19,10 @@ export const site = {
     ano: "2026",
   },
   listaEspera: {
-    // Fecho da lista — segunda-feira, 3 de agosto de 2026, 08:00 (WEST, UTC+1)
-    fecha: "2026-08-03T08:00:00+01:00",
-    fechaExtenso: "segunda-feira, 3 de agosto, às 08:00",
-    fechaCurta: "3 AGO · 08:00",
+    // Fecho da lista — segunda-feira, 3 de agosto de 2026, 10:00 (Lisboa, WEST)
+    fecha: "2026-08-03T10:00:00+01:00",
+    fechaExtenso: "segunda-feira, 3 de agosto, às 10:00",
+    fechaCurta: "3 AGO · 10:00",
   },
   local: {
     nome: "INNSiDE by Meliá",
@@ -72,8 +72,7 @@ export const experiencia = [
       "Empresárias, profissionais, mães e mulheres em reinvenção. Cem histórias na mesma sala.",
   },
   {
-    titulo: "Arte ao vivo",
-    texto:
-      "Violino, bailado clássico e pintura ao vivo a acompanhar a jornada do dia.",
+    titulo: "Experiências ao vivo",
+    texto: "Música, dança e arte visual.",
   },
 ] as const;
