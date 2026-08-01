@@ -91,16 +91,6 @@ export default function Footer({ abrirModal }: Props) {
                 </a>
               </li>
             </ul>
-
-            {/* Marca Essence — centrada, largura fluida */}
-            <Image
-              src="/logo/eb-marca-papel.png"
-              alt="Essence of Beauty"
-              width={1180}
-              height={453}
-              quality={95}
-              className="mx-auto mt-6 h-9 w-auto sm:h-10"
-            />
           </div>
 
           {/* Legal — modais em vez de texto estático */}
@@ -129,8 +119,20 @@ export default function Footer({ abrirModal }: Props) {
           </div>
         </div>
 
+        {/* Marca Essence — área própria, centralizada, imediatamente acima da linha */}
+        <div className="mt-12 flex justify-center">
+          <Image
+            src="/logo/eb-marca-papel.png"
+            alt="Essence of Beauty"
+            width={1180}
+            height={453}
+            quality={95}
+            className="h-9 w-auto sm:h-10"
+          />
+        </div>
+
         {/* Barra única — centrada, com quebra de linha em ecrãs pequenos */}
-        <div className="mt-12 border-t border-creme/10 pt-6">
+        <div className="mt-8 border-t border-creme/10 pt-6">
           <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-[0.8125rem] text-creme/45">
             <span>© {new Date().getFullYear()} Além do Espelho</span>
             <span aria-hidden>•</span>
