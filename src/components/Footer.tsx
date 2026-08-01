@@ -95,14 +95,14 @@ export default function Footer({ abrirModal }: Props) {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Essence of Beauty no Instagram (abre em nova janela)"
-                className="inline-flex h-24 items-center justify-center rounded-[2px] bg-creme/5 p-3 ring-1 ring-creme/10 opacity-80 transition-opacity duration-300 hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-blush"
+                className="inline-flex h-24 items-center justify-center opacity-80 transition-opacity duration-300 hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-blush"
               >
                 <Image
-                  src="/brand/essence-claro.webp"
+                  src="/brand/essence.webp"
                   alt="Essence of Beauty"
-                  width={420}
-                  height={420}
-                  className="h-full w-auto object-contain grayscale transition-all duration-500 hover:grayscale-0"
+                  width={560}
+                  height={560}
+                  className="h-full w-auto object-contain"
                 />
               </a>
             </li>
@@ -115,14 +115,14 @@ export default function Footer({ abrirModal }: Props) {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Conexão Women no Instagram (abre em nova janela)"
-                className="inline-flex h-24 items-center justify-center rounded-[2px] bg-creme/5 p-3 ring-1 ring-creme/10 opacity-80 transition-opacity duration-300 hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-blush"
+                className="inline-flex h-24 items-center justify-center opacity-80 transition-opacity duration-300 hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-blush"
               >
                 <Image
                   src="/brand/conexao.webp"
                   alt="Conexão Women"
-                  width={222}
-                  height={226}
-                  className="h-full w-auto object-contain grayscale transition-all duration-500 hover:grayscale-0"
+                  width={490}
+                  height={490}
+                  className="h-full w-auto object-contain"
                 />
               </a>
             </li>
@@ -135,14 +135,14 @@ export default function Footer({ abrirModal }: Props) {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Organização Atos (abre em nova janela)"
-                className="inline-flex h-24 items-center justify-center rounded-[2px] bg-creme/5 p-3 ring-1 ring-creme/10 opacity-80 transition-opacity duration-300 hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-blush"
+                className="inline-flex h-24 items-center justify-center rounded-[2px] bg-creme px-4 py-3 opacity-80 transition-opacity duration-300 hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-blush"
               >
                 <Image
                   src="/brand/atos.webp"
                   alt="Organização Atos"
-                  width={420}
-                  height={418}
-                  className="h-full w-auto object-contain grayscale transition-all duration-500 hover:grayscale-0"
+                  width={560}
+                  height={558}
+                  className="h-full w-auto object-contain"
                 />
               </a>
             </li>
