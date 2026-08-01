@@ -85,7 +85,7 @@ export default function Realizacao() {
           {/* Coluna esquerda — ilustração + missão */}
           <div>
             <Reveal>
-              <figure className="pt-20 overflow-hidden rounded-sm bg-white/70 p-3 ring-1 ring-vinho/12">
+              <figure className="mt-20 overflow-hidden rounded-sm bg-white/70 p-3 ring-1 ring-vinho/12">
                 <Image
                   src="/brand/assets-realizacao/mulheres.webp"
                   alt="Ilustração de mulheres diversas de perfil, em tons suaves de rosa e terre"
