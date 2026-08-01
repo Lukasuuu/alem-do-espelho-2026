@@ -18,6 +18,12 @@ export const site = {
     mes: "Outubro",
     ano: "2026",
   },
+  listaEspera: {
+    // Fecho da lista — segunda-feira, 3 de agosto de 2026, 08:00 (WEST, UTC+1)
+    fecha: "2026-08-03T08:00:00+01:00",
+    fechaExtenso: "segunda-feira, 3 de agosto, às 08:00",
+    fechaCurta: "3 AGO · 08:00",
+  },
   local: {
     nome: "INNSiDE by Meliá",
     cidade: "Braga",

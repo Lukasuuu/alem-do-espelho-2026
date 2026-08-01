@@ -61,10 +61,7 @@ export default function Hero({ abrirModal }: Props) {
           </motion.p>
 
           <motion.div {...surgir(0.4)} className="mt-10">
-            <span className="eyebrow text-creme/35">Faltam</span>
-            <div className="mt-3">
-              <Countdown tom="claro" />
-            </div>
+            <Countdown tom="claro" />
           </motion.div>
 
           <motion.div {...surgir(0.5)} className="mt-11">

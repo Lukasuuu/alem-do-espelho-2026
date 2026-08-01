@@ -2,7 +2,8 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Gift } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import WaitlistForm from "./WaitlistForm";
 import Countdown from "./Countdown";
 import { site } from "@/lib/site";
@@ -12,22 +13,72 @@ type Props = {
   fechar: () => void;
 };
 
+/** Elementos focáveis dentro do painel — para o foco circular (trap). */
+function focaveis(raiz: HTMLElement): HTMLElement[] {
+  return Array.from(
+    raiz.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )
+  ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+}
+
 export default function WaitlistModal({ aberto, fechar }: Props) {
   const overlayRef = useRef<HTMLDivElement>(null);
-  const primeiroFocusRef = useRef<HTMLButtonElement>(null);
+  const painelRef = useRef<HTMLDivElement>(null);
+  const abridorRef = useRef<HTMLElement | null>(null);
+  const [montado, setMontado] = useState(false);
+
+  // createPortal ao <body> — só depois de o cliente montar.
+  useEffect(() => setMontado(true), []);
 
   useEffect(() => {
     if (!aberto) return;
-    const aoTecla = (e: KeyboardEvent) => {
-      if (e.key === "Escape") fechar();
-    };
-    document.addEventListener("keydown", aoTecla);
+
+    // Quem abriu — devolve-se o foco ao fechar.
+    abridorRef.current = document.activeElement as HTMLElement;
+
+    // Trava o scroll do fundo compensando a barra (sem salto de layout).
+    const larguraScroll = window.innerWidth - document.documentElement.clientWidth;
+    const paddingAnterior = document.body.style.paddingRight;
     document.body.style.overflow = "hidden";
-    // Foco no botão fechar ao abrir
-    setTimeout(() => primeiroFocusRef.current?.focus(), 50);
+    if (larguraScroll > 0) document.body.style.paddingRight = `${larguraScroll}px`;
+
+    const aoTecla = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        fechar();
+        return;
+      }
+      if (e.key === "Tab" && painelRef.current) {
+        const lista = focaveis(painelRef.current);
+        if (lista.length === 0) return;
+        const primeiro = lista[0];
+        const ultimo = lista[lista.length - 1];
+        if (e.shiftKey && document.activeElement === primeiro) {
+          e.preventDefault();
+          ultimo.focus();
+        } else if (!e.shiftKey && document.activeElement === ultimo) {
+          e.preventDefault();
+          primeiro.focus();
+        }
+      }
+    };
+
+    document.addEventListener("keydown", aoTecla);
+
+    // Foco no primeiro campo ao abrir.
+    const t = window.setTimeout(() => {
+      const campo = painelRef.current?.querySelector<HTMLElement>(
+        "input:not([disabled]), select:not([disabled])"
+      );
+      (campo ?? painelRef.current?.querySelector<HTMLElement>("button:not([disabled])"))?.focus();
+    }, 60);
+
     return () => {
       document.removeEventListener("keydown", aoTecla);
+      window.clearTimeout(t);
       document.body.style.overflow = "";
+      document.body.style.paddingRight = paddingAnterior;
+      abridorRef.current?.focus();
     };
   }, [aberto, fechar]);
 
@@ -35,7 +86,7 @@ export default function WaitlistModal({ aberto, fechar }: Props) {
     if (e.target === overlayRef.current) fechar();
   }
 
-  return (
+  const dialogo = (
     <AnimatePresence>
       {aberto && (
         <motion.div
@@ -48,9 +99,10 @@ export default function WaitlistModal({ aberto, fechar }: Props) {
           onClick={aoClicarFora}
           role="dialog"
           aria-modal="true"
-          aria-label="Lista de espera"
+          aria-labelledby="waitlist-titulo"
         >
           <motion.div
+            ref={painelRef}
             className="modal-content"
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -64,27 +116,27 @@ export default function WaitlistModal({ aberto, fechar }: Props) {
                 <div className="absolute -bottom-1/3 right-0 h-[25rem] w-[25rem] rounded-full bg-[radial-gradient(circle,rgba(196,126,138,0.20),transparent_62%)] blur-3xl" />
               </div>
 
-              {/* Botão fechar */}
+              {/* Botão fechar — alvo de toque ≥ 44×44 */}
               <button
-                ref={primeiroFocusRef}
                 onClick={fechar}
-                className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full border border-creme/20 text-creme/50 transition-colors hover:border-creme/40 hover:text-creme/80"
+                className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full border border-creme/20 text-creme/50 transition-colors hover:border-creme/40 hover:text-creme/80"
                 aria-label="Fechar"
               >
                 <X className="h-4 w-4" />
               </button>
 
-              {/* Layout 2 colunas em desktop */}
-              <div className="relative grid lg:grid-cols-[1fr_1.1fr]">
+              {/* Duas colunas em desktop, uma em mobile */}
+              <div className="relative grid gap-12 lg:grid-cols-2">
                 {/* ── Coluna esquerda: copy + contador ── */}
-                <div className="flex flex-col justify-center px-6 pt-14 pb-8 sm:px-9 lg:py-14">
+                <div className="flex flex-col items-start px-6 pt-16 pb-8 sm:px-9 lg:py-14">
                   <span className="eyebrow text-dourado-claro/70">Lista de espera</span>
 
-                  <h2 className="display mt-4 text-[1.75rem] leading-[1.05] text-creme sm:text-[2.25rem]">
+                  <h2
+                    id="waitlist-titulo"
+                    className="display mt-4 text-[1.75rem] leading-[1.05] text-creme sm:text-[2.25rem]"
+                  >
                     As inscrições abrem em breve.
-                    <span className="mt-1 block italic text-blush">
-                      A lista abre agora.
-                    </span>
+                    <span className="mt-1 block italic text-blush">A lista abre agora.</span>
                   </h2>
 
                   <p className="mt-5 max-w-sm text-[0.9375rem] leading-relaxed text-creme/65">
@@ -108,7 +160,7 @@ export default function WaitlistModal({ aberto, fechar }: Props) {
                     ))}
                   </ul>
 
-                  {/* Data e contador */}
+                  {/* Data do evento e contagem */}
                   <div className="mt-8">
                     <span className="eyebrow text-creme/35">
                       {site.data.extenso} · {site.local.nome}, {site.local.cidade}
@@ -119,14 +171,8 @@ export default function WaitlistModal({ aberto, fechar }: Props) {
                   </div>
                 </div>
 
-                {/* ── Separador vertical ── */}
-                <div
-                  className="hidden w-px bg-gradient-to-b from-transparent via-creme/15 to-transparent lg:block"
-                  aria-hidden
-                />
-
                 {/* ── Coluna direita: formulário ── */}
-                <div className="px-6 pb-8 sm:px-9 lg:py-14 lg:pl-8">
+                <div className="px-6 pb-8 sm:px-9 lg:py-14 lg:pl-0">
                   <WaitlistForm />
                 </div>
               </div>
@@ -136,4 +182,6 @@ export default function WaitlistModal({ aberto, fechar }: Props) {
       )}
     </AnimatePresence>
   );
+
+  return montado ? createPortal(dialogo, document.body) : null;
 }

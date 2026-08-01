@@ -44,6 +44,12 @@ export default function WaitlistForm() {
     montadoEm.current = Date.now();
   }, []);
 
+  // Depois do mount — o servidor nunca decide se a lista está fechada.
+  const [listaFechada, setListaFechada] = useState(false);
+  useEffect(() => {
+    setListaFechada(Date.now() >= new Date(site.listaEspera.fecha).getTime());
+  }, []);
+
   const paisSelecionado = useMemo(
     () => paises.find((p) => p.code === phoneCountry) ?? paises[0],
     [phoneCountry]
@@ -78,6 +84,7 @@ export default function WaitlistForm() {
 
   async function submeter(evento: React.FormEvent) {
     evento.preventDefault();
+    if (listaFechada) return;
 
     const novos = validar();
     setErros(novos);
@@ -196,6 +203,13 @@ export default function WaitlistForm() {
 
   return (
     <form onSubmit={submeter} noValidate className="espelho rounded-sm p-6 sm:p-9">
+      {/* Lista fechada — aviso em vez de formulário ativo */}
+      {listaFechada && (
+        <div className="mb-6 rounded-sm border border-creme/25 bg-creme/5 px-4 py-3 text-[0.875rem] leading-relaxed text-creme/75">
+          As inscrições na lista de espera estão fechadas.
+        </div>
+      )}
+
       <div
         ref={regiaoEstado}
         tabIndex={-1}
@@ -228,8 +242,9 @@ export default function WaitlistForm() {
             type="text"
             autoComplete="name"
             enterKeyHint="next"
-            className="campo"
+            className="campo disabled:cursor-not-allowed disabled:opacity-50"
             placeholder="Maria Fernandes"
+            disabled={listaFechada}
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             onBlur={() => aoSair("fullName")}
@@ -255,8 +270,9 @@ export default function WaitlistForm() {
             inputMode="email"
             autoComplete="email"
             enterKeyHint="next"
-            className="campo"
+            className="campo disabled:cursor-not-allowed disabled:opacity-50"
             placeholder="maria@exemplo.com"
+            disabled={listaFechada}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onBlur={() => aoSair("email")}
@@ -279,7 +295,8 @@ export default function WaitlistForm() {
             <div className="relative shrink-0">
               <select
                 aria-label="Indicativo do país"
-                className="campo cursor-pointer appearance-none pr-9 [&>option]:bg-carvao [&>option]:text-creme"
+                className="campo cursor-pointer appearance-none pr-9 disabled:cursor-not-allowed disabled:opacity-50 [&>option]:bg-carvao [&>option]:text-creme"
+                disabled={listaFechada}
                 value={phoneCountry}
                 onChange={(e) => {
                   setPhoneCountry(e.target.value);
@@ -307,8 +324,9 @@ export default function WaitlistForm() {
               inputMode="tel"
               autoComplete="tel-national"
               enterKeyHint="done"
-              className="campo"
+              className="campo disabled:cursor-not-allowed disabled:opacity-50"
               placeholder={paisSelecionado.code === "PT" ? "912 345 678" : "Número"}
+              disabled={listaFechada}
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               onBlur={() => aoSair("phone")}
@@ -332,6 +350,7 @@ export default function WaitlistForm() {
             type="text"
             tabIndex={-1}
             autoComplete="off"
+            disabled={listaFechada}
             value={website}
             onChange={(e) => setWebsite(e.target.value)}
           />
@@ -345,13 +364,14 @@ export default function WaitlistForm() {
               name="consent"
               type="checkbox"
               checked={consent}
+              disabled={listaFechada}
               onChange={(e) => {
                 setConsent(e.target.checked);
                 if (tocados.consent) setErros(validar());
               }}
               onBlur={() => aoSair("consent")}
               aria-invalid={campoInvalido("consent")}
-              className="mt-0.5 h-[18px] w-[18px] shrink-0 cursor-pointer accent-rosa"
+              className="mt-0.5 h-[18px] w-[18px] shrink-0 cursor-pointer accent-rosa disabled:cursor-not-allowed disabled:opacity-50"
             />
             <span className="text-[0.8125rem] leading-relaxed text-creme/60">
               Autorizo o {site.anfitria.empresa.replace("CEO e fundadora do ", "")} a
@@ -367,7 +387,7 @@ export default function WaitlistForm() {
 
       <button
         type="submit"
-        disabled={estado === "a-enviar"}
+        disabled={estado === "a-enviar" || listaFechada}
         className="group mt-8 flex w-full items-center justify-center gap-3 rounded-full bg-rosa px-8 py-4 text-[0.9375rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro hover:shadow-[0_12px_40px_-12px_rgba(186,121,132,0.7)] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {estado === "a-enviar" ? (

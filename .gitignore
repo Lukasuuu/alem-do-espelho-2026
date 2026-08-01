@@ -1,6 +1,7 @@
 node_modules
 .next
 out
+dev-server.log
 .env
 .env*.local
 .vercel

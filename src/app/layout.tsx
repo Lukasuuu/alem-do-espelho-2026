@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { site } from "@/lib/site";
 import MotionProvider from "@/components/MotionProvider";
+import SaltarParaInscricao from "@/components/SaltarParaInscricao";
 import "./globals.css";
 
 const descricao = `A 2ª edição do ${site.nome} acontece a ${site.data.extenso}, no ${site.local.completo}. São ${site.vagas} lugares — entra na lista de espera e sê das primeiras a saber quando abrirem as inscrições.`;
@@ -89,12 +90,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(dadosEstruturados) }}
         />
-        <a
-          href="#inscricao"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-rosa focus:px-5 focus:py-3 focus:text-sm focus:text-creme"
-        >
-          Saltar para a inscrição
-        </a>
+        <SaltarParaInscricao />
         <MotionProvider>{children}</MotionProvider>
       </body>
     </html>

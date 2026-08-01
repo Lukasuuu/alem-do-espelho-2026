@@ -7,7 +7,7 @@ const icones = [Sparkles, Heart, Users, Music];
 
 export default function Experience() {
   return (
-    <section className="grau relative overflow-hidden bg-creme py-24 sm:py-28">
+    <section id="o-que-te-espera" className="grau relative overflow-hidden bg-creme py-24 sm:py-28">
       {/* Marca d'água decorativa */}
       <div
         aria-hidden
@@ -24,7 +24,7 @@ export default function Experience() {
 
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal>
-          <span className="eyebrow text-rosa">Os detalhes</span>
+          <span className="eyebrow text-rosa">O que te espera</span>
           <h2 className="display mt-5 max-w-xl text-[2.25rem] leading-[1.06] text-vinho sm:text-5xl">
             Um dia inteiro a olhar para dentro — acompanhada.
           </h2>

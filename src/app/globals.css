@@ -274,8 +274,8 @@ body {
 .modal-content {
   position: relative;
   width: 100%;
-  max-width: 32rem;
-  max-height: 90vh;
+  max-width: 64rem;
+  max-height: 90dvh;
   overflow-y: auto;
   border-radius: 0.125rem;
 }

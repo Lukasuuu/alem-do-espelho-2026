@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import Experience from "@/components/Experience";
+import Anfitria from "@/components/Anfitria";
 import Gallery from "@/components/Gallery";
 import Footer from "@/components/Footer";
 import WaitlistModal from "@/components/WaitlistModal";
+import { definirAberturaModal } from "@/lib/modal";
 
 export default function Page() {
   const [modalAberto, setModalAberto] = useState(false);
@@ -14,12 +16,19 @@ export default function Page() {
   const abrirModal = useCallback(() => setModalAberto(true), []);
   const fecharModal = useCallback(() => setModalAberto(false), []);
 
+  // O skip-link "Saltar para a inscrição" (layout) abre o modal via registo global.
+  useEffect(() => {
+    definirAberturaModal(abrirModal);
+    return () => definirAberturaModal(null);
+  }, [abrirModal]);
+
   return (
     <>
       <Header abrirModal={abrirModal} />
       <main>
         <Hero abrirModal={abrirModal} />
         <Experience />
+        <Anfitria />
         <Gallery />
       </main>
       <Footer abrirModal={abrirModal} />
