@@ -8,8 +8,8 @@ export const site = {
   subtitulo: "Além de Mim",
   edicao: "2ª Edição",
   tagline: "Transformando mulheres em Portugal, impactando vidas em Angola.",
-  // Domínio canónico — pode ser sobrescrito por env no deploy secundário.
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://alemdoespelho.pt",
+  // Domínio canónico — sobrescrito por NEXT_PUBLIC_SITE_URL quando definido.
+  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://alemdoespelho.com",
   data: {
     // 17 de outubro de 2026 — hora local de Braga (WEST, UTC+1)
     iso: "2026-10-17T09:00:00+01:00",
