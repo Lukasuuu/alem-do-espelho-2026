@@ -1,6 +1,6 @@
 import Image from "next/image";
-import { ChevronRight } from "lucide-react";
 import Reveal from "./Reveal";
+import SponsorFlow from "./SponsorFlow";
 
 type Entidade = {
   rotulo: string;
@@ -168,13 +168,7 @@ export default function Realizacao() {
               projeto que transforma vidas, gera impacto social e fortalece comunidades em Portugal
               e Angola. Cada parceria ajuda-nos a alcançar ainda mais mulheres.
             </p>
-            <a
-              href="#contactos"
-              className="group mt-8 inline-flex items-center gap-2 rounded-full bg-vinho px-8 py-4 text-sm font-medium text-creme transition-colors duration-300 hover:bg-rosa focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rosa/50 focus-visible:ring-offset-2 focus-visible:ring-offset-creme"
-            >
-              Quero ser Patrocinador
-              <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-            </a>
+            <SponsorFlow />
           </div>
         </Reveal>
 

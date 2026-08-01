@@ -23,6 +23,7 @@ Cria `.env.local` (local) e adiciona as mesmas na Vercel:
 NEXT_PUBLIC_SUPABASE_URL=https://qtiyxibqeignvsnfhzpw.supabase.co
 SUPABASE_PUBLISHABLE_KEY=sb_publishable_reYCZiV6gc8Rqt6Q2kqyRg_e0-uxttv
 IP_HASH_SALT=<qualquer string longa e aleatória, só tua>
+NEXT_PUBLIC_SITE_URL=https://alemdoespelho.pt
 ```
 
 > A base de dados **já está criada e configurada**. Não é preciso correr SQL nenhum.
@@ -54,6 +55,27 @@ Ou pelo painel: **New Project → importar o repo → Add Environment Variables*
 
 Vercel → Project → Settings → Domains → adicionar o domínio → apontar o DNS
 conforme as instruções que aparecem.
+
+### 6. Domínio secundário — `/lista-de-espera` (opcional)
+
+A página de lista também pode viver num domínio à parte
+(`https://alemdoespelho.com/lista-de-espera`) para campanhas ou ads.
+
+**Como funciona:**
+
+- O canónico da página é absoluto e usa `NEXT_PUBLIC_SITE_URL` — ver
+  `src/app/lista-de-espera/page.tsx`. Aponta sempre para o domínio onde a
+  página está servida, sem duplicar conteúdo para os motores de busca.
+- Cria um segundo projeto Vercel com o mesmo repo e define
+  `NEXT_PUBLIC_SITE_URL=https://alemdoespelho.com` (Production *e* Preview).
+  O resto das variáveis fica igual.
+- Nesse deploy, aponta o domínio secundário no painel (como no passo 5) e a
+  rota `/lista-de-espera` passa a estar disponível lá.
+- No deploy principal mantém-se `NEXT_PUBLIC_SITE_URL=https://alemdoespelho.pt`
+  — o `canonical` do `/lista-de-espera` resolve para o domínio certo em cada um.
+
+> Sem `NEXT_PUBLIC_SITE_URL` definida, o `src/lib/site.ts` usa por defeito
+> `https://alemdoespelho.pt`.
 
 ---
 
@@ -89,6 +111,20 @@ Formulário → POST /api/waitlist → RPC join_waitlist() → Postgres
   em tribunais europeus.
 - Cada inscrição guarda UTMs, referrer e user agent. Dá para saber que campanha
   trouxe cada pessoa.
+
+---
+
+## Como funciona o patrocínio
+
+"Quero Patrocinar" (secção Realização) abre o **mesmo** formulário com
+`variant="sponsor"` → `POST /api/sponsor`. Reutiliza a validação e o anti-bot
+da lista de espera; no sucesso mostra "Falar com Vitória" — o mesmo WhatsApp do
+footer, com mensagem pré-preenchida.
+
+**Persistência:** ainda não existe tabela de leads de patrocínio — o interesse é
+registado no log da função com o email mascarado (RGPD, nada em claro). Quando a
+tabela existir, troca-se o `console.info` do passo 6 em
+`src/app/api/sponsor/route.ts` por um insert; o resto da rota não muda.
 
 ---
 
@@ -142,6 +178,8 @@ chamado Além do Espelho.
 src/
 ├── app/
 │   ├── api/waitlist/route.ts   Endpoint da inscrição
+│   ├── api/sponsor/route.ts    Endpoint do patrocínio (sem DB — log mascarado)
+│   ├── lista-de-espera/        Página de pré-inscrição (domínio secundário)
 │   ├── globals.css             Tokens da marca + fontes + .espelho
 │   ├── layout.tsx              SEO, Open Graph, JSON-LD
 │   └── page.tsx

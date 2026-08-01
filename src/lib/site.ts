@@ -8,7 +8,8 @@ export const site = {
   subtitulo: "Além de Mim",
   edicao: "2ª Edição",
   tagline: "Transformando mulheres em Portugal, impactando vidas em Angola.",
-  url: "https://alemdoespelho.pt",
+  // Domínio canónico — pode ser sobrescrito por env no deploy secundário.
+  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://alemdoespelho.pt",
   data: {
     // 17 de outubro de 2026 — hora local de Braga (WEST, UTC+1)
     iso: "2026-10-17T09:00:00+01:00",
@@ -35,8 +36,22 @@ export const site = {
     papel: "Empresária, escritora e ativista social feminina",
     empresa: "CEO e fundadora do Essence of Beauty",
   },
+  contacto: {
+    email: "essenceofbeauty.pt@gmail.com",
+    whatsapp: {
+      // Mesmo número usado no footer — nunca criar um contacto novo.
+      numero: "351939009874",
+      /** Mensagem pré-preenchida do fluxo "Quero Patrocinar". */
+      mensagemSponsor: `Olá Vitória!\nCliquei em "Quero Patrocinar" na landing page e gostaria de saber mais informações sobre as oportunidades de patrocínio.\nObrigado.`,
+    },
+  },
   vagas: 100,
 } as const;
+
+/** Constrói um link wa.me com mensagem pré-preenchida. */
+export function linkWhatsApp(numero: string, mensagem: string): string {
+  return `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;
+}
 
 /** Códigos de país no formulário — ordenados pela realidade do público do evento. */
 export const paises = [

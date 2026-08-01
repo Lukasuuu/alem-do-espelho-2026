@@ -2,21 +2,27 @@
 
 import Image from "next/image";
 import { ChevronRight } from "lucide-react";
+import { useState } from "react";
 import { InstagramIcon, MailIcon, WhatsAppIcon } from "./icons";
-import { site } from "@/lib/site";
+import TermosModal from "./TermosModal";
+import PrivacidadeModal from "./PrivacidadeModal";
+import { linkWhatsApp, site } from "@/lib/site";
 
 type Props = {
   abrirModal: () => void;
 };
 
 export default function Footer({ abrirModal }: Props) {
+  const [termosAberto, setTermosAberto] = useState(false);
+  const [privacidadeAberto, setPrivacidadeAberto] = useState(false);
+
   return (
-    <footer className="bg-musgo py-14 sm:py-16">
+    <footer className="bg-musgo pt-14 pb-7 sm:pt-16">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        {/* Colunas: logo+desc | contactos | social | legal */}
-        <div className="grid gap-12 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+        {/* Colunas: logo+desc | contactos | social | legal — empilham centradas em mobile */}
+        <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           {/* Logo + descrição */}
-          <div>
+          <div className="flex flex-col items-center text-center md:items-start md:text-left">
             <Image
               src="/brand/logo-offwhite.webp"
               alt={site.nome}
@@ -36,69 +42,108 @@ export default function Footer({ abrirModal }: Props) {
             </button>
           </div>
 
-          {/* Contactos */}
-          <div id="contactos" className="scroll-mt-28">
+          {/* Contactos — email e WhatsApp, sem data/local (fica mais compacto) */}
+          <div id="contactos" className="flex scroll-mt-28 flex-col items-center text-center md:items-start md:text-left">
             <h3 className="eyebrow text-creme/35">Contactos</h3>
-            <ul className="mt-5 space-y-3 text-[0.875rem] text-creme/60">
+            <ul className="mt-5 space-y-2.5 text-[0.875rem] text-creme/60">
               <li>
                 <a
-                  href="mailto:essenceofbeauty.pt@gmail.com"
-                  aria-label="Enviar email para essenceofbeauty.pt@gmail.com"
-                  className="group inline-flex min-h-11 items-center gap-3 text-creme/70 transition-colors duration-300 hover:text-creme focus-visible:text-creme"
+                  href={`mailto:${site.contacto.email}`}
+                  aria-label={`Enviar email para ${site.contacto.email}`}
+                  className="inline-flex min-h-11 items-center gap-3 text-creme/70 transition-colors duration-300 hover:text-creme focus-visible:text-creme"
                 >
                   <MailIcon className="h-[1.15rem] w-[1.15rem] shrink-0" />
-                  essenceofbeauty.pt@gmail.com
+                  {site.contacto.email}
                 </a>
               </li>
               <li>
                 <a
-                  href="https://wa.me/351939009874?text=Ol%C3%A1%20Vit%C3%B3ria!%20Vim%20pela%20p%C3%A1gina%20do%20Al%C3%A9m%20do%20Espelho."
+                  href={linkWhatsApp(
+                    site.contacto.whatsapp.numero,
+                    "Olá Vitória! Vim pela página do Além do Espelho."
+                  )}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Falar com Vitória Gomes no WhatsApp (abre em nova janela)"
-                  className="group inline-flex min-h-11 items-center gap-3 text-creme/70 transition-colors duration-300 hover:text-creme focus-visible:text-creme"
+                  className="inline-flex min-h-11 items-center gap-3 text-creme/70 transition-colors duration-300 hover:text-creme focus-visible:text-creme"
                 >
                   <WhatsAppIcon className="h-[1.15rem] w-[1.15rem] shrink-0" />
                   Vitória Gomes
                 </a>
               </li>
-              <li className="inline-flex min-h-11 items-center">{site.data.extenso}</li>
-              <li className="inline-flex min-h-11 items-center">
-                {site.local.nome}, {site.local.cidade}
-              </li>
             </ul>
           </div>
 
           {/* Social */}
-          <div>
+          <div className="flex flex-col items-center text-center md:items-start md:text-left">
             <h3 className="eyebrow text-creme/35">Social</h3>
-            <ul className="mt-5 space-y-3 text-[0.875rem] text-creme/60">
+            <ul className="mt-5 space-y-2.5 text-[0.875rem] text-creme/60">
               <li>
                 <a
                   href="https://www.instagram.com/vitaasilva/"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Instagram do evento (abre em nova janela)"
-                  className="group inline-flex min-h-11 items-center gap-3 text-creme/70 transition-colors duration-300 hover:text-creme focus-visible:text-creme"
+                  className="inline-flex min-h-11 items-center gap-3 text-creme/70 transition-colors duration-300 hover:text-creme focus-visible:text-creme"
                 >
                   <InstagramIcon className="h-[1.15rem] w-[1.15rem] shrink-0" />
                   Instagram
                 </a>
               </li>
             </ul>
+
+            {/* Marca Essence — centrada, largura fluida */}
+            <Image
+              src="/logo/eb-marca-papel.png"
+              alt="Essence of Beauty"
+              width={1180}
+              height={453}
+              quality={95}
+              className="mx-auto mt-6 h-9 w-auto sm:h-10"
+            />
           </div>
 
-          {/* Legal */}
-          <div>
+          {/* Legal — modais em vez de texto estático */}
+          <div className="flex flex-col items-center text-center md:items-start md:text-left">
             <h3 className="eyebrow text-creme/35">Legal</h3>
-            <ul className="mt-5 space-y-3 text-[0.8125rem] text-creme/50">
-              <li>© {new Date().getFullYear()} Além do Espelho</li>
-              <li>Essence of Beauty</li>
-              <li>{site.subtitulo} — {site.edicao}</li>
+            <ul className="mt-5 space-y-2.5 text-[0.8125rem]">
+              <li>
+                <button
+                  type="button"
+                  onClick={() => setTermosAberto(true)}
+                  className="inline-flex min-h-11 items-center text-creme/70 transition-colors duration-300 hover:text-creme focus-visible:text-creme"
+                >
+                  Termos de Serviço
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => setPrivacidadeAberto(true)}
+                  className="inline-flex min-h-11 items-center text-creme/70 transition-colors duration-300 hover:text-creme focus-visible:text-creme"
+                >
+                  Política de Privacidade
+                </button>
+              </li>
             </ul>
           </div>
         </div>
+
+        {/* Barra única — centrada, com quebra de linha em ecrãs pequenos */}
+        <div className="mt-12 border-t border-creme/10 pt-6">
+          <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-[0.8125rem] text-creme/45">
+            <span>© {new Date().getFullYear()} Além do Espelho</span>
+            <span aria-hidden>•</span>
+            <span>Essence of Beauty</span>
+            <span aria-hidden>•</span>
+            <span>{site.subtitulo} — {site.edicao}</span>
+          </p>
+        </div>
       </div>
+
+      {/* Modais legais */}
+      <TermosModal aberto={termosAberto} fechar={() => setTermosAberto(false)} />
+      <PrivacidadeModal aberto={privacidadeAberto} fechar={() => setPrivacidadeAberto(false)} />
     </footer>
   );
 }

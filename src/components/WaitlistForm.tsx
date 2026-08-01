@@ -7,6 +7,14 @@ import { normalizarNome, validarTelefone } from "@/lib/validation";
 
 type Estado = "inativo" | "a-enviar" | "sucesso" | "erro";
 type Erros = Partial<Record<"fullName" | "email" | "phone" | "consent" | "form", string>>;
+type Variante = "waitlist" | "sponsor";
+
+type Props = {
+  /** waitlist (padrão) ou sponsor — muda textos, endpoint e sucesso. */
+  variant?: Variante;
+  /** Chamado quando a submissão sponsor é aceite — o pai abre o modal de sucesso. */
+  onSucesso?: () => void;
+};
 
 const NOME_COMPLETO = /^\p{L}[\p{L}'’.-]{1,}(?:\s+\p{L}[\p{L}'’.-]{1,})+$/u;
 const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/;
@@ -23,7 +31,25 @@ function lerUtm(): Record<string, string> {
   return utm;
 }
 
-export default function WaitlistForm() {
+export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props) {
+  const ehSponsor = variant === "sponsor";
+  const empresa = site.anfitria.empresa.replace("CEO e fundadora do ", "");
+
+  /** Textos e destino por variante — mesma lógica, sem duplicar código. */
+  const config = ehSponsor
+    ? {
+        endpoint: "/api/sponsor",
+        botao: "Quero Patrocinar",
+        consentimento: `Autorizo o ${empresa} a contactar-me por email e telemóvel sobre oportunidades de patrocínio do ${site.nome}. Podes remover os teus dados quando quiseres.`,
+        listaFechada: "O registo de patrocínio está temporariamente indisponível.",
+      }
+    : {
+        endpoint: "/api/waitlist",
+        botao: "Quero a minha vaga",
+        consentimento: `Autorizo o ${empresa} a contactar-me por email e telemóvel sobre o ${site.nome}. Podes cancelar quando quiseres.`,
+        listaFechada: "As inscrições na lista de espera estão fechadas.",
+      };
+
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -45,10 +71,12 @@ export default function WaitlistForm() {
   }, []);
 
   // Depois do mount — o servidor nunca decide se a lista está fechada.
+  // O patrocínio não fecha com a lista de espera.
   const [listaFechada, setListaFechada] = useState(false);
   useEffect(() => {
+    if (ehSponsor) return;
     setListaFechada(Date.now() >= new Date(site.listaEspera.fecha).getTime());
-  }, []);
+  }, [ehSponsor]);
 
   const paisSelecionado = useMemo(
     () => paises.find((p) => p.code === phoneCountry) ?? paises[0],
@@ -99,7 +127,7 @@ export default function WaitlistForm() {
     setEstado("a-enviar");
 
     try {
-      const resposta = await fetch("/api/waitlist", {
+      const resposta = await fetch(config.endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -124,9 +152,15 @@ export default function WaitlistForm() {
         return;
       }
 
-      setPosicao(dados.posicao ?? null);
-      setJaInscrita(dados.status === "already_registered");
-      setEstado("sucesso");
+      if (ehSponsor) {
+        // O fluxo de patrocínio fecha o modal e abre o de sucesso no pai.
+        setEstado("inativo");
+        onSucesso?.();
+      } else {
+        setPosicao(dados.posicao ?? null);
+        setJaInscrita(dados.status === "already_registered");
+        setEstado("sucesso");
+      }
     } catch {
       setEstado("erro");
       setErros({ form: "Sem ligação ao servidor. Verifica a internet e tenta novamente." });
@@ -206,7 +240,7 @@ export default function WaitlistForm() {
       {/* Lista fechada — aviso em vez de formulário ativo */}
       {listaFechada && (
         <div className="mb-6 rounded-sm border border-creme/25 bg-creme/5 px-4 py-3 text-[0.875rem] leading-relaxed text-creme/75">
-          As inscrições na lista de espera estão fechadas.
+          {config.listaFechada}
         </div>
       )}
 
@@ -374,9 +408,7 @@ export default function WaitlistForm() {
               className="mt-0.5 h-[18px] w-[18px] shrink-0 cursor-pointer accent-rosa disabled:cursor-not-allowed disabled:opacity-50"
             />
             <span className="text-[0.8125rem] leading-relaxed text-creme/60">
-              Autorizo o {site.anfitria.empresa.replace("CEO e fundadora do ", "")} a
-              contactar-me por email e telemóvel sobre o {site.nome}. Podes cancelar quando
-              quiseres.
+              {config.consentimento}
             </span>
           </label>
           {campoInvalido("consent") && (
@@ -405,7 +437,7 @@ export default function WaitlistForm() {
           </>
         ) : (
           <>
-            Quero a minha vaga
+            {config.botao}
             <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">
               →
             </span>
