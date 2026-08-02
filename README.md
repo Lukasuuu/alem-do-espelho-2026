@@ -23,7 +23,7 @@ Cria `.env.local` (local) e adiciona as mesmas na Vercel:
 NEXT_PUBLIC_SUPABASE_URL=https://qtiyxibqeignvsnfhzpw.supabase.co
 SUPABASE_PUBLISHABLE_KEY=sb_publishable_reYCZiV6gc8Rqt6Q2kqyRg_e0-uxttv
 IP_HASH_SALT=<qualquer string longa e aleatória, só tua>
-NEXT_PUBLIC_SITE_URL=https://essenceofbeauty.com
+NEXT_PUBLIC_SITE_URL=https://essenceofbeautysalon.com
 ```
 
 > A base de dados **já está criada e configurada**. Não é preciso correr SQL nenhum.
@@ -56,24 +56,29 @@ Ou pelo painel: **New Project → importar o repo → Add Environment Variables*
 Vercel → Project → Settings → Domains → adicionar o domínio → apontar o DNS
 conforme as instruções que aparecem.
 
-### 6. Domínio e publicação (`essenceofbeauty.com`)
+### 6. Domínio e publicação (`essenceofbeautysalon.com`)
 
-O domínio canónico é `https://essenceofbeauty.com` — é para onde apontam o
+O domínio canónico é `https://essenceofbeautysalon.com` — é para onde apontam o
 `canonical`, o Open Graph, o sitemap e o `robots.txt`.
 
-- Define `NEXT_PUBLIC_SITE_URL=https://essenceofbeauty.com` na Vercel
+- Define `NEXT_PUBLIC_SITE_URL=https://essenceofbeautysalon.com` na Vercel
   (Production *e* Preview) — o `src/lib/site.ts` usa este valor em todo o SEO.
 - Nos previews (`*.vercel.app`) o `canonical` continua a resolver para
-  `https://essenceofbeauty.com/...`, evitando conteúdo duplicado.
+  `https://essenceofbeautysalon.com/...`, evitando conteúdo duplicado.
 - Sitemap (`/sitemap.xml`) e `robots.txt` são gerados em
   `src/app/sitemap.ts` e `src/app/robots.ts`, usando o mesmo domínio.
 
-**Domínio secundário:** `alemdoespelho.com` — ligado ao mesmo projeto. A página
-do evento responde em `https://alemdoespelho.com/lista`, mas o `canonical`
-aponta sempre para `https://essenceofbeauty.com/lista` (sem conteúdo duplicado).
+**Domínio secundário:** `alemdoespelho2026.com` — ligado ao mesmo projeto. A
+página do evento responde em `https://alemdoespelho2026.com/lista`, mas o
+`canonical` aponta sempre para `https://essenceofbeautysalon.com/lista` (sem
+conteúdo duplicado).
 
 > Sem `NEXT_PUBLIC_SITE_URL` definida, o `src/lib/site.ts` usa por defeito
-> `https://essenceofbeauty.com`.
+> `https://essenceofbeautysalon.com`.
+
+> ⚠️ Nota sobre domínios: `essenceofbeauty.com` pertence à CVS Health (não é
+> obtenível) e `alemdoespelho.com` está estacionado/à venda no GoDaddy. Por isso
+> o principal é `essenceofbeautysalon.com` e o secundário `alemdoespelho2026.com`.
 
 ---
 
