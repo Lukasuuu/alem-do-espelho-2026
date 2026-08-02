@@ -5,7 +5,7 @@ import { isDepoisDoCorte } from "@/lib/cutover";
 import EventoPage from "@/components/EventoPage";
 
 /**
- * Versão do evento — página ativa DEPOIS do corte (03/08/2026 10:00 Lisboa).
+ * Versão do evento, página ativa DEPOIS do corte (03/08/2026 10:00 Lisboa).
  * Antes do corte: 308 para a lista de espera, para nunca existirem duas
  * versões indexáveis em paralelo (conteúdo duplicado).
  *
@@ -17,9 +17,9 @@ export const revalidate = 0;
 const ROTA_LISTA = "/alem-do-espelho-2026/lista";
 const ROTA_EVENTO = "/alem-do-espelho-2026";
 
-const titulo = `${site.nome} — ${site.subtitulo} · ${site.data.extenso} · ${site.local.cidade}`;
+const titulo = `${site.nome} · ${site.subtitulo} · ${site.data.extenso} · ${site.local.cidade}`;
 
-const descricao = `O ${site.nome} — ${site.subtitulo} acontece a ${site.data.extenso}, no ${site.local.completo}. ${site.tagline}`;
+const descricao = `O ${site.nome} · ${site.subtitulo} acontece a ${site.data.extenso}, no ${site.local.completo}. ${site.tagline}`;
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -39,7 +39,7 @@ export async function generateMetadata(): Promise<Metadata> {
           url: "/og-image.jpg",
           width: 1200,
           height: 630,
-          alt: `${site.nome} — ${site.data.extenso}, ${site.local.completo}`,
+          alt: `${site.nome} · ${site.data.extenso}, ${site.local.completo}`,
         },
       ],
     },

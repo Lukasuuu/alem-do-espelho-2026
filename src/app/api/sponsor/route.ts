@@ -15,7 +15,7 @@ const TEMPO_MINIMO_MS = 2_500;
 
 /**
  * Mascara um email para registo: mantém o domínio e a 1ª letra,
- * ocultando o resto — nunca guardamos PII em claro nos logs.
+ * ocultando o resto, nunca guardamos PII em claro nos logs.
  */
 function mascararEmail(email: string): string {
   const [local, dominio] = email.split("@");
@@ -33,7 +33,7 @@ function mascararEmail(email: string): string {
  * Persistência: ainda não existe uma tabela de leads de patrocínio, por
  * isso o interesse é registado no log da função (com email mascarado).
  * Quando a tabela for criada, o passo 6 abaixo troca o console.info por
- * um insert — o resto da rota fica igual.
+ * um insert, o resto da rota fica igual.
  */
 export async function POST(request: Request): Promise<NextResponse<Resposta>> {
   // 1. Limite de tentativas por IP
@@ -60,7 +60,7 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
     return NextResponse.json({ ok: false, mensagem: MENSAGENS.invalido }, { status: 400 });
   }
 
-  // 3. Validação do formato — o mesmo esquema da lista de espera
+  // 3. Validação do formato, o mesmo esquema da lista de espera
   let dados;
   try {
     dados = waitlistSchema.parse(corpo);
@@ -79,7 +79,7 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
     return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor }, { status: 500 });
   }
 
-  // 4. Armadilhas anti-bot — resposta genérica de propósito
+  // 4. Armadilhas anti-bot, resposta genérica de propósito
   if (dados.website && dados.website.length > 0) {
     return NextResponse.json({ ok: false, mensagem: MENSAGENS.bot }, { status: 400 });
   }
@@ -96,7 +96,7 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
     );
   }
 
-  // 6. Registo do lead — sem PII em claro (RGPD)
+  // 6. Registo do lead, sem PII em claro (RGPD)
   console.info(
     "[sponsor] novo interesse de patrocínio",
     JSON.stringify({

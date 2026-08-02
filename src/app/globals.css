@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ───────────────────────────────────────────────
-   RECLINE — tipografia oficial Além do Espelho
+   RECLINE, tipografia oficial Além do Espelho
    ─────────────────────────────────────────────── */
 @font-face {
   font-family: "Recline";
@@ -40,7 +40,7 @@
 }
 
 /* ───────────────────────────────────────────────
-   JOST — geométrica utilitária (labels, UI, corpo)
+   JOST, geométrica utilitária (labels, UI, corpo)
    Self-hosted: sem pedidos ao Google, sem IPs para fora da UE.
    ─────────────────────────────────────────────── */
 @font-face {
@@ -80,7 +80,7 @@
 }
 
 /* ───────────────────────────────────────────────
-   TOKENS — paleta oficial Além do Espelho 2026
+   TOKENS, paleta oficial Além do Espelho 2026
    ─────────────────────────────────────────────── */
 @theme {
   --color-creme: #f5f0e8;
@@ -162,7 +162,7 @@ body {
   letter-spacing: -0.02em;
 }
 
-/* Painel de espelho — vidro fosco com reflexo diagonal */
+/* Painel de espelho, vidro fosco com reflexo diagonal */
 .espelho {
   position: relative;
   background: linear-gradient(
@@ -257,7 +257,7 @@ body {
   background-size: 4px 4px;
 }
 
-/* Overlay do modal — abre SEMPRE ALINHADO AO TOPO (com respiro), nunca centrado.
+/* Overlay do modal, abre SEMPRE ALINHADO AO TOPO (com respiro), nunca centrado.
    .modal-overlay-top é a classe anti-regressão aplicada nos componentes:
    a intenção de top-alinhamento fica explícita e dominante, independente de
    qualquer regra futura que toque em .modal-overlay. */
@@ -267,7 +267,7 @@ body {
   inset: 0;
   z-index: 100;
   display: flex;
-  /* Respiro superior responsivo — a modal abre alinhada ao topo, não ao centro. */
+  /* Respiro superior responsivo, a modal abre alinhada ao topo, não ao centro. */
   --topo-modal: clamp(1.25rem, 5vh, 3.5rem);
   /* DOMINANTE: flex-start força o topo. NUNCA usar center aqui. */
   align-items: flex-start;
@@ -282,7 +282,7 @@ body {
   position: relative;
   width: 100%;
   max-width: 64rem;
-  /* Painel + respiro do topo cabem sempre no viewport — scroll interno se for preciso.
+  /* Painel + respiro do topo cabem sempre no viewport, scroll interno se for preciso.
      Fallback 100vh p/ browsers sem suporte a dvh (o calc com dvh seria inválido e
      max-height cairia para none, deixando o painel estourar o viewport). */
   max-height: calc(100vh - var(--topo-modal) - 1rem);

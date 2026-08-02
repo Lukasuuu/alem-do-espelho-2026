@@ -24,13 +24,30 @@ export default function Experience() {
 
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal>
-          <span className="eyebrow text-rosa">O que te espera</span>
+          <span className="eyebrow text-rosa">O que vais viver</span>
           <h2 className="display mt-5 max-w-xl text-[2.25rem] leading-[1.06] text-vinho sm:text-5xl">
-            Um dia inteiro a olhar para dentro — acompanhada.
+            O que vais viver no Além do Espelho
           </h2>
           <p className="mt-6 max-w-lg text-[1.0625rem] leading-relaxed text-carvao/65">
-            Não é uma conferência onde te sentas e ouves. É uma sala de cem mulheres a fazer o
-            mesmo trabalho ao mesmo tempo.
+            Um dia inteiro para olhares para dentro, sem estares sozinha.
+          </p>
+
+          {/* Manifesto: continua a abertura do hero, no lugar do parágrafo de introdução */}
+          <div className="mt-8 max-w-lg text-[1.0625rem] leading-relaxed text-carvao/65">
+            <p>
+              Talvez tenhas passado anos a cuidar de todos, a cumprir expectativas e a ser
+              forte. Mas, algures pelo caminho, deixaste de te reconhecer.
+            </p>
+            <p className="mt-4">
+              Um dia inteiro pensado para te ajudar a recuperar a tua voz, a tua confiança, a
+              tua feminilidade e a mulher que sempre existiu dentro de ti.
+            </p>
+            <p className="mt-4">
+              Porque quando uma mulher muda a forma como se vê, muda a forma como vive.
+            </p>
+          </div>
+          <p className="display mt-8 text-[1.75rem] leading-[1.15] text-vinho sm:text-[2rem]">
+            Toda a transformação começa quando decides olhar para ti.
           </p>
         </Reveal>
 
@@ -54,6 +71,14 @@ export default function Experience() {
           })}
         </ul>
 
+        {/* Fecho da secção */}
+        <Reveal>
+          <p className="display mx-auto mt-20 max-w-xl text-center text-[1.75rem] leading-[1.15] text-vinho sm:text-[2rem]">
+            Porque este não será apenas um evento.
+            <br />
+            Será o dia em que podes voltar a encontrar-te.
+          </p>
+        </Reveal>
       </div>
     </section>
   );

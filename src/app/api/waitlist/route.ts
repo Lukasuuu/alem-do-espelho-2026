@@ -58,7 +58,7 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
     return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor }, { status: 500 });
   }
 
-  // 4. Armadilhas anti-bot — resposta genérica de propósito
+  // 4. Armadilhas anti-bot, resposta genérica de propósito
   if (dados.website && dados.website.length > 0) {
     return NextResponse.json({ ok: false, mensagem: MENSAGENS.bot }, { status: 400 });
   }

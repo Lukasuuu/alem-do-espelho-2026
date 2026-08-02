@@ -8,7 +8,7 @@ let cliente: SupabaseClient | null = null;
  * A tabela `waitlist_subscribers` tem RLS ativo e nenhuma policy pública:
  * ninguém lê os dados com esta chave. A escrita acontece exclusivamente
  * através da função `join_waitlist` (SECURITY DEFINER), que valida e
- * deduplica. Por isso não é preciso — nem desejável — expor a service role key.
+ * deduplica. Por isso não é preciso, nem desejável, expor a service role key.
  */
 export function getSupabase(): SupabaseClient {
   if (cliente) return cliente;

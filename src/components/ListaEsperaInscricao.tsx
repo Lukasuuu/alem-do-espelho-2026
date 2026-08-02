@@ -7,7 +7,7 @@ import { site } from "@/lib/site";
 
 /**
  * Secção de pré-inscrição: o formulário vive aqui inline (em vez de modal),
- * com copy, benefícios e contagem — mesma linguagem visual do modal principal.
+ * com copy, benefícios e contagem, mesma linguagem visual do modal principal.
  */
 export default function ListaEsperaInscricao() {
   return (
@@ -20,7 +20,7 @@ export default function ListaEsperaInscricao() {
 
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          {/* Coluna esquerda — copy + benefícios + contagem */}
+          {/* Coluna esquerda, copy + benefícios + contagem */}
           <div className="flex flex-col items-start">
             <span className="eyebrow text-dourado-claro/70">Lista de espera</span>
             <h2 className="display mt-4 text-[2rem] leading-[1.05] text-creme sm:text-[2.5rem]">
@@ -29,7 +29,7 @@ export default function ListaEsperaInscricao() {
             </h2>
             <p className="mt-5 max-w-md text-[0.9375rem] leading-relaxed text-creme/65">
               Quem está na lista recebe o aviso antes de todos, assim que as inscrições
-              abrirem — e escolhe o lugar em primeiro.
+              abrirem e escolhe o lugar em primeiro.
             </p>
 
             <ul className="mt-7 space-y-3">
@@ -55,7 +55,7 @@ export default function ListaEsperaInscricao() {
             </div>
           </div>
 
-          {/* Coluna direita — formulário inline */}
+          {/* Coluna direita, formulário inline */}
           <div>
             <WaitlistForm />
           </div>

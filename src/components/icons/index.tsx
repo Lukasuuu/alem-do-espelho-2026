@@ -1,5 +1,5 @@
 /**
- * Ícones de marca como SVG inline — herdam `currentColor`, pelo que mudam de
+ * Ícones de marca como SVG inline, herdam `currentColor`, pelo que mudam de
  * cor com o texto no hover. Usados apenas como links para os respetivos perfis,
  * sempre monocromáticos e sem distorção.
  */

@@ -10,7 +10,7 @@ type Props = {
 
 const pontos = [
   "Esta página serve para te registares na lista de espera do evento.",
-  "Não existe qualquer pagamento nesta página — a inscrição é gratuita.",
+  "Não existe qualquer pagamento nesta página. A inscrição é gratuita.",
   "O envio do formulário não garante participação no evento.",
   "Os dados são usados apenas para comunicação sobre o evento.",
   "Os teus dados não são vendidos nem cedidos a terceiros.",
@@ -18,7 +18,7 @@ const pontos = [
   "O tratamento segue o RGPD/GDPR e a legislação portuguesa aplicável.",
 ];
 
-/** Modal "Termos de Serviço" — conformidade PT/RGPD. */
+/** Modal "Termos de Serviço", conformidade PT/RGPD. */
 export default function TermosModal({ aberto, fechar }: Props) {
   return (
     <Modal aberto={aberto} fechar={fechar} titulo="Termos de Serviço" tom="claro" larguraMax="34rem">

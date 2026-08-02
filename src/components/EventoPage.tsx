@@ -12,7 +12,7 @@ import WaitlistModal from "@/components/WaitlistModal";
 import { definirAberturaModal } from "@/lib/modal";
 
 /**
- * Versão do evento — a landing completa, com o formulário em modal.
+ * Versão do evento, a landing completa, com o formulário em modal.
  * Vive em /alem-do-espelho-2026 (após o corte da lista de espera).
  */
 export default function EventoPage() {

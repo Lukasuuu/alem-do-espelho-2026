@@ -7,21 +7,21 @@ export default function Gallery() {
     <section className="relative overflow-hidden bg-creme py-24 sm:py-28">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
         <Reveal>
-          <span className="eyebrow text-rosa">NA PRIMEIRA EDIÇÃO</span>
+          <span className="eyebrow text-rosa">Na primeira edição</span>
           <h2 className="display mt-5 max-w-xl text-[2.25rem] leading-[1.06] text-vinho sm:text-5xl">
-            O dia que abriu o caminho.
+            A tua história ainda pode ganhar um novo capítulo.
           </h2>
         </Reveal>
 
-        {/* Grid editorial assimétrico — 1ª edição à esquerda, autoras + citação à direita.
+        {/* Grid editorial assimétrico: 1ª edição à esquerda, autoras + citação à direita.
             O bloco de citação é o terceiro retângulo e fecha a grelha na base. */}
         <div className="mt-16 grid gap-5 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)] lg:grid-rows-[auto_1fr]">
-          {/* ── 1ª edição — ocupa as duas linhas ── */}
+          {/* 1ª edição, ocupa as duas linhas */}
           <Reveal className="lg:row-span-2">
             <figure className="group relative mx-auto w-full max-w-[40rem] overflow-hidden rounded-sm">
               <Image
                 src="/brand/edicao-1.webp"
-                alt="1ª edição do Além do Espelho — o evento que marcou a transformação da vida de muitas mulheres"
+                alt="1ª edição do Além do Espelho, o evento que marcou a transformação da vida de muitas mulheres"
                 width={642}
                 height={856}
                 sizes="(max-width: 1024px) 100vw, 40vw"
@@ -34,13 +34,13 @@ export default function Gallery() {
                   <span className="eyebrow text-[0.625rem] tracking-[0.25em]">1ª EDIÇÃO</span>
                 </div>
                 <p className="mt-2 text-[0.9375rem] font-medium leading-snug text-creme">
-                  1ª edição do Evento que marcou a transformação da vida de muitas mulheres
+                  A 1ª edição, o dia que mudou a forma como muitas mulheres se veem.
                 </p>
               </figcaption>
             </figure>
           </Reveal>
 
-          {/* ── Autoras — linha 1 ── */}
+          {/* Autoras, linha 1 */}
           <Reveal delay={0.08}>
             <figure className="group relative overflow-hidden rounded-sm">
               <Image
@@ -64,7 +64,7 @@ export default function Gallery() {
             </figure>
           </Reveal>
 
-          {/* ── Citação — linha 2, estica até à base da foto da 1ª edição ── */}
+          {/* Citação, linha 2, estica até à base da foto da 1ª edição */}
           <Reveal delay={0.15}>
             <div className="flex h-full flex-col justify-end gap-5 rounded-sm border border-vinho/10 bg-blush/25 p-8 sm:p-10 lg:min-h-[13rem]">
               <span className="fio block w-16 text-vinho" aria-hidden />

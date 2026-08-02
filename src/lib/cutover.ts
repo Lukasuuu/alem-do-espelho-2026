@@ -7,7 +7,7 @@ import { CORTE_ESPERA_ISO } from "@/lib/site";
  * Antes de CORTE_ESPERA_ISO: a lista de espera é a página ativa.
  * No corte e depois: redireciona para a versão do evento.
  *
- * A hora de corte é a MESMA do countdown (site.listaEspera.fecha) — fonte
+ * A hora de corte é a MESMA do countdown (site.listaEspera.fecha), fonte
  * única em site.ts. Fuso Lisbon (Europe/Lisbon, +01:00 no verão).
  */
 export const CORTE_ESPERA_MS = new Date(CORTE_ESPERA_ISO).getTime();

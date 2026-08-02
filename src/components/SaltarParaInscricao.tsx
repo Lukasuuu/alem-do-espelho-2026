@@ -4,7 +4,7 @@ import { abrirModalGlobal } from "@/lib/modal";
 
 /**
  * Skip-link do layout: o destino "inscrição" já não é uma âncora (#inscricao
- * foi removida) — é o modal de inscrição. Abrir e focar o primeiro campo.
+ * foi removida), é o modal de inscrição. Abrir e focar o primeiro campo.
  */
 export default function SaltarParaInscricao() {
   return (

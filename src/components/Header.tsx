@@ -58,7 +58,7 @@ export default function Header({ abrirModal }: Props) {
             onClick={abrirModal}
             className="rounded-full bg-rosa px-6 py-2.5 text-[0.8125rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro hover:shadow-[0_8px_28px_-8px_rgba(196,126,138,0.6)]"
           >
-            Entrar na lista
+            Quero fazer parte
           </button>
         </div>
 
@@ -93,7 +93,7 @@ export default function Header({ abrirModal }: Props) {
               }}
               className="w-full rounded-full bg-rosa px-6 py-3 text-[0.875rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro"
             >
-              Entrar na lista
+              Quero fazer parte
             </button>
           </div>
         </div>

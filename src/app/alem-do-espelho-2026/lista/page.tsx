@@ -5,7 +5,7 @@ import { isDepoisDoCorte } from "@/lib/cutover";
 import ListaEsperaPage from "@/components/ListaEsperaPage";
 
 /**
- * Lista de espera — página ativa ATÉ ao corte (03/08/2026 10:00 Lisboa).
+ * Lista de espera, página ativa ATÉ ao corte (03/08/2026 10:00 Lisboa).
  * No corte e depois: 308 para a versão do evento (/alem-do-espelho-2026).
  *
  * Render dinâmico por request: o build estático não pode congelar a virada.
@@ -16,15 +16,15 @@ export const revalidate = 0;
 const ROTA_LISTA = "/alem-do-espelho-2026/lista";
 const ROTA_EVENTO = "/alem-do-espelho-2026";
 
-const titulo = `Lista de Espera — ${site.nome} · ${site.data.extenso} · ${site.local.cidade}`;
+const titulo = `Lista de espera · ${site.nome} · ${site.local.cidade}`;
 
-const descricao = `Entra na lista de espera do ${site.nome} e sê um dos primeiros a receber todas as novidades e a garantir prioridade na abertura das inscrições. A 2ª edição acontece a ${site.data.extenso}, no ${site.local.completo}.`;
+const descricao = `A 2ª edição do ${site.nome} acontece a ${site.data.extenso}, no ${site.local.completo}. Um dia de desenvolvimento pessoal feminino, autoestima e networking para mulheres que querem voltar a encontrar-se. Entra na lista de espera.`;
 
 export async function generateMetadata(): Promise<Metadata> {
   // Canónico da fase pré-corte. Depois do corte a rota devolve 308 para o
-  // evento, que carrega o canónico da fase pós-corte — nunca em conflito.
+  // evento, que carrega o canónico da fase pós-corte, nunca em conflito.
   return {
-    // Título absoluto (bypass do template) — forte para busca e sem duplicar o nome do site.
+    // Título absoluto (bypass do template), forte para busca e sem duplicar o nome do site.
     title: { absolute: titulo },
     description: descricao,
     alternates: { canonical: `${site.url}${ROTA_LISTA}` },
@@ -41,7 +41,7 @@ export async function generateMetadata(): Promise<Metadata> {
           url: "/og-image.jpg",
           width: 1200,
           height: 630,
-          alt: `${site.nome} — ${site.data.extenso}, ${site.local.completo}`,
+          alt: `${site.nome} · ${site.data.extenso}, ${site.local.completo}`,
         },
       ],
     },

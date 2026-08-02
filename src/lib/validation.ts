@@ -47,7 +47,7 @@ export const waitlistSchema = z.object({
   }),
 
   // Anti-bot: campo invisível que só um robô preenche.
-  // Aceita qualquer valor aqui — a rejeição acontece no handler,
+  // Aceita qualquer valor aqui, a rejeição acontece no handler,
   // com resposta genérica, para não dar pistas ao robô.
   website: z.string().max(200).optional().default(""),
 

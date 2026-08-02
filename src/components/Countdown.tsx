@@ -18,9 +18,9 @@ function calcular(restanteMs: number): Tempo {
 
 type Props = {
   tom?: "claro" | "escuro";
-  /** Data ISO para a qual se conta — por omissão, o fecho da lista de espera. */
+  /** Data ISO para a qual se conta, por omissão o fecho da lista de espera. */
   alvo?: string;
-  /** Rótulo acima dos números — por omissão, "A lista fecha em". */
+  /** Rótulo acima dos números, por omissão "A lista fecha em". */
   rotulo?: string;
 };
 

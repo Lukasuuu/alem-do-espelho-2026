@@ -10,9 +10,9 @@ type Erros = Partial<Record<"fullName" | "email" | "phone" | "consent" | "form",
 type Variante = "waitlist" | "sponsor";
 
 type Props = {
-  /** waitlist (padrão) ou sponsor — muda textos, endpoint e sucesso. */
+  /** waitlist (padrão) ou sponsor, muda textos, endpoint e sucesso. */
   variant?: Variante;
-  /** Chamado quando a submissão sponsor é aceite — o pai abre o modal de sucesso. */
+  /** Chamado quando a submissão sponsor é aceite, o pai abre o modal de sucesso. */
   onSucesso?: () => void;
 };
 
@@ -35,7 +35,7 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
   const ehSponsor = variant === "sponsor";
   const empresa = site.anfitria.empresa.replace("CEO e fundadora do ", "");
 
-  /** Textos e destino por variante — mesma lógica, sem duplicar código. */
+  /** Textos e destino por variante, mesma lógica, sem duplicar código. */
   const config = ehSponsor
     ? {
         endpoint: "/api/sponsor",
@@ -45,7 +45,7 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
       }
     : {
         endpoint: "/api/waitlist",
-        botao: "Quero a minha vaga",
+        botao: "Quero fazer parte",
         consentimento: `Autorizo o ${empresa} a contactar-me por email e telemóvel sobre o ${site.nome}.`,
         listaFechada: "As inscrições na lista de espera estão fechadas.",
       };
@@ -70,7 +70,7 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
     montadoEm.current = Date.now();
   }, []);
 
-  // Depois do mount — o servidor nunca decide se a lista está fechada.
+  // Depois do mount, o servidor nunca decide se a lista está fechada.
   // O patrocínio não fecha com a lista de espera.
   const [listaFechada, setListaFechada] = useState(false);
   useEffect(() => {
@@ -168,7 +168,7 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
   }
 
   const mensagemPartilha = encodeURIComponent(
-    `Acabei de entrar na lista de espera do ${site.nome} — ${site.subtitulo}. ${site.data.extenso}, ${site.local.completo}. Entra também: ${site.url}`
+    `Acabei de entrar na lista de espera do ${site.nome} · ${site.subtitulo}. ${site.data.extenso}, ${site.local.completo}. Entra também: ${site.url}`
   );
 
   /* ── Ecrã de confirmação ─────────────────────────────────── */
@@ -196,14 +196,25 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
         </div>
 
         <h3 className="display mt-7 text-3xl text-creme sm:text-4xl">
-          {jaInscrita ? "Já estavas connosco." : "Estás na lista."}
+          {jaInscrita ? "Já estavas connosco." : "O teu lugar está guardado."}
         </h3>
 
-        <p className="mx-auto mt-4 max-w-sm text-[0.9375rem] leading-relaxed text-creme/70">
-          {jaInscrita
-            ? "Este email já estava registado — atualizámos os teus dados. Continuas entre as primeiras a saber."
-            : "Vais receber o aviso antes de todos, assim que as inscrições abrirem. Guarda o nosso email."}
-        </p>
+        {jaInscrita ? (
+          <p className="mx-auto mt-4 max-w-sm text-[0.9375rem] leading-relaxed text-creme/70">
+            Este email já estava registado. Atualizámos os teus dados e continuas entre
+            as primeiras a saber.
+          </p>
+        ) : (
+          <>
+            <p className="mx-auto mt-4 max-w-sm text-[0.9375rem] leading-relaxed text-creme/70">
+              Assim que as inscrições abrirem, és das primeiras a saber.
+            </p>
+            <p className="mx-auto mt-3 max-w-sm text-[0.9375rem] leading-relaxed text-creme/70">
+              Tu não precisas tornar-te outra mulher. Precisas apenas de voltar a
+              encontrar quem sempre foste.
+            </p>
+          </>
+        )}
 
         {posicao !== null && (
           <p className="mt-7">
@@ -237,7 +248,7 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
 
   return (
     <form onSubmit={submeter} noValidate className="espelho rounded-sm p-6 sm:p-9">
-      {/* Lista fechada — aviso em vez de formulário ativo */}
+      {/* Lista fechada, aviso em vez de formulário ativo */}
       {listaFechada && (
         <div className="mb-6 rounded-sm border border-creme/25 bg-creme/5 px-4 py-3 text-[0.875rem] leading-relaxed text-creme/75">
           {config.listaFechada}
@@ -375,7 +386,7 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
           )}
         </div>
 
-        {/* Honeypot — invisível para pessoas, irresistível para robôs */}
+        {/* Honeypot: invisível para pessoas, irresistível para robôs */}
         <div aria-hidden className="absolute left-[-9999px] h-0 w-0 overflow-hidden">
           <label htmlFor="website">Website</label>
           <input

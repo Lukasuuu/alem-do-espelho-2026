@@ -15,12 +15,12 @@ export const site = {
   nome: "Além do Espelho 2026",
   subtitulo: "Além de Mim",
   edicao: "2ª Edição",
-  tagline: "Transformando mulheres em Portugal, impactando vidas em Angola.",
-  // Domínio canónico — sobrescrito por NEXT_PUBLIC_SITE_URL quando definido.
+  tagline: "Transformamos mulheres em Portugal e impactamos vidas em Angola.",
+  // Domínio canónico, sobrescrito por NEXT_PUBLIC_SITE_URL quando definido.
   // (alemdoespelho2026.com é domínio secundário; o canónico fica sempre no principal.)
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://essenceofbeautysalon.com",
   data: {
-    // 17 de outubro de 2026 — hora local de Braga (WEST, UTC+1)
+    // 17 de outubro de 2026, hora local de Braga (WEST, UTC+1)
     iso: "2026-10-17T09:00:00+01:00",
     extenso: "17 de outubro de 2026",
     curta: "17 OUT 2026",
@@ -29,7 +29,7 @@ export const site = {
     ano: "2026",
   },
   listaEspera: {
-    // Fecho da lista — segunda-feira, 3 de agosto de 2026, 10:00 (Lisboa, WEST)
+    // Fecho da lista: segunda-feira, 3 de agosto de 2026, 10:00 (Lisboa, WEST)
     fecha: CORTE_ESPERA_ISO,
     fechaExtenso: "segunda-feira, 3 de agosto, às 10:00",
     fechaCurta: "3 AGO · 10:00",
@@ -38,7 +38,7 @@ export const site = {
     nome: "INNSiDE by Meliá",
     cidade: "Braga",
     pais: "Portugal",
-    completo: "INNSiDE by Meliá — Braga, Portugal",
+    completo: "INNSiDE by Meliá, Braga, Portugal",
   },
   anfitria: {
     nome: "Vitória Gomes",
@@ -48,7 +48,7 @@ export const site = {
   contacto: {
     email: "essenceofbeauty.pt@gmail.com",
     whatsapp: {
-      // Mesmo número usado no footer — nunca criar um contacto novo.
+      // Mesmo número usado no footer; nunca criar um contacto novo.
       numero: "351939009874",
       /** Mensagem pré-preenchida do fluxo "Quero Patrocinar". */
       mensagemSponsor: `Olá Vitória!\nCliquei em "Quero Patrocinar" na landing page e gostaria de saber mais informações sobre as oportunidades de patrocínio.\nObrigado.`,
@@ -62,7 +62,7 @@ export function linkWhatsApp(numero: string, mensagem: string): string {
   return `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;
 }
 
-/** Códigos de país no formulário — ordenados pela realidade do público do evento. */
+/** Códigos de país no formulário, ordenados pela realidade do público do evento. */
 export const paises = [
   { code: "PT", dial: "+351", nome: "Portugal", flag: "🇵🇹" },
   { code: "BR", dial: "+55", nome: "Brasil", flag: "🇧🇷" },
@@ -78,25 +78,26 @@ export const paises = [
 
 export type PaisCode = (typeof paises)[number]["code"];
 
-/** O que a participante vai viver — extraído do dossiê do projeto. */
+/** O que a participante vai viver, extraído do dossiê do projeto. */
 export const experiencia = [
   {
-    titulo: "Palestras que mexem por dentro",
+    titulo: "Palestras que despertam",
     texto:
-      "Mulheres que já atravessaram o que tu atravessas, a contar como saíram do outro lado.",
+      "Histórias reais de mulheres que enfrentaram os seus medos, venceram as suas batalhas e hoje inspiram outras a acreditar que também é possível recomeçar.",
   },
   {
     titulo: "Dinâmicas de desenvolvimento pessoal",
     texto:
-      "Trabalho real sobre identidade e autoestima — não é uma plateia, é uma sala que participa.",
+      "Experiências práticas que te ajudam a fortalecer a autoestima, resgatar a tua identidade e olhar para ti com mais amor, coragem e verdade.",
   },
   {
-    titulo: "Networking com propósito",
+    titulo: "Uma sala cheia de mulheres que se apoiam",
     texto:
-      "Empresárias, profissionais, mães e mulheres em reinvenção. Cem histórias na mesma sala.",
+      "Empresárias, profissionais, mães e mulheres em processo de reinvenção.",
   },
   {
-    titulo: "Experiências ao vivo",
-    texto: "Música, dança e arte visual.",
+    titulo: "Experiências que tocam a alma",
+    texto:
+      "Momentos de música, dança e arte visual criados para despertar a tua verdadeira beleza.",
   },
 ] as const;

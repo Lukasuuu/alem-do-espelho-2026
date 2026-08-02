@@ -11,14 +11,14 @@ type Entidade = {
   height: number;
   href: string;
   ariaLabel: string;
-  /** Só a Conexão: a coroa dourada perde legibilidade no claro — leva medalhão escuro. */
+  /** Só a Conexão: a coroa dourada perde legibilidade no claro, por isso leva medalhão escuro. */
   medalhao: boolean;
 };
 
 /**
  * Entidades que fazem o evento acontecer. Sobre o creme, a Essence (clara) e o
  * Atos (a cores) assentam diretos; a Conexão (coroa dourada) ganha um medalhão
- * de carvão por trás — o dourado só lê sobre escuro.
+ * de carvão por trás, porque o dourado só lê sobre escuro.
  */
 const entidades: Entidade[] = [
   {
@@ -35,7 +35,7 @@ const entidades: Entidade[] = [
   {
     rotulo: "Organização",
     nome: "Conexão Women",
-    descricao: "Rede de mulheres — conectadas, inspiradas, imparáveis.",
+    descricao: "Rede de mulheres conectadas, inspiradas e imparáveis.",
     asset: "/brand/conexao.webp",
     width: 490,
     height: 490,
@@ -59,7 +59,7 @@ const entidades: Entidade[] = [
 export default function Realizacao() {
   return (
     <section className="grao relative overflow-hidden bg-creme py-24 sm:py-32">
-      {/* fio de abertura em sage — destaca a secção das vizinhas sem mudar de tom */}
+      {/* fio de abertura em sage, destaca a secção das vizinhas sem mudar de tom */}
       <span className="fio text-sage block w-full" aria-hidden />
 
       {/* halos suaves da paleta */}
@@ -68,7 +68,7 @@ export default function Realizacao() {
         <div className="absolute -left-32 bottom-0 h-[26rem] w-[26rem] rounded-full bg-blush/35 blur-[120px]" />
       </div>
 
-      {/* marca de água — moldura ornamental em sage, sangra pela direita */}
+      {/* marca de água: moldura ornamental em sage, sangra pela direita */}
       <Image
         src="/brand/logo-verde.webp"
         alt=""
@@ -80,7 +80,7 @@ export default function Realizacao() {
       />
 
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
-        {/* ── "Quem faz acontecer" — cabeçalho centrado no topo da secção ── */}
+        {/* "Quem faz acontecer", cabeçalho centrado no topo da secção */}
         <Reveal>
           <div className="mt-[clamp(32px,4vw,56px)]">
             <h2 className="eyebrow text-rosa">Quem faz acontecer</h2>
@@ -89,7 +89,7 @@ export default function Realizacao() {
 
         {/* ── Zona A: ilustração + missão │ declaração + bandeira ── */}
         <div className="mt-[clamp(40px,5vw,64px)] grid items-start gap-16 lg:grid-cols-2">
-          {/* Coluna esquerda — ilustração + missão */}
+          {/* Coluna esquerda: ilustração + missão */}
           <div>
             <Reveal>
               <figure className="overflow-hidden rounded-sm bg-white/70 p-3 ring-1 ring-vinho/12">
@@ -104,10 +104,10 @@ export default function Realizacao() {
               </figure>
             </Reveal>
 
-            {/* Nossa Missão */}
+            {/* A nossa missão */}
             <Reveal delay={0.08}>
               <div className="mt-[clamp(48px,7vw,96px)]">
-                <span className="eyebrow text-rosa">Nossa Missão</span>
+                <span className="eyebrow text-rosa">A nossa missão</span>
                 <p className="display mt-[clamp(14px,2vw,20px)] text-[clamp(1.5rem,3vw,1.875rem)] leading-[1.08] text-vinho">
                   Transformar vidas em dois continentes.
                 </p>
@@ -116,15 +116,15 @@ export default function Realizacao() {
                   <div>
                     <h3 className="eyebrow text-rosa">Em Portugal</h3>
                     <p className="mt-[clamp(12px,1.5vw,16px)] text-[0.9375rem] leading-relaxed text-carvao/70">
-                      Desenvolver, conectar e capacitar mais de 100 mulheres na cidade de Braga através de
-                      conhecimento, empreendedorismo, autoestima e oportunidades de crescimento.
+                      Desenvolver, conectar e capacitar mais de 100 mulheres em Braga, através de
+                      conhecimento, empreendedorismo, autoestima e oportunidades reais de crescimento.
                     </p>
                   </div>
                   <div>
                     <h3 className="eyebrow text-rosa">Em Angola</h3>
                     <p className="mt-[clamp(12px,1.5vw,16px)] text-[0.9375rem] leading-relaxed text-carvao/70">
                       Arrecadar e enviar produtos de higiene feminina para mulheres em situação de
-                      vulnerabilidade, promovendo dignidade, cuidado e esperança.
+                      vulnerabilidade, levando dignidade, cuidado e esperança.
                     </p>
                   </div>
                 </div>
@@ -132,7 +132,7 @@ export default function Realizacao() {
             </Reveal>
           </div>
 
-          {/* Coluna direita — declaração + bandeira */}
+          {/* Coluna direita: declaração + bandeira */}
           <div>
             <Reveal>
               <p className="display text-[2rem] uppercase leading-[1.1] text-vinho sm:text-[2.5rem]">
@@ -159,14 +159,14 @@ export default function Realizacao() {
           </div>
         </div>
 
-        {/* ── Chamada para patrocinadores — largura total, centrada ── */}
+        {/* Chamada para patrocinadores, largura total e centrada */}
         <Reveal delay={0.08}>
           <div className="mx-auto mt-20 max-w-2xl text-center">
             <h3 className="display text-[2rem] text-vinho">Junte-se à nossa missão.</h3>
             <p className="mt-5 leading-relaxed text-carvao/70">
               Ao tornar-se patrocinador desta iniciativa, a sua marca passa a fazer parte de um
               projeto que transforma vidas, gera impacto social e fortalece comunidades em Portugal
-              e Angola. Cada parceria ajuda-nos a alcançar ainda mais mulheres.
+              e em Angola. Cada parceria ajuda-nos a chegar a mais mulheres.
             </p>
             <SponsorFlow />
           </div>

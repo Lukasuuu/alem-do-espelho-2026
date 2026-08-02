@@ -4,7 +4,7 @@ type Registo = { contagem: number; expiraEm: number };
 
 /**
  * Janela fixa em memória, por instância da função.
- * Em serverless não é partilhada entre instâncias — é uma primeira barreira,
+ * Em serverless não é partilhada entre instâncias, é uma primeira barreira,
  * não a única: o índice único de email na base de dados é a garantia final.
  */
 const janelas = new Map<string, Registo>();
@@ -46,7 +46,7 @@ export function obterIp(headers: Headers): string {
 }
 
 /**
- * Guardamos apenas o hash do IP — suficiente para detetar abuso,
+ * Guardamos apenas o hash do IP, suficiente para detetar abuso,
  * sem armazenar um identificador pessoal em claro (RGPD).
  */
 export function hashIp(ip: string): string {

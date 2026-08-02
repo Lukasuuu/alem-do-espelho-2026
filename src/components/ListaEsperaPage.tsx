@@ -12,7 +12,7 @@ import WaitlistModal from "./WaitlistModal";
 import { definirAberturaModal } from "@/lib/modal";
 
 /**
- * Página de pré-inscrição — reutiliza Header, Experience, Anfitria, Gallery e
+ * Página de pré-inscrição, reutiliza Header, Experience, Anfitria, Gallery e
  * Footer. Todos os CTAs abrem a WaitlistModal (mesma lógica da EventoPage),
  * sem formulário inline no corpo da página.
  */

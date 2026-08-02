@@ -15,7 +15,7 @@ const itens = [
   },
   {
     rotulo: "Finalidade",
-    texto: "Comunicação sobre a lista de espera e o evento — nada além disso.",
+    texto: "Comunicação sobre a lista de espera e o evento. Nada além disso.",
   },
   {
     rotulo: "Base legal",
@@ -32,7 +32,7 @@ const itens = [
   },
 ];
 
-/** Modal "Política de Privacidade" — curto e alinhado ao RGPD. */
+/** Modal "Política de Privacidade", curto e alinhado ao RGPD. */
 export default function PrivacidadeModal({ aberto, fechar }: Props) {
   return (
     <Modal

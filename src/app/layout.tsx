@@ -4,12 +4,12 @@ import MotionProvider from "@/components/MotionProvider";
 import SaltarParaInscricao from "@/components/SaltarParaInscricao";
 import "./globals.css";
 
-const descricao = `A 2ª edição do ${site.nome} acontece a ${site.data.extenso}, no ${site.local.completo}. São ${site.vagas} lugares — entra na lista de espera e sê das primeiras a saber quando abrirem as inscrições.`;
+const descricao = `A 2ª edição do ${site.nome} acontece a ${site.data.extenso}, no ${site.local.completo}. Um dia de desenvolvimento pessoal feminino, autoestima e networking para mulheres que querem voltar a encontrar-se. Entra na lista de espera.`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
-    default: `${site.nome} — ${site.subtitulo} | Lista de espera`,
+    default: `${site.nome} · ${site.subtitulo} | Lista de espera`,
     template: `%s | ${site.nome}`,
   },
   description: descricao,
@@ -29,20 +29,20 @@ export const metadata: Metadata = {
     locale: "pt_PT",
     url: site.url,
     siteName: site.nome,
-    title: `${site.nome} — ${site.subtitulo}`,
+    title: `${site.nome} · ${site.subtitulo}`,
     description: descricao,
     images: [
       {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: `${site.nome} — ${site.data.extenso}, ${site.local.completo}`,
+        alt: `${site.nome} · ${site.data.extenso}, ${site.local.completo}`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${site.nome} — ${site.subtitulo}`,
+    title: `${site.nome} · ${site.subtitulo}`,
     description: descricao,
     images: ["/og-image.jpg"],
   },
@@ -59,7 +59,7 @@ export const viewport: Viewport = {
 const dadosEstruturados = {
   "@context": "https://schema.org",
   "@type": "Event",
-  name: `${site.nome} — ${site.subtitulo}`,
+  name: `${site.nome} · ${site.subtitulo}`,
   description: descricao,
   startDate: site.data.iso,
   eventStatus: "https://schema.org/EventScheduled",

@@ -13,7 +13,7 @@ type Props = {
   fechar: () => void;
 };
 
-/** Elementos focáveis dentro do painel — para o foco circular (trap). */
+/** Elementos focáveis dentro do painel, para o foco circular (trap). */
 function focaveis(raiz: HTMLElement): HTMLElement[] {
   return Array.from(
     raiz.querySelectorAll<HTMLElement>(
@@ -28,13 +28,13 @@ export default function WaitlistModal({ aberto, fechar }: Props) {
   const abridorRef = useRef<HTMLElement | null>(null);
   const [montado, setMontado] = useState(false);
 
-  // createPortal ao <body> — só depois de o cliente montar.
+  // createPortal ao <body>, só depois de o cliente montar.
   useEffect(() => setMontado(true), []);
 
   useEffect(() => {
     if (!aberto) return;
 
-    // Quem abriu — devolve-se o foco ao fechar.
+    // Quem abriu, devolve-se o foco ao fechar.
     abridorRef.current = document.activeElement as HTMLElement;
 
     // Trava o scroll do fundo compensando a barra (sem salto de layout).
@@ -116,7 +116,7 @@ export default function WaitlistModal({ aberto, fechar }: Props) {
                 <div className="absolute -bottom-1/3 right-0 h-[25rem] w-[25rem] rounded-full bg-[radial-gradient(circle,rgba(196,126,138,0.20),transparent_62%)] blur-3xl" />
               </div>
 
-              {/* Botão fechar — alvo de toque ≥ 44×44 */}
+              {/* Botão fechar, alvo de toque ≥ 44×44 */}
               <button
                 onClick={fechar}
                 className="absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full border border-creme/20 text-creme/50 transition-colors hover:border-creme/40 hover:text-creme/80"
@@ -135,20 +135,20 @@ export default function WaitlistModal({ aberto, fechar }: Props) {
                     id="waitlist-titulo"
                     className="display mt-4 text-[1.75rem] leading-[1.05] text-creme sm:text-[2.25rem]"
                   >
-                    As inscrições abrem em breve.
-                    <span className="mt-1 block italic text-blush">A lista abre agora.</span>
+                    A coragem começa quando decides
+                    <span className="mt-1 block italic text-blush">dar o primeiro passo.</span>
                   </h2>
 
                   <p className="mt-5 max-w-sm text-[0.9375rem] leading-relaxed text-creme/65">
-                    Na primeira edição, os lugares esgotaram. Desta vez, quem está na lista
-                    recebe o aviso primeiro — e escolhe antes de abrirmos ao público.
+                    Na primeira edição, os lugares esgotaram. Desta vez, quem está na lista é
+                    avisada primeiro e escolhe o seu lugar antes de abrirmos ao público.
                   </p>
 
                   {/* Benefícios */}
                   <ul className="mt-7 space-y-3">
                     {[
                       "Aviso por email e telemóvel antes da abertura oficial",
-                      "Prioridade na escolha do lugar",
+                      "Prioridade na escolha do teu lugar",
                       "Condição especial de lançamento",
                     ].map((texto) => (
                       <li key={texto} className="flex items-start gap-3">

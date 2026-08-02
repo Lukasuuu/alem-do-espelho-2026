@@ -10,7 +10,7 @@ import { linkWhatsApp, site } from "@/lib/site";
  *  botão → formulário (reusa WaitlistForm variant="sponsor") → confirmação.
  *
  * No sucesso, o formulário fecha e abre o modal de confirmação com o atalho
- * "Falar com Vitória" — o mesmo número do footer, mensagem pré-preenchida.
+ * "Falar com Vitória", o mesmo número do footer e mensagem pré-preenchida.
  */
 export default function SponsorFlow() {
   const [formAberto, setFormAberto] = useState(false);
@@ -34,7 +34,7 @@ export default function SponsorFlow() {
         </span>
       </button>
 
-      {/* Formulário de patrocínio — o mesmo WaitlistForm, com variant="sponsor" */}
+      {/* Formulário de patrocínio, o mesmo WaitlistForm com variant="sponsor" */}
       <Modal
         aberto={formAberto}
         fechar={() => setFormAberto(false)}
@@ -42,7 +42,7 @@ export default function SponsorFlow() {
         larguraMax="30rem"
       >
         <p className="text-[0.9375rem] leading-relaxed text-creme/70">
-          Obrigado pelo teu interesse. Deixa os teus dados — a nossa equipa entra em contacto
+          Obrigado pelo teu interesse. Deixa os teus dados, a nossa equipa entra em contacto
           para partilhar as oportunidades de patrocínio.
         </p>
         <div className="mt-6">
@@ -50,7 +50,7 @@ export default function SponsorFlow() {
         </div>
       </Modal>
 
-      {/* Confirmação — "Falar com Vitória" abre o WhatsApp com mensagem pronta */}
+      {/* Confirmação: "Falar com Vitória" abre o WhatsApp com mensagem pronta */}
       <Modal
         aberto={sucessoAberto}
         fechar={() => setSucessoAberto(false)}
@@ -72,8 +72,8 @@ export default function SponsorFlow() {
           </div>
 
           <p className="mt-5 max-w-[24rem] text-[0.9375rem] leading-relaxed text-creme/70">
-            Recebemos o teu interesse. A nossa equipa vai contactar-te em breve — se preferires,
-            fala já connosco.
+            Obrigada pelo teu interesse. Fala diretamente com a Vitória Gomes para conhecer as
+            condições de patrocínio e como a tua marca pode fazer parte deste projeto.
           </p>
 
           <a

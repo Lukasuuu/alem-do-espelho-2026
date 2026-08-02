@@ -8,7 +8,7 @@ import { createPortal } from "react-dom";
 type Props = {
   aberto: boolean;
   fechar: () => void;
-  /** Título do modal — usado como aria-labelledby. */
+  /** Título do modal, usado como aria-labelledby. */
   titulo: string;
   children: React.ReactNode;
   /** vinho (escuro, para o formulário) ou claro (para leitura de texto legal). */
@@ -17,7 +17,7 @@ type Props = {
   larguraMax?: string;
 };
 
-/** Elementos focáveis dentro do painel — para o foco circular (trap). */
+/** Elementos focáveis dentro do painel, para o foco circular (trap). */
 function focaveis(raiz: HTMLElement): HTMLElement[] {
   return Array.from(
     raiz.querySelectorAll<HTMLElement>(
@@ -44,7 +44,7 @@ export default function Modal({
   const [montado, setMontado] = useState(false);
   const tituloId = useId();
 
-  // createPortal ao <body> — só depois de o cliente montar.
+  // createPortal ao <body>, só depois de o cliente montar.
   useEffect(() => setMontado(true), []);
 
   useEffect(() => {
@@ -139,7 +139,7 @@ export default function Modal({
                 </div>
               )}
 
-              {/* Botão fechar — alvo de toque ≥ 44×44 */}
+              {/* Botão fechar, alvo de toque ≥ 44×44 */}
               <button
                 onClick={fechar}
                 aria-label="Fechar"
