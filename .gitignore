@@ -8,3 +8,10 @@ dev-server.log
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
+
+# Material de referência da marca (entregas da cliente — não vai para produção)
+public/brand/*.zip
+public/brand/assets-final/
+public/brand/logos-transparentes/
+public/brand/logos-v2/
+public/brand/bandeira.png
