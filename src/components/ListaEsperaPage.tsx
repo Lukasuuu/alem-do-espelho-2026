@@ -6,6 +6,7 @@ import ListaEsperaHero from "./ListaEsperaHero";
 import Experience from "./Experience";
 import Anfitria from "./Anfitria";
 import Gallery from "./Gallery";
+import Realizacao from "./Realizacao";
 import Footer from "./Footer";
 import WaitlistModal from "./WaitlistModal";
 import { definirAberturaModal } from "@/lib/modal";
@@ -33,6 +34,7 @@ export default function ListaEsperaPage() {
         <Experience />
         <Anfitria />
         <Gallery />
+        <Realizacao />
       </main>
       <Footer abrirModal={abrirModal} />
       <WaitlistModal aberto={modalAberto} fechar={() => setModalAberto(false)} />
