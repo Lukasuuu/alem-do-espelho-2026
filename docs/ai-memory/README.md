@@ -24,6 +24,7 @@
 | `responsive-rules.md` | Regras de responsividade por breakpoint real |
 | `release-checklist.md` | Checklist de release (gates antes de merge/deploy) |
 | `templates/prompt-template.md` | Prompt reutilizável para próximas landings |
+| `landing-enterprise-frontend-backend-ultra-master.md` | Consolidação enterprise FE+BE+Ultra + operação de go-live |
 
 ## Contexto do projecto actual
 

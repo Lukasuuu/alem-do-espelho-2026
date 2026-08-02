@@ -24,6 +24,7 @@
 | `performance-checklist.md` | Latência, cache, force-dynamic, no-store |
 | `release-checklist.md` | Checklist de release backend |
 | `templates/prompt-template.md` | Prompt reutilizável para novos backends |
+| `../ai-memory/landing-enterprise-frontend-backend-ultra-master.md` | Master consolidado FE+BE+Ultra + go-live validado |
 
 ## Superfície actual
 
