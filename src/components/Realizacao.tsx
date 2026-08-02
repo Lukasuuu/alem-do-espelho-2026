@@ -128,11 +128,6 @@ export default function Realizacao() {
                     </p>
                   </div>
                 </div>
-
-                {/* Elo entre as duas missões, na linguagem display da página */}
-                <p className="display mt-[clamp(32px,4vw,44px)] text-[clamp(1.5rem,3vw,1.875rem)] leading-[1.08] text-vinho">
-                  Transformando mulheres em Portugal. Impactando vidas em Angola.
-                </p>
               </div>
             </Reveal>
           </div>
@@ -172,6 +167,11 @@ export default function Realizacao() {
               e em Angola. Cada parceria ajuda-nos a chegar a mais mulheres.
             </p>
             <SponsorFlow />
+
+            {/* Elo entre as duas missões: reforço sob o CTA de patrocínio, em display */}
+            <p className="display mt-[clamp(24px,3.5vw,40px)] text-[clamp(1.25rem,2.5vw,1.5rem)] leading-[1.15] text-vinho">
+              Transformando mulheres em Portugal. Impactando vidas em Angola.
+            </p>
           </div>
         </Reveal>
 
