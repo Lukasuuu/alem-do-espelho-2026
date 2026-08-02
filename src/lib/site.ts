@@ -9,7 +9,7 @@ export const site = {
   edicao: "2ª Edição",
   tagline: "Transformando mulheres em Portugal, impactando vidas em Angola.",
   // Domínio canónico — sobrescrito por NEXT_PUBLIC_SITE_URL quando definido.
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://alemdoespelho.com",
+  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://alemdoespelho2026.com",
   data: {
     // 17 de outubro de 2026 — hora local de Braga (WEST, UTC+1)
     iso: "2026-10-17T09:00:00+01:00",

@@ -23,7 +23,7 @@ Cria `.env.local` (local) e adiciona as mesmas na Vercel:
 NEXT_PUBLIC_SUPABASE_URL=https://qtiyxibqeignvsnfhzpw.supabase.co
 SUPABASE_PUBLISHABLE_KEY=sb_publishable_reYCZiV6gc8Rqt6Q2kqyRg_e0-uxttv
 IP_HASH_SALT=<qualquer string longa e aleatória, só tua>
-NEXT_PUBLIC_SITE_URL=https://alemdoespelho.com
+NEXT_PUBLIC_SITE_URL=https://alemdoespelho2026.com
 ```
 
 > A base de dados **já está criada e configurada**. Não é preciso correr SQL nenhum.
@@ -56,20 +56,20 @@ Ou pelo painel: **New Project → importar o repo → Add Environment Variables*
 Vercel → Project → Settings → Domains → adicionar o domínio → apontar o DNS
 conforme as instruções que aparecem.
 
-### 6. Domínio e publicação (`alemdoespelho.com`)
+### 6. Domínio e publicação (`alemdoespelho2026.com`)
 
-O domínio canónico é `https://alemdoespelho.com` — é para onde apontam o
+O domínio canónico é `https://alemdoespelho2026.com` — é para onde apontam o
 `canonical`, o Open Graph, o sitemap e o `robots.txt`.
 
-- Define `NEXT_PUBLIC_SITE_URL=https://alemdoespelho.com` na Vercel
+- Define `NEXT_PUBLIC_SITE_URL=https://alemdoespelho2026.com` na Vercel
   (Production *e* Preview) — o `src/lib/site.ts` usa este valor em todo o SEO.
 - Nos previews (`*.vercel.app`) o `canonical` continua a resolver para
-  `https://alemdoespelho.com/...`, evitando conteúdo duplicado.
+  `https://alemdoespelho2026.com/...`, evitando conteúdo duplicado.
 - Sitemap (`/sitemap.xml`) e `robots.txt` são gerados em
   `src/app/sitemap.ts` e `src/app/robots.ts`, usando o mesmo domínio.
 
 > Sem `NEXT_PUBLIC_SITE_URL` definida, o `src/lib/site.ts` usa por defeito
-> `https://alemdoespelho.com`.
+> `https://alemdoespelho2026.com`.
 
 ---
 
@@ -173,8 +173,8 @@ src/
 ├── app/
 │   ├── api/waitlist/route.ts   Endpoint da inscrição
 │   ├── api/sponsor/route.ts    Endpoint do patrocínio (sem DB — log mascarado)
-│   ├── lista-de-espera/        Página de pré-inscrição (domínio canónico)
-│   ├── sitemap.ts              Sitemap — / e /lista-de-espera
+│   ├── lista/                  Página de pré-inscrição (domínio canónico)
+│   ├── sitemap.ts              Sitemap — / e /lista
 │   ├── robots.ts               robots.txt + sitemap
 │   ├── globals.css             Tokens da marca + fontes + .espelho
 │   ├── layout.tsx              SEO, Open Graph, JSON-LD

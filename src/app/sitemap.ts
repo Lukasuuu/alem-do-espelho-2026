@@ -11,7 +11,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 1,
     },
     {
-      url: `${site.url}/lista-de-espera`,
+      url: `${site.url}/lista`,
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.9,
