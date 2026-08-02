@@ -231,7 +231,7 @@ export default function Realizacao() {
       </div>
 
       {/* fio de fecho em sage */}
-      <span className="fio text-sage block w-full" aria-hidden />
+      <span className="fio text-sage mt-14 block w-full sm:mt-20" aria-hidden />
     </section>
   );
 }
