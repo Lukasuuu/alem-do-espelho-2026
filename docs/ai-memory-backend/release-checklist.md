@@ -1,6 +1,13 @@
 # Release Checklist — Backend
 
-> Gates antes de promover qualquer alteração de API.
+> Gates antes de promover qualquer alteração de API. Severidade e score: `playbook-backend.md`.
+
+## Go/no-go
+
+- [ ] **S0** aberto → **bloqueia release** (hotfix imediato + postmortem).
+- [ ] **S1** aberto → bloquear promoção até corrigir + validação extra de regressão.
+- [ ] **S2** → corrigir no ciclo; documentar risco residual se não for possível.
+- [ ] **Quality score ≥ 90** (senão release condicional; <80 não promover).
 
 ## Qualidade
 
