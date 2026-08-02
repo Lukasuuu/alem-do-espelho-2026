@@ -257,14 +257,19 @@ body {
   background-size: 4px 4px;
 }
 
-/* Overlay do modal */
-.modal-overlay {
+/* Overlay do modal — abre SEMPRE ALINHADO AO TOPO (com respiro), nunca centrado.
+   .modal-overlay-top é a classe anti-regressão aplicada nos componentes:
+   a intenção de top-alinhamento fica explícita e dominante, independente de
+   qualquer regra futura que toque em .modal-overlay. */
+.modal-overlay,
+.modal-overlay-top {
   position: fixed;
   inset: 0;
   z-index: 100;
   display: flex;
   /* Respiro superior responsivo — a modal abre alinhada ao topo, não ao centro. */
   --topo-modal: clamp(1.25rem, 5vh, 3.5rem);
+  /* DOMINANTE: flex-start força o topo. NUNCA usar center aqui. */
   align-items: flex-start;
   justify-content: center;
   padding: var(--topo-modal) 1rem 1rem;
@@ -277,7 +282,10 @@ body {
   position: relative;
   width: 100%;
   max-width: 64rem;
-  /* Painel + respiro do topo cabem sempre no viewport — scroll interno se for preciso. */
+  /* Painel + respiro do topo cabem sempre no viewport — scroll interno se for preciso.
+     Fallback 100vh p/ browsers sem suporte a dvh (o calc com dvh seria inválido e
+     max-height cairia para none, deixando o painel estourar o viewport). */
+  max-height: calc(100vh - var(--topo-modal) - 1rem);
   max-height: calc(100dvh - var(--topo-modal) - 1rem);
   overflow-y: auto;
   border-radius: 0.125rem;

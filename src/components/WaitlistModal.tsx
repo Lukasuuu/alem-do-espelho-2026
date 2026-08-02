@@ -91,7 +91,7 @@ export default function WaitlistModal({ aberto, fechar }: Props) {
       {aberto && (
         <motion.div
           ref={overlayRef}
-          className="modal-overlay"
+          className="modal-overlay modal-overlay-top"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
