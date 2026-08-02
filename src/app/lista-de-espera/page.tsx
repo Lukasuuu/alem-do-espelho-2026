@@ -1,10 +1,12 @@
 import { permanentRedirect } from "next/navigation";
 
 /**
- * Rota antiga — a página vive agora em /lista. Redirect permanente (308)
- * para preservar links existentes e o valor SEO que aponte para o caminho
- * anterior, sem conteúdo duplicado.
+ * Rota antiga — a lista de espera vive agora em /alem-do-espelho-2026/lista.
+ * 308 permanente: preserva links existentes sem conteúdo duplicado indexável.
  */
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default function Page() {
-  permanentRedirect("/lista");
+  permanentRedirect("/alem-do-espelho-2026/lista");
 }

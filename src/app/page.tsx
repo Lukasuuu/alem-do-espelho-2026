@@ -1,40 +1,13 @@
-"use client";
+import { permanentRedirect } from "next/navigation";
 
-import { useState, useCallback, useEffect } from "react";
-import Header from "@/components/Header";
-import Hero from "@/components/Hero";
-import Experience from "@/components/Experience";
-import Anfitria from "@/components/Anfitria";
-import Gallery from "@/components/Gallery";
-import Realizacao from "@/components/Realizacao";
-import Footer from "@/components/Footer";
-import WaitlistModal from "@/components/WaitlistModal";
-import { definirAberturaModal } from "@/lib/modal";
+/**
+ * A raiz do domínio redireciona (308) para a versão do evento.
+ * Nunca servimos conteúdo aqui: evita duplicar a landing entre / e
+ * /alem-do-espelho-2026 (conteúdo duplicado indexável).
+ */
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export default function Page() {
-  const [modalAberto, setModalAberto] = useState(false);
-
-  const abrirModal = useCallback(() => setModalAberto(true), []);
-  const fecharModal = useCallback(() => setModalAberto(false), []);
-
-  // O skip-link "Saltar para a inscrição" (layout) abre o modal via registo global.
-  useEffect(() => {
-    definirAberturaModal(abrirModal);
-    return () => definirAberturaModal(null);
-  }, [abrirModal]);
-
-  return (
-    <>
-      <Header abrirModal={abrirModal} />
-      <main>
-        <Hero abrirModal={abrirModal} />
-        <Experience />
-        <Anfitria />
-        <Gallery />
-        <Realizacao />
-      </main>
-      <Footer abrirModal={abrirModal} />
-      <WaitlistModal aberto={modalAberto} fechar={fecharModal} />
-    </>
-  );
+  permanentRedirect("/alem-do-espelho-2026");
 }

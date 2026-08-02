@@ -68,17 +68,44 @@ O domínio canónico é `https://essenceofbeautysalon.com` — é para onde apon
 - Sitemap (`/sitemap.xml`) e `robots.txt` são gerados em
   `src/app/sitemap.ts` e `src/app/robots.ts`, usando o mesmo domínio.
 
-**Domínio secundário:** `alemdoespelho2026.com` — ligado ao mesmo projeto. A
-página do evento responde em `https://alemdoespelho2026.com/lista`, mas o
-`canonical` aponta sempre para `https://essenceofbeautysalon.com/lista` (sem
-conteúdo duplicado).
-
 > Sem `NEXT_PUBLIC_SITE_URL` definida, o `src/lib/site.ts` usa por defeito
 > `https://essenceofbeautysalon.com`.
 
 > ⚠️ Nota sobre domínios: `essenceofbeauty.com` pertence à CVS Health (não é
 > obtenível) e `alemdoespelho.com` está estacionado/à venda no GoDaddy. Por isso
-> o principal é `essenceofbeautysalon.com` e o secundário `alemdoespelho2026.com`.
+> o evento vive num único domínio: `essenceofbeautysalon.com`.
+
+---
+
+## Cutover automático (lista → evento)
+
+A lista de espera fica ativa em `/alem-do-espelho-2026/lista` até ao corte.
+No instante do corte, o site **troca sozinho** para a versão do evento, sem
+intervenção manual.
+
+**Constante única de corte** (`src/lib/site.ts`):
+
+```
+CORTE_ESPERA_ISO = "2026-08-03T10:00:00+01:00"   # segunda, 3 ago 2026, 10:00 Lisboa
+```
+
+| Antes do corte | No corte e depois |
+|---|---|
+| `/alem-do-espelho-2026/lista` → lista de espera | `/alem-do-espelho-2026/lista` → **308** → `/alem-do-espelho-2026` |
+| `/alem-do-espelho-2026` → **308** → lista | `/alem-do-espelho-2026` → landing do evento |
+| `/lista` → **308** → `/alem-do-espelho-2026/lista` | `/lista` → **308** → `/alem-do-espelho-2026/lista` (converge) |
+| `/lista-de-espera` → **308** → `/alem-do-espelho-2026/lista` | idem |
+| `/` → **308** → `/alem-do-espelho-2026` | idem |
+| sitemap → `/alem-do-espelho-2026/lista` | sitemap → `/alem-do-espelho-2026` |
+
+**Anti-cache na virada:** as rotas de cutover são `force-dynamic` +
+`revalidate = 0`, renderizadas por request — o build estático não congela a
+virada. O `Cache-Control` servido é `no-store`.
+
+**Como testar sem esperar pela data** (fora de produção): header
+`x-cutover-test: after` simula pós-corte (308 para o evento);
+`x-cutover-test: before` simula pré-corte. O gate ignora o header em produção
+(`VERCEL_ENV=production`), para não haver forma pública de saltar o corte.
 
 ---
 
@@ -180,27 +207,33 @@ chamado Além do Espelho.
 ```
 src/
 ├── app/
-│   ├── api/waitlist/route.ts   Endpoint da inscrição
-│   ├── api/sponsor/route.ts    Endpoint do patrocínio (sem DB — log mascarado)
-│   ├── lista/                  Página de pré-inscrição (domínio canónico)
-│   ├── sitemap.ts              Sitemap — / e /lista
-│   ├── robots.ts               robots.txt + sitemap
-│   ├── globals.css             Tokens da marca + fontes + .espelho
-│   ├── layout.tsx              SEO, Open Graph, JSON-LD
-│   └── page.tsx
+│   ├── api/waitlist/route.ts          Endpoint da inscrição
+│   ├── api/sponsor/route.ts           Endpoint do patrocínio (sem DB — log mascarado)
+│   ├── alem-do-espelho-2026/lista/    Lista de espera (ativa até ao corte)
+│   ├── alem-do-espelho-2026/          Landing do evento (ativa após o corte)
+│   ├── lista/                         308 → /alem-do-espelho-2026/lista
+│   ├── lista-de-espera/               308 → /alem-do-espelho-2026/lista
+│   ├── sitemap.ts                     Sitemap fase-aware (só a rota ativa)
+│   ├── robots.ts                      robots.txt + sitemap
+│   ├── globals.css                    Tokens da marca + fontes + .espelho
+│   ├── layout.tsx                     SEO, Open Graph, JSON-LD
+│   └── page.tsx                       308 → /alem-do-espelho-2026
 ├── components/
-│   ├── Header.tsx              Fixo, encolhe ao rolar
-│   ├── Hero.tsx                Cartaz oficial + contador + CTA
-│   ├── Countdown.tsx           Contagem para 17/10/2026
-│   ├── Experience.tsx          O que te espera + anfitriã
-│   ├── Mission.tsx             Missão Angola
-│   ├── Inscricao.tsx           Secção do formulário
-│   ├── WaitlistForm.tsx        Formulário + ecrã de confirmação
+│   ├── EventoPage.tsx                 Landing completa do evento (composição)
+│   ├── ListaEsperaPage.tsx            Página de lista de espera
+│   ├── Header.tsx                     Fixo, encolhe ao rolar
+│   ├── Hero.tsx                       Cartaz oficial + contador + CTA
+│   ├── Countdown.tsx                  Contagem para 17/10/2026
+│   ├── Experience.tsx                 O que te espera + anfitriã
+│   ├── Mission.tsx                    Missão Angola
+│   ├── Inscricao.tsx                  Secção do formulário
+│   ├── WaitlistForm.tsx               Formulário + ecrã de confirmação
 │   ├── Footer.tsx
-│   └── Reveal.tsx              Animação de entrada
+│   └── Reveal.tsx                     Animação de entrada
 └── lib/
-    ├── site.ts                 Todo o conteúdo do evento (edita aqui)
-    ├── validation.ts           Schemas partilhados cliente/servidor
+    ├── site.ts                        Todo o conteúdo do evento + constante de corte (edita aqui)
+    ├── cutover.ts                     Gate isDepoisDoCorte + teste por header (server-only)
+    ├── validation.ts                  Schemas partilhados cliente/servidor
     ├── supabase.ts
     └── rate-limit.ts
 ```
@@ -222,6 +255,6 @@ confirmar que a linha aparece na tabela.
 
 ## Próximo passo
 
-Esta página existe para construir a lista. Quando ela estiver a crescer, a mesma
-base de código serve de fundação para o site completo do evento: programação,
-oradoras, patrocínios e bilheteira.
+A landing do evento (versão pós-corte) já vive na mesma base de código em
+`/alem-do-espelho-2026`. Próximo passo natural: quando a lista estiver a crescer,
+adicionar programação, oradoras e bilheteira à versão do evento.

@@ -3,6 +3,14 @@
  * Alterar aqui reflete em toda a landing page.
  */
 
+/**
+ * Fecho da lista de espera = corte da landing (release manager).
+ * Fuso Lisbon (Europe/Lisbon). É a MESMA hora do countdown e da virada
+ * para a versão do evento em /alem-do-espelho-2026.
+ * Fonte única: src/lib/cutover.ts usa este valor.
+ */
+export const CORTE_ESPERA_ISO = "2026-08-03T10:00:00+01:00";
+
 export const site = {
   nome: "Além do Espelho 2026",
   subtitulo: "Além de Mim",
@@ -22,7 +30,7 @@ export const site = {
   },
   listaEspera: {
     // Fecho da lista — segunda-feira, 3 de agosto de 2026, 10:00 (Lisboa, WEST)
-    fecha: "2026-08-03T10:00:00+01:00",
+    fecha: CORTE_ESPERA_ISO,
     fechaExtenso: "segunda-feira, 3 de agosto, às 10:00",
     fechaCurta: "3 AGO · 10:00",
   },
