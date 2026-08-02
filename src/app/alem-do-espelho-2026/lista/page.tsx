@@ -18,7 +18,7 @@ const ROTA_EVENTO = "/alem-do-espelho-2026";
 
 const titulo = `Lista de espera · ${site.nome} · ${site.local.cidade}`;
 
-const descricao = `A 2ª edição do ${site.nome} acontece a ${site.data.extenso}, no ${site.local.completo}. Um dia de desenvolvimento pessoal feminino, autoestima e networking para mulheres que querem voltar a encontrar-se. Entra na lista de espera.`;
+const descricao = `A 2ª edição do Além do Espelho acontece a ${site.data.extenso}, no ${site.local.nome}, em ${site.local.cidade}. Um dia de desenvolvimento pessoal feminino, autoestima e networking para mulheres que querem voltar a encontrar-se. Entra na lista de espera.`;
 
 export async function generateMetadata(): Promise<Metadata> {
   // Canónico da fase pré-corte. Depois do corte a rota devolve 308 para o

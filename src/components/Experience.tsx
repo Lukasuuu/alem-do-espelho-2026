@@ -36,7 +36,7 @@ export default function Experience() {
           <div className="mt-8 max-w-lg text-[1.0625rem] leading-relaxed text-carvao/65">
             <p>
               Talvez tenhas passado anos a cuidar de todos, a cumprir expectativas e a ser
-              forte. Mas, algures pelo caminho, deixaste de te reconhecer.
+              forte. Mas, em algum lugar no caminho, deixaste de te reconhecer.
             </p>
             <p className="mt-4">
               Um dia inteiro pensado para te ajudar a recuperar a tua voz, a tua confiança, a

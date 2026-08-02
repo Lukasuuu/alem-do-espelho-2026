@@ -4,7 +4,7 @@ import MotionProvider from "@/components/MotionProvider";
 import SaltarParaInscricao from "@/components/SaltarParaInscricao";
 import "./globals.css";
 
-const descricao = `A 2ª edição do ${site.nome} acontece a ${site.data.extenso}, no ${site.local.completo}. Um dia de desenvolvimento pessoal feminino, autoestima e networking para mulheres que querem voltar a encontrar-se. Entra na lista de espera.`;
+const descricao = `A 2ª edição do Além do Espelho acontece a ${site.data.extenso}, no ${site.local.nome}, em ${site.local.cidade}. Um dia de desenvolvimento pessoal feminino, autoestima e networking para mulheres que querem voltar a encontrar-se. Entra na lista de espera.`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),

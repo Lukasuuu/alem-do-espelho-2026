@@ -93,7 +93,7 @@ export const experiencia = [
   {
     titulo: "Uma sala cheia de mulheres que se apoiam",
     texto:
-      "Empresárias, profissionais, mães e mulheres em processo de reinvenção.",
+      "Empresárias, profissionais, mães e mulheres em processo de reinvenção. Cada uma com a sua história, todas com o mesmo desejo de recomeçar.",
   },
   {
     titulo: "Experiências que tocam a alma",

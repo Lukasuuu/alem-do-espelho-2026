@@ -136,9 +136,7 @@ export default function Realizacao() {
           <div>
             <Reveal>
               <p className="display text-[2rem] uppercase leading-[1.1] text-vinho sm:text-[2.5rem]">
-                Quando uma mulher se transforma,
-                <br />
-                ela transforma o mundo ao seu redor.
+                O Projeto nasce para gerar Transformação local e Impacto Global.
               </p>
             </Reveal>
 
@@ -154,6 +152,9 @@ export default function Realizacao() {
                     className="h-auto w-full rounded-[2px]"
                   />
                 </div>
+                <figcaption className="mt-4 text-[0.9375rem] leading-relaxed text-carvao/70">
+                  Transformando mulheres em Portugal. Impactando vidas em Angola.
+                </figcaption>
               </figure>
             </Reveal>
           </div>
