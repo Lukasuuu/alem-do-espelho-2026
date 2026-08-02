@@ -128,6 +128,11 @@ export default function Realizacao() {
                     </p>
                   </div>
                 </div>
+
+                {/* Elo entre as duas missões, na linguagem display da página */}
+                <p className="display mt-[clamp(32px,4vw,44px)] text-[clamp(1.5rem,3vw,1.875rem)] leading-[1.08] text-vinho">
+                  Transformando mulheres em Portugal. Impactando vidas em Angola.
+                </p>
               </div>
             </Reveal>
           </div>
@@ -136,7 +141,7 @@ export default function Realizacao() {
           <div>
             <Reveal>
               <p className="display text-[2rem] uppercase leading-[1.1] text-vinho sm:text-[2.5rem]">
-                O Projeto nasce para gerar Transformação local e Impacto Global.
+                O Projeto nasce para gerar Transformação Local e Impacto Global.
               </p>
             </Reveal>
 
@@ -152,9 +157,6 @@ export default function Realizacao() {
                     className="h-auto w-full rounded-[2px]"
                   />
                 </div>
-                <figcaption className="mt-4 text-[0.9375rem] leading-relaxed text-carvao/70">
-                  Transformando mulheres em Portugal. Impactando vidas em Angola.
-                </figcaption>
               </figure>
             </Reveal>
           </div>
