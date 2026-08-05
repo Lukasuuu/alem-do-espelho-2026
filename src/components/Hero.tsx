@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import Countdown from "./Countdown";
 import { site } from "@/lib/site";
+import { VALOR_INSCRICAO_TEXT } from "@/lib/pagamento";
 
 type Props = {
   abrirModal: () => void;
@@ -38,7 +39,7 @@ export default function Hero({ abrirModal }: Props) {
           <motion.div {...surgir(0.05)} className="flex items-center gap-4">
             <span className="eyebrow text-dourado-claro/80">{site.edicao}</span>
             <span className="h-px w-12 bg-creme/20" aria-hidden />
-            <span className="eyebrow text-creme/40">Lista de espera aberta</span>
+            <span className="eyebrow text-creme/40">Inscrições abertas</span>
           </motion.div>
 
           <motion.h1 {...surgir(0.15)} className="display mt-7 tracking-[-0.01em] text-creme">
@@ -60,16 +61,22 @@ export default function Hero({ abrirModal }: Props) {
             A segunda edição do Além do Espelho acontece a{" "}
             <strong className="font-medium text-creme">{site.data.extenso}</strong>, no{" "}
             {site.local.nome}, em {site.local.cidade}. São{" "}
-            <strong className="font-medium text-creme">{site.vagas} lugares</strong>, e quem
-            está na lista escolhe primeiro.
+            <strong className="font-medium text-creme">{site.vagas} lugares</strong>, garantidos
+            por ordem de pagamento.
           </motion.p>
 
           <motion.p {...surgir(0.35)} className="mt-4 text-[0.875rem] text-creme/45">
-            As inscrições na lista fecharam.
+            A lista de espera fechou. As inscrições pagas já estão abertas.
           </motion.p>
 
           <motion.div {...surgir(0.4)} className="mt-8">
-            <Countdown tom="claro" />
+            <Countdown
+              tom="claro"
+              alvo={site.data.iso}
+              rotulo="Faltam"
+              suporte={`${site.vagas} lugares · inscrição ${VALOR_INSCRICAO_TEXT}`}
+              mensagemEncerrado="O dia chegou — vemo-nos lá!"
+            />
           </motion.div>
 
           <motion.div {...surgir(0.5)} className="mt-11">

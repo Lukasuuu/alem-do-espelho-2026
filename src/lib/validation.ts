@@ -60,6 +60,68 @@ export const waitlistSchema = z.object({
 
 export type WaitlistInput = z.input<typeof waitlistSchema>;
 
+/**
+ * Inscrição paga (FASE3): mesma disciplina do waitlist, sem o consentimento —
+ * ao pagar, a pessoa consente o contacto. O telemóvel valida-se depois com
+ * libphonenumber (E.164) na rota, igual ao fluxo da lista de espera.
+ */
+export const inscricaoSchema = z.object({
+  nome: z
+    .string()
+    .transform(normalizarNome)
+    .pipe(
+      z
+        .string()
+        .min(3, "Escreve o teu nome completo.")
+        .max(120, "Nome demasiado longo.")
+        .regex(NOME_COMPLETO, "Escreve o nome e o apelido.")
+    ),
+
+  email: z
+    .string()
+    .transform((v) => v.trim().toLowerCase())
+    .pipe(
+      z
+        .string()
+        .min(5, "Indica o teu email.")
+        .max(180, "Email demasiado longo.")
+        .email("Este email não parece válido.")
+    ),
+
+  phoneCountry: z
+    .string()
+    .length(2, "País inválido.")
+    .transform((v) => v.toUpperCase()),
+
+  phone: z
+    .string()
+    .min(5, "Indica o teu telemóvel.")
+    .max(24, "Número demasiado longo."),
+
+  // Anti-bot: igual ao waitlist — o campo invisível e o tempo mínimo.
+  website: z.string().max(200).optional().default(""),
+  elapsedMs: z.number().int().nonnegative().optional(),
+
+  locale: z.string().max(12).optional(),
+  utm: z.record(z.string().max(160)).optional(),
+});
+
+export type InscricaoInput = z.input<typeof inscricaoSchema>;
+
+/** Métodos de pagamento da modal — são também os valores da coluna da base. */
+export const METODOS_PAGAMENTO = ["sumup", "mbway", "transferencia"] as const;
+export type MetodoPagamento = (typeof METODOS_PAGAMENTO)[number];
+
+/** PATCH que marca o método escolhido (chamado ao abrir cada método). */
+export const metodoInscricaoSchema = z.object({
+  inscricaoId: z.string().uuid("Inscrição inválida."),
+  metodo: z.enum(METODOS_PAGAMENTO, {
+    errorMap: () => ({ message: "Método de pagamento inválido." }),
+  }),
+});
+
+export type MetodoInscricaoInput = z.input<typeof metodoInscricaoSchema>;
+
 export type TelefoneValidado = {
   ok: boolean;
   e164?: string;

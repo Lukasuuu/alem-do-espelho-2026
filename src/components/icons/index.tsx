@@ -32,6 +32,75 @@ export function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
+/**
+ * Ícones transparentes dos métodos de pagamento (FASE4): contorno fino,
+ * herdam currentColor, sem preenchimento — consistentes com os restantes.
+ */
+
+export function SumUpIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {/* Terminal de pagamento SumUp */}
+      <rect x="4" y="3.5" width="16" height="12" rx="2.5" />
+      <path d="M7.5 8h9" />
+      <path d="M9.5 11.5h5" />
+      <path d="M8.5 19h7" />
+      <path d="M12 15.5V19" />
+    </svg>
+  );
+}
+
+export function MbWayIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {/* Telemóvel com sinal de pagamento */}
+      <rect x="7" y="3" width="10" height="18" rx="2.5" />
+      <path d="M11 17.5h2" />
+      <path d="M15.5 9a2.5 2.5 0 0 1 0 4" />
+      <path d="M17.5 7a5 5 0 0 1 0 8" />
+    </svg>
+  );
+}
+
+export function TransferenciaIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {/* Edifício de banco, transferência */}
+      <path d="M4.5 10.5 12 5l7.5 5.5" />
+      <path d="M6 10.5V19h12v-8.5" />
+      <path d="M9.5 10.5V19M14.5 10.5V19" />
+      <path d="M4 21h16" />
+    </svg>
+  );
+}
+
 export function MailIcon({ className }: { className?: string }) {
   return (
     <svg

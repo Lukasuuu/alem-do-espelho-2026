@@ -15,6 +15,8 @@ type Props = {
   tom?: "vinho" | "claro";
   /** Largura máxima do painel. */
   larguraMax?: string;
+  /** Seletor do primeiro elemento a focar ao abrir. Por omissão, o primeiro botão/link. */
+  focoInicial?: string;
 };
 
 /** Elementos focáveis dentro do painel, para o foco circular (trap). */
@@ -38,6 +40,7 @@ export default function Modal({
   children,
   tom = "vinho",
   larguraMax = "40rem",
+  focoInicial = "button:not([disabled]), a[href]",
 }: Props) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const painelRef = useRef<HTMLDivElement>(null);
@@ -80,11 +83,9 @@ export default function Modal({
 
     document.addEventListener("keydown", aoTecla);
 
-    // Foco no primeiro elemento focável do painel ao abrir.
+    // Foco no primeiro elemento (input no formulário, botão/link nos restantes).
     const t = window.setTimeout(() => {
-      painelRef.current
-        ?.querySelector<HTMLElement>("button:not([disabled]), a[href]")
-        ?.focus();
+      painelRef.current?.querySelector<HTMLElement>(focoInicial)?.focus();
     }, 60);
 
     return () => {
@@ -94,7 +95,7 @@ export default function Modal({
       document.body.style.paddingRight = paddingAnterior;
       abridor?.focus();
     };
-  }, [aberto, fechar]);
+  }, [aberto, fechar, focoInicial]);
 
   function aoClicarFora(e: React.MouseEvent) {
     if (e.target === overlayRef.current) fechar();

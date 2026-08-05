@@ -22,17 +22,34 @@ type Props = {
   alvo?: string;
   /** Rótulo acima dos números, por omissão "A lista fecha em". */
   rotulo?: string;
+  /** Linha de apoio por baixo dos números (por omissão, o fecho da lista). */
+  suporte?: string;
+  /** Mensagem quando o alvo já passou (por omissão, o fecho da lista). */
+  mensagemEncerrado?: string;
 };
 
 export default function Countdown({
   tom = "claro",
   alvo,
   rotulo = "A lista fecha em",
+  suporte,
+  mensagemEncerrado = "As inscrições na lista fecharam.",
 }: Props) {
   const alvoMs = useMemo(
     () => new Date(alvo ?? site.listaEspera.fecha).getTime(),
     [alvo]
   );
+
+  // Data do alvo em português, para o aria-label do contador (o padrão é o
+  // fecho da lista; quando se conta para a data do evento, o rótulo acompanha).
+  const dataAlvoExtenso = useMemo(() => {
+    if (!alvo) return site.listaEspera.fechaExtenso;
+    return new Intl.DateTimeFormat("pt-PT", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(new Date(alvo));
+  }, [alvo]);
 
   // Começa nulo: a decisão aberto/encerrado acontece só após o mount,
   // para que servidor e cliente rendam o mesmo HTML (sem warnings de hidratação).
@@ -60,11 +77,11 @@ export default function Countdown({
   const corLabel = tom === "claro" ? "text-creme/35" : "text-sage/70";
   const corSuporte = tom === "claro" ? "text-creme/50" : "text-carvao/55";
 
-  // Lista fechada: nada de contagem, só o aviso.
+  // Alvo ultrapassado: nada de contagem, só o aviso.
   if (encerrado) {
     return (
       <p className={`text-[0.9375rem] font-medium leading-relaxed ${corValor}`}>
-        As inscrições na lista fecharam.
+        {mensagemEncerrado}
       </p>
     );
   }
@@ -75,7 +92,7 @@ export default function Countdown({
       <div
         className="mt-3 flex items-stretch gap-4 sm:gap-6"
         role="timer"
-        aria-label={`${rotulo} ${site.listaEspera.fechaExtenso}`}
+        aria-label={`${rotulo} ${dataAlvoExtenso}`}
       >
         {unidades.map((unidade, i) => (
           <div key={unidade.rotulo} className="flex items-stretch gap-4 sm:gap-6">
@@ -95,7 +112,7 @@ export default function Countdown({
         ))}
       </div>
       <p className={`mt-3 text-[0.8125rem] leading-relaxed ${corSuporte}`}>
-        Inscrições abertas até {site.listaEspera.fechaExtenso}.
+        {suporte ?? `Inscrições abertas até ${site.listaEspera.fechaExtenso}.`}
       </p>
     </div>
   );
