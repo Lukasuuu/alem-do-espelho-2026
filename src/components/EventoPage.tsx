@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from "react";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
+import EcobagCard from "@/components/EcobagCard";
 import Experience from "@/components/Experience";
 import Anfitria from "@/components/Anfitria";
 import Gallery from "@/components/Gallery";
@@ -21,6 +22,7 @@ export default function EventoPage() {
   const [inscricaoAberto, setInscricaoAberto] = useState(false);
   const [pagamentoAberto, setPagamentoAberto] = useState(false);
   const [inscricao, setInscricao] = useState<{ id: string; nome: string } | null>(null);
+  const [campanhaAtiva, setCampanhaAtiva] = useState(true);
 
   const abrirInscricao = useCallback(() => setInscricaoAberto(true), []);
   const fecharInscricao = useCallback(() => setInscricaoAberto(false), []);
@@ -37,6 +39,8 @@ export default function EventoPage() {
     setInscricao(null);
   }, []);
 
+  const aoCampanhaEncerrar = useCallback(() => setCampanhaAtiva(false), []);
+
   // O skip-link "Saltar para a inscrição" (layout) abre o formulário via registo global.
   useEffect(() => {
     definirAberturaModal(abrirInscricao);
@@ -48,6 +52,7 @@ export default function EventoPage() {
       <Header abrirModal={abrirInscricao} />
       <main>
         <Hero abrirModal={abrirInscricao} />
+        <EcobagCard onEncerrado={aoCampanhaEncerrar} />
         <Experience />
         <Anfitria />
         <Gallery />
@@ -61,6 +66,7 @@ export default function EventoPage() {
           fechar={fecharPagamento}
           inscricaoId={inscricao.id}
           nome={inscricao.nome}
+          campanhaAtiva={campanhaAtiva}
         />
       )}
     </>

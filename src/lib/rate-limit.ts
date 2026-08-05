@@ -13,21 +13,25 @@ const LIMITE = 5;
 const JANELA_MS = 60_000;
 const MAX_CHAVES = 5_000;
 
-export function rateLimit(chave: string): { permitido: boolean; restantes: number; resetEm: number } {
+export function rateLimit(
+  chave: string,
+  limite = LIMITE,
+  janelaMs = JANELA_MS
+): { permitido: boolean; restantes: number; resetEm: number } {
   const agora = Date.now();
   const registo = janelas.get(chave);
 
   if (!registo || registo.expiraEm <= agora) {
     if (janelas.size > MAX_CHAVES) limparExpirados(agora);
-    janelas.set(chave, { contagem: 1, expiraEm: agora + JANELA_MS });
-    return { permitido: true, restantes: LIMITE - 1, resetEm: agora + JANELA_MS };
+    janelas.set(chave, { contagem: 1, expiraEm: agora + janelaMs });
+    return { permitido: true, restantes: limite - 1, resetEm: agora + janelaMs };
   }
 
   registo.contagem += 1;
 
   return {
-    permitido: registo.contagem <= LIMITE,
-    restantes: Math.max(0, LIMITE - registo.contagem),
+    permitido: registo.contagem <= limite,
+    restantes: Math.max(0, limite - registo.contagem),
     resetEm: registo.expiraEm,
   };
 }

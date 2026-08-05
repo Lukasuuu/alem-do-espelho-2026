@@ -5,7 +5,7 @@ import { ArrowLeft, ChevronRight, Check, X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { WhatsAppIcon, SumUpIcon, MbWayIcon, TransferenciaIcon } from "./icons";
+import { WhatsAppIcon, GlobeIcon, MbWayIcon, TransferenciaIcon } from "./icons";
 import { travarScroll, destravarScroll } from "@/lib/scroll-lock";
 import {
   MBWAY_NUMERO,
@@ -25,6 +25,8 @@ type Props = {
   nome: string;
   /** Tema da modal: vinho (escuro) ou claro. */
   tom?: "vinho" | "claro";
+  /** Se a campanha ecobag está ativa (mostra disclaimer no rodapé). */
+  campanhaAtiva?: boolean;
 };
 
 /** Elementos focáveis dentro do painel, para o foco circular (trap). */
@@ -48,7 +50,7 @@ const TITULO_MODAL = "pagamento-titulo";
  *  - MB Way / Transferência: instruções + confirmação por WhatsApp;
  *  - Ecrã de agradecimento após escolher o método.
  */
-export default function PagamentoModal({ aberto, fechar, inscricaoId, nome, tom = "vinho" }: Props) {
+export default function PagamentoModal({ aberto, fechar, inscricaoId, nome, tom = "vinho", campanhaAtiva = true }: Props) {
   const claro = tom === "claro";
   const overlayRef = useRef<HTMLDivElement>(null);
   const painelRef = useRef<HTMLDivElement>(null);
@@ -281,7 +283,7 @@ export default function PagamentoModal({ aberto, fechar, inscricaoId, nome, tom 
                         claro ? "text-vinho" : "text-creme"
                       }`}
                     >
-                      Escolhe como queres pagar
+                      Escolha a forma de pagamento
                     </h2>
 
                     <p
@@ -349,9 +351,9 @@ export default function PagamentoModal({ aberto, fechar, inscricaoId, nome, tom 
                     <div className="mt-8 space-y-3">
                       <CartaoMetodo
                         metodo="sumup"
-                        titulo="SumUp"
+                        titulo="Multi-plataforma de Pagamento"
                         descricao="Pagas com cartão por link, num checkout rápido e seguro."
-                        icone={<SumUpIcon className="h-6 w-6" />}
+                        icone={<GlobeIcon className="h-6 w-6" />}
                       />
                       <CartaoMetodo
                         metodo="mbway"
@@ -373,6 +375,18 @@ export default function PagamentoModal({ aberto, fechar, inscricaoId, nome, tom 
                         className={`mt-4 rounded-sm border border-[#e88b8b]/40 bg-[#e88b8b]/10 px-4 py-3 text-[0.875rem] text-[#f3c0c0]`}
                       >
                         {erroMetodo}
+                      </p>
+                    )}
+
+                    {/* Disclaimer da campanha ecobag */}
+                    {campanhaAtiva && (
+                      <p
+                        className={`mt-8 text-center text-[0.75rem] leading-relaxed ${
+                          claro ? "text-carvao/45" : "text-creme/45"
+                        }`}
+                      >
+                        🎁 Oferta válida apenas para as primeiras 50 inscrições na Lista de
+                        Espera e enquanto a campanha estiver ativa.
                       </p>
                     )}
                   </div>

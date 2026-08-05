@@ -3,9 +3,7 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
-import Countdown from "./Countdown";
 import { site } from "@/lib/site";
-import { VALOR_INSCRICAO_TEXT } from "@/lib/pagamento";
 
 type Props = {
   abrirModal: () => void;
@@ -39,7 +37,7 @@ export default function Hero({ abrirModal }: Props) {
           <motion.div {...surgir(0.05)} className="flex items-center gap-4">
             <span className="eyebrow text-dourado-claro/80">{site.edicao}</span>
             <span className="h-px w-12 bg-creme/20" aria-hidden />
-            <span className="eyebrow text-creme/40">Inscrições abertas</span>
+            <span className="eyebrow text-creme/40">Lista de espera aberta</span>
           </motion.div>
 
           <motion.h1 {...surgir(0.15)} className="display mt-7 tracking-[-0.01em] text-creme">
@@ -49,8 +47,16 @@ export default function Hero({ abrirModal }: Props) {
             <span className="mt-2 block text-[2.875rem] leading-[1.04] sm:text-[4rem] lg:text-[4.25rem]">
               está de volta.
             </span>
-            <span className="mt-2 block text-[2.875rem] leading-[1.04] sm:text-[4rem] lg:text-[4.25rem]">
-              E dessa vez...
+            <span className="mt-2 block">
+              <Image
+                src="/brand/alemdemim.webp"
+                alt="Além de Mim!"
+                width={1080}
+                height={260}
+                priority
+                sizes="(max-width: 640px) 70vw, (max-width: 1024px) 50vw, 28rem"
+                className="h-[2.875rem] w-auto sm:h-[4rem] lg:h-[4.25rem]"
+              />
             </span>
           </motion.h1>
 
@@ -60,24 +66,9 @@ export default function Hero({ abrirModal }: Props) {
           >
             A segunda edição do Além do Espelho acontece a{" "}
             <strong className="font-medium text-creme">{site.data.extenso}</strong>, no{" "}
-            {site.local.nome}, em {site.local.cidade}. São{" "}
-            <strong className="font-medium text-creme">{site.vagas} lugares</strong>, garantidos
-            por ordem de pagamento.
+            {site.local.nome}, em {site.local.cidade}. Entra agora na Lista de Espera e garante
+            prioridade para receber o bónus exclusivo da campanha.
           </motion.p>
-
-          <motion.p {...surgir(0.35)} className="mt-4 text-[0.875rem] text-creme/45">
-            A lista de espera fechou. As inscrições pagas já estão abertas.
-          </motion.p>
-
-          <motion.div {...surgir(0.4)} className="mt-8">
-            <Countdown
-              tom="claro"
-              alvo={site.data.iso}
-              rotulo="Faltam"
-              suporte={`${site.vagas} lugares · inscrição ${VALOR_INSCRICAO_TEXT}`}
-              mensagemEncerrado="O dia chegou — vemo-nos lá!"
-            />
-          </motion.div>
 
           <motion.div {...surgir(0.5)} className="mt-11">
             <button
@@ -90,7 +81,7 @@ export default function Hero({ abrirModal }: Props) {
           </motion.div>
         </div>
 
-        {/* ── Coluna direita: fotoprincipal + lettering "Além de Mim!" ── */}
+        {/* ── Coluna direita: fotoprincipal com moldura de vidro ── */}
         <motion.div
           initial={{ opacity: 0, scale: 0.94, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -106,16 +97,6 @@ export default function Hero({ abrirModal }: Props) {
               priority
               sizes="(max-width: 1024px) 90vw, 44vw"
               className="w-full rounded-sm"
-            />
-
-            {/* Lettering "Além de Mim!" — sobreposto no canto inferior-esquerdo da foto */}
-            <Image
-              src="/brand/alemdemim.webp"
-              alt=""
-              aria-hidden
-              width={1080}
-              height={1934}
-              className="pointer-events-none absolute bottom-2 left-2 w-[50%] sm:bottom-3 sm:left-3 sm:w-[52%]"
             />
           </div>
         </motion.div>

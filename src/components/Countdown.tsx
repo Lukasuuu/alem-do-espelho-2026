@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { site } from "@/lib/site";
 
 type Tempo = { dias: number; horas: number; minutos: number; segundos: number };
@@ -26,6 +26,8 @@ type Props = {
   suporte?: string;
   /** Mensagem quando o alvo já passou (por omissão, o fecho da lista). */
   mensagemEncerrado?: string;
+  /** Callback que dispara uma vez quando a contagem chega a 0. */
+  onEncerrado?: () => void;
 };
 
 export default function Countdown({
@@ -34,6 +36,7 @@ export default function Countdown({
   rotulo = "A lista fecha em",
   suporte,
   mensagemEncerrado = "As inscrições na lista fecharam.",
+  onEncerrado,
 }: Props) {
   const alvoMs = useMemo(
     () => new Date(alvo ?? site.listaEspera.fecha).getTime(),
@@ -62,6 +65,15 @@ export default function Countdown({
   }, []);
 
   const encerrado = agora !== null && agora >= alvoMs;
+
+  // Dispara o callback uma única vez quando a contagem chega a 0.
+  const disparado = useRef(false);
+  useEffect(() => {
+    if (encerrado && !disparado.current) {
+      disparado.current = true;
+      onEncerrado?.();
+    }
+  }, [encerrado, onEncerrado]);
   const tempo = agora !== null ? calcular(alvoMs - agora) : null;
 
   const unidades = [

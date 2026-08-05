@@ -101,6 +101,28 @@ export function TransferenciaIcon({ className }: { className?: string }) {
   );
 }
 
+export function GlobeIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {/* Globo terrestre — multi-plataforma de pagamento */}
+      <circle cx="12" cy="12" r="9.5" />
+      <ellipse cx="12" cy="12" rx="4" ry="9.5" />
+      <path d="M2.5 12h19" />
+      <path d="M4.5 7h15" />
+      <path d="M4.5 17h15" />
+    </svg>
+  );
+}
+
 export function MailIcon({ className }: { className?: string }) {
   return (
     <svg
