@@ -46,9 +46,6 @@ export default function Experience() {
               Porque quando uma mulher muda a forma como se vê, muda a forma como vive.
             </p>
           </div>
-          <p className="display mt-8 text-[1.75rem] leading-[1.15] text-vinho sm:text-[2rem]">
-            Toda a transformação começa quando decides olhar para ti.
-          </p>
         </Reveal>
 
         {/* Grid de 4 diferenciais com ícones */}
@@ -74,9 +71,7 @@ export default function Experience() {
         {/* Fecho da secção */}
         <Reveal>
           <p className="display mx-auto mt-20 max-w-xl text-center text-[1.75rem] leading-[1.15] text-vinho sm:text-[2rem]">
-            Porque este não será apenas um evento.
-            <br />
-            Será o dia em que podes voltar a encontrar-te.
+            Toda a transformação começa quando decides olhar para ti.
           </p>
         </Reveal>
       </div>

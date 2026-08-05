@@ -37,15 +37,18 @@ export default function Hero({ abrirModal }: Props) {
             <span className="eyebrow text-creme/40">Lista de espera aberta</span>
           </motion.div>
 
-          <motion.h1 {...surgir(0.15)} className="display mt-7 text-creme">
-            <span className="block text-[2.75rem] leading-[1.02] sm:text-6xl lg:text-[4.25rem]">
-              Ela volta.
+          <motion.h1 {...surgir(0.15)} className="display mt-7 tracking-[-0.01em] text-creme">
+            <span className="block text-[2.875rem] leading-[1.04] sm:text-[4rem] lg:text-[4.25rem]">
+              O Além do Espelho
             </span>
-            <span className="mt-2 block text-[2.75rem] leading-[1.02] sm:text-6xl lg:text-[4.25rem]">
-              E desta vez,
+            <span className="mt-2 block text-[2.875rem] leading-[1.04] sm:text-[4rem] lg:text-[4.25rem]">
+              está de volta.
             </span>
-            <span className="mt-2 block text-[2.75rem] italic leading-[1.02] text-blush sm:text-6xl lg:text-[4.25rem]">
-              além de mim.
+            <span className="mt-2 block text-[2.875rem] leading-[1.04] sm:text-[4rem] lg:text-[4.25rem]">
+              E dessa vez...
+            </span>
+            <span className="mt-2 block text-[3.125rem] italic leading-[1.04] text-blush sm:text-[4.375rem] lg:text-[4.75rem]">
+              Além de Mim!
             </span>
           </motion.h1>
 

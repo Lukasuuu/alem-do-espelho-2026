@@ -116,8 +116,11 @@ export default function Realizacao() {
                   <div>
                     <h3 className="eyebrow text-rosa">Em Portugal</h3>
                     <p className="mt-[clamp(12px,1.5vw,16px)] text-[0.9375rem] leading-relaxed text-carvao/70">
-                      Desenvolver, conectar e capacitar mais de 100 mulheres em Braga, através de
-                      conhecimento, empreendedorismo, autoestima e oportunidades reais de crescimento.
+                      Desenvolver, conectar e capacitar mais de 100 mulheres em Braga.
+                    </p>
+                    <p className="mt-3 text-[0.9375rem] leading-relaxed text-carvao/70">
+                      Através do conhecimento, desenvolvimento pessoal, busca pela identidade,
+                      empreendedorismo, autoestima e oportunidades reais de crescimento.
                     </p>
                   </div>
                   <div>
@@ -168,8 +171,11 @@ export default function Realizacao() {
             </p>
             <SponsorFlow />
 
-            {/* Elo entre as duas missões: reforço sob o CTA de patrocínio, em display */}
-            <p className="display mt-[clamp(24px,3.5vw,40px)] text-[clamp(1.25rem,2.5vw,1.5rem)] leading-[1.15] text-vinho">
+            {/* Elo entre as duas missões: cabeçalho de marca + reforço sob o CTA de patrocínio */}
+            <p className="display mt-[clamp(24px,3.5vw,40px)] text-[clamp(1.75rem,3.5vw,2.5rem)] uppercase leading-[1.05] text-vinho">
+              Além do Espelho 2026:
+            </p>
+            <p className="display mt-[clamp(14px,2vw,20px)] text-[clamp(1.25rem,2.5vw,1.5rem)] leading-[1.15] text-vinho">
               Transformando mulheres em Portugal. Impactando vidas em Angola.
             </p>
           </div>

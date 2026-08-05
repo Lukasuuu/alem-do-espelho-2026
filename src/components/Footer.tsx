@@ -76,11 +76,11 @@ export default function Footer({ abrirModal }: Props) {
                   href="https://www.instagram.com/vitaasilva/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label="Instagram do evento (abre em nova janela)"
+                  aria-label="Instagram de Vitória Gomes (abre em nova janela)"
                   className="inline-flex min-h-11 items-center gap-3 text-creme/70 transition-colors duration-300 hover:text-creme focus-visible:text-creme"
                 >
                   <InstagramIcon className="h-[1.15rem] w-[1.15rem] shrink-0" />
-                  Instagram
+                  Vitória Gomes
                 </a>
               </li>
             </ul>

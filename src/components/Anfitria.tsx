@@ -63,7 +63,8 @@ export default function Anfitria() {
             <span className="eyebrow mt-5 block text-rosa">A anfitriã</span>
             <p className="display mt-6 text-[2rem] leading-[1.1] text-vinho sm:text-[2.5rem]">
               <span className="text-rosa">&ldquo;</span>Quando uma mulher descobre quem
-              realmente é, ela transforma tudo ao seu redor.
+              realmente é, ela transforma o{" "}
+              <span className="whitespace-nowrap text-rosa">MUNDO</span> ao seu redor.
               <span className="text-rosa">&rdquo;</span>
             </p>
             <p className="mt-6 text-[0.9375rem] font-medium text-carvao">{site.anfitria.nome}</p>

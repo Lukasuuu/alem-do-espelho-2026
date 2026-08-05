@@ -44,10 +44,10 @@ export default function Gallery() {
           <Reveal delay={0.08}>
             <figure className="group relative overflow-hidden rounded-sm">
               <Image
-                src="/brand/autoras.webp"
+                src="/brand/grupo.webp"
                 alt="Autoras do livro «Princípios para o Sucesso do Cristão Empreendedor»"
-                width={1600}
-                height={1066}
+                width={1079}
+                height={720}
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 className="aspect-[3/2] h-auto w-full object-cover transition-transform duration-700 group-hover:scale-[1.03]"
               />
@@ -59,6 +59,9 @@ export default function Gallery() {
                 </div>
                 <p className="mt-2 text-[0.9375rem] font-medium leading-snug text-creme">
                   Autoras do livro «Princípios para o Sucesso do Cristão Empreendedor»
+                </p>
+                <p className="mt-1 text-[0.8125rem] tracking-[0.08em] text-creme/70">
+                  Editora Florecer
                 </p>
               </figcaption>
             </figure>
@@ -73,7 +76,7 @@ export default function Gallery() {
                 <br />
                 Outras escreveram um livro.
                 <br />
-                <em className="italic text-rosa">Todas passaram por esta sala.</em>
+                <em className="italic text-rosa">Algumas passaram por esta sala.</em>
               </p>
             </div>
           </Reveal>
