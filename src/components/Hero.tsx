@@ -14,7 +14,11 @@ export default function Hero({ abrirModal }: Props) {
   const surgir = (delay: number) => ({
     initial: { opacity: 0, y: 24 },
     animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.9, delay, ease: [0.22, 1, 0.36, 1] as const },
+    transition: {
+      duration: 0.9,
+      delay,
+      ease: [0.22, 1, 0.36, 1] as const,
+    },
   });
 
   return (
@@ -29,7 +33,7 @@ export default function Hero({ abrirModal }: Props) {
       </div>
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-14 px-5 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
-        {/* Coluna esquerda, conteúdo */}
+        {/* ── Coluna esquerda: conteúdo textual ── */}
         <div className="order-2 lg:order-1">
           <motion.div {...surgir(0.05)} className="flex items-center gap-4">
             <span className="eyebrow text-dourado-claro/80">{site.edicao}</span>
@@ -47,9 +51,6 @@ export default function Hero({ abrirModal }: Props) {
             <span className="mt-2 block text-[2.875rem] leading-[1.04] sm:text-[4rem] lg:text-[4.25rem]">
               E dessa vez...
             </span>
-            <span className="mt-2 block text-[3.125rem] italic leading-[1.04] text-blush sm:text-[4.375rem] lg:text-[4.75rem]">
-              Além de Mim!
-            </span>
           </motion.h1>
 
           <motion.p
@@ -63,7 +64,11 @@ export default function Hero({ abrirModal }: Props) {
             está na lista escolhe primeiro.
           </motion.p>
 
-          <motion.div {...surgir(0.4)} className="mt-10">
+          <motion.p {...surgir(0.35)} className="mt-4 text-[0.875rem] text-creme/45">
+            As inscrições na lista fecharam.
+          </motion.p>
+
+          <motion.div {...surgir(0.4)} className="mt-8">
             <Countdown tom="claro" />
           </motion.div>
 
@@ -78,7 +83,7 @@ export default function Hero({ abrirModal }: Props) {
           </motion.div>
         </div>
 
-        {/* Coluna direita, poster oficial dentro do painel de espelho */}
+        {/* ── Coluna direita: fotoprincipal + lettering "Além de Mim!" ── */}
         <motion.div
           initial={{ opacity: 0, scale: 0.94, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -87,13 +92,23 @@ export default function Hero({ abrirModal }: Props) {
         >
           <div className="espelho relative mx-auto max-w-[26rem] rounded-sm p-3 sm:p-4 lg:max-w-none">
             <Image
-              src="/brand/keyart.webp"
-              alt={`Cartaz oficial do ${site.nome} · ${site.subtitulo}, ${site.data.extenso}, ${site.local.completo}`}
-              width={1200}
-              height={1500}
+              src="/brand/fotoprincipal.webp"
+              alt={`Vitória Gomes sentada num campo de flores ao pôr do sol — ${site.nome} · ${site.data.extenso}`}
+              width={1078}
+              height={1217}
               priority
               sizes="(max-width: 1024px) 90vw, 44vw"
               className="w-full rounded-sm"
+            />
+
+            {/* Lettering "Além de Mim!" — sobreposto no canto inferior-esquerdo da foto */}
+            <Image
+              src="/brand/alemdemim.webp"
+              alt=""
+              aria-hidden
+              width={1080}
+              height={1934}
+              className="pointer-events-none absolute bottom-2 left-2 w-[50%] sm:bottom-3 sm:left-3 sm:w-[52%]"
             />
           </div>
         </motion.div>
