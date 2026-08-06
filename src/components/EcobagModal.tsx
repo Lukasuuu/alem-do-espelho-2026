@@ -97,8 +97,7 @@ export default function EcobagModal({
                     <strong className="font-medium text-creme">
                       {LIMITE_BONUS} participantes
                     </strong>{" "}
-                    inscritas recebem uma ecobag exclusiva com{" "}
-                    {TEXTO_BONUS.toLowerCase()}.
+                    inscritas recebem a {TEXTO_BONUS.toLowerCase()}.
                   </p>
 
                   {/* Counter tipográfico — MolduraEspelho compact */}

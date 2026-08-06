@@ -3,11 +3,14 @@
  * Alterar aqui reflete em toda a landing page.
  */
 
+import { FIM_CAMPANHA_ISO } from "@/lib/campanha";
+
 /**
- * Fecho da lista de espera = corte da landing (release manager).
- * Fuso Lisbon (Europe/Lisbon). É a MESMA hora do countdown e da virada
- * para a versão do evento em /alem-do-espelho-2026.
+ * Corte histórico da landing (release manager): 3 de agosto de 2026.
+ * Já aconteceu — a partir daí a rota serve a versão do evento.
  * Fonte única: src/lib/cutover.ts usa este valor.
+ * NOTA: a lista de espera NÃO fecha nesta data. Fecha no fim da campanha
+ * (site.listaEspera.fecha = FIM_CAMPANHA_ISO, 10 de agosto).
  */
 export const CORTE_ESPERA_ISO = "2026-08-03T10:00:00+01:00";
 
@@ -29,10 +32,12 @@ export const site = {
     ano: "2026",
   },
   listaEspera: {
-    // Fecho da lista: segunda-feira, 3 de agosto de 2026, 10:00 (Lisboa, WEST)
-    fecha: CORTE_ESPERA_ISO,
-    fechaExtenso: "segunda-feira, 3 de agosto, às 10:00",
-    fechaCurta: "3 AGO · 10:00",
+    // Fecho da lista = fim da campanha Ecobag Bónus (FIM_CAMPANHA_ISO),
+    // segunda-feira, 10 de agosto de 2026, 10:00 (Lisboa, WEST).
+    // Desacoplado do corte histórico da rota (CORTE_ESPERA_ISO, 03/08).
+    fecha: FIM_CAMPANHA_ISO,
+    fechaExtenso: "segunda-feira, 10 de agosto, às 10:00",
+    fechaCurta: "10 AGO · 10:00",
   },
   local: {
     nome: "INNSiDE by Meliá",
