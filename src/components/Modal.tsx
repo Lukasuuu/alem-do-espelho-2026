@@ -15,6 +15,8 @@ type Props = {
   tom?: "vinho" | "claro";
   /** Largura máxima do painel. */
   larguraMax?: string;
+  /** Etiqueta em versalete por cima do título (ex.: "Bónus exclusivo"). */
+  eyebrow?: string;
   /** Seletor do primeiro elemento a focar ao abrir. Por omissão, o primeiro botão/link. */
   focoInicial?: string;
 };
@@ -40,6 +42,7 @@ export default function Modal({
   children,
   tom = "vinho",
   larguraMax = "40rem",
+  eyebrow,
   focoInicial = "button:not([disabled]), a[href]",
 }: Props) {
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -154,6 +157,15 @@ export default function Modal({
               </button>
 
               <div className="relative px-6 py-10 sm:px-9 sm:py-12">
+                {eyebrow && (
+                  <span
+                    className={`eyebrow mb-3 block ${
+                      claro ? "text-sage/80" : "text-dourado-claro/80"
+                    }`}
+                  >
+                    {eyebrow}
+                  </span>
+                )}
                 <h2
                   id={tituloId}
                   className={`display pr-10 text-[1.75rem] leading-[1.05] sm:text-[2rem] ${

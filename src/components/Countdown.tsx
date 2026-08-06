@@ -28,6 +28,16 @@ type Props = {
   mensagemEncerrado?: string;
   /** Callback que dispara uma vez quando a contagem chega a 0. */
   onEncerrado?: () => void;
+
+  /* ── Modo externo (síncrono) ──
+     Quando todos estes valores são fornecidos, o componente NÃO cria o seu
+     próprio timer: espelha o estado partilhado (ex.: useCampaignCountdown).
+     Dois visores, uma fonte de verdade. */
+  dias?: number | null;
+  horas?: number | null;
+  minutos?: number | null;
+  segundos?: number | null;
+  encerrado?: boolean;
 };
 
 export default function Countdown({
@@ -37,6 +47,11 @@ export default function Countdown({
   suporte,
   mensagemEncerrado = "As inscrições na lista fecharam.",
   onEncerrado,
+  dias,
+  horas,
+  minutos,
+  segundos,
+  encerrado,
 }: Props) {
   const alvoMs = useMemo(
     () => new Date(alvo ?? site.listaEspera.fecha).getTime(),
@@ -58,23 +73,42 @@ export default function Countdown({
   // para que servidor e cliente rendam o mesmo HTML (sem warnings de hidratação).
   const [agora, setAgora] = useState<number | null>(null);
 
+  // Modo externo: quando o consumidor fornece todos os valores, o timer
+  // interno é desativado e o componente apenas espelha o estado partilhado.
+  const modoExterno =
+    dias !== undefined &&
+    horas !== undefined &&
+    minutos !== undefined &&
+    segundos !== undefined &&
+    encerrado !== undefined;
+
   useEffect(() => {
+    if (modoExterno) return;
     setAgora(Date.now());
     const id = setInterval(() => setAgora(Date.now()), 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [modoExterno]);
 
-  const encerrado = agora !== null && agora >= alvoMs;
+  const jaEncerrado = modoExterno
+    ? (encerrado ?? false)
+    : agora !== null && agora >= alvoMs;
 
   // Dispara o callback uma única vez quando a contagem chega a 0.
   const disparado = useRef(false);
   useEffect(() => {
-    if (encerrado && !disparado.current) {
+    if (jaEncerrado && !disparado.current) {
       disparado.current = true;
       onEncerrado?.();
     }
-  }, [encerrado, onEncerrado]);
-  const tempo = agora !== null ? calcular(alvoMs - agora) : null;
+  }, [jaEncerrado, onEncerrado]);
+
+  const tempo = modoExterno
+    ? dias !== null && horas !== null && minutos !== null && segundos !== null
+      ? { dias, horas, minutos, segundos }
+      : null
+    : agora !== null
+      ? calcular(alvoMs - agora)
+      : null;
 
   const unidades = [
     { valor: tempo?.dias, rotulo: "dias" },
@@ -90,7 +124,7 @@ export default function Countdown({
   const corSuporte = tom === "claro" ? "text-creme/50" : "text-carvao/55";
 
   // Alvo ultrapassado: nada de contagem, só o aviso.
-  if (encerrado) {
+  if (jaEncerrado) {
     return (
       <p className={`text-[0.9375rem] font-medium leading-relaxed ${corValor}`}>
         {mensagemEncerrado}

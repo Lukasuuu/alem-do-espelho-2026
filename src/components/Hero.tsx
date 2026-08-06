@@ -4,6 +4,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { site } from "@/lib/site";
+import Countdown from "./Countdown";
 
 type Props = {
   abrirModal: () => void;
@@ -69,6 +70,17 @@ export default function Hero({ abrirModal }: Props) {
             {site.local.nome}, em {site.local.cidade}. Entra agora na Lista de Espera e garante
             prioridade para receber o bónus exclusivo da campanha.
           </motion.p>
+
+          {/* Contagem regressiva para o dia do evento (só lugares, sem preço) */}
+          <motion.div {...surgir(0.4)} className="mt-8">
+            <Countdown
+              tom="claro"
+              alvo={site.data.iso}
+              rotulo="Faltam"
+              suporte={`${site.vagas} lugares`}
+              mensagemEncerrado="O dia chegou — vemo-nos lá!"
+            />
+          </motion.div>
 
           <motion.div {...surgir(0.5)} className="mt-11">
             <button

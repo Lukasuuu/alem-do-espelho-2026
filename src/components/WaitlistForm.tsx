@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { paises, site } from "@/lib/site";
+import { linkWhatsApp, paises, site } from "@/lib/site";
+import { FIM_CAMPANHA_ISO, MENSAGEM_ECOBAG, SALON_WHATSAPP } from "@/lib/campanha";
 import { normalizarNome, validarTelefone } from "@/lib/validation";
+import { WhatsAppIcon } from "./icons";
 
 type Estado = "inativo" | "a-enviar" | "sucesso" | "erro";
 type Erros = Partial<Record<"fullName" | "email" | "phone" | "consent" | "form", string>>;
@@ -72,10 +74,13 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
 
   // Depois do mount, o servidor nunca decide se a lista está fechada.
   // O patrocínio não fecha com a lista de espera.
+  // A lista aceita inscrições até ao fim da campanha (segunda, 10/08), quando
+  // abrem as inscrições definitivas. O corte de rota (site.listaEspera.fecha)
+  // já passou e não deve bloquear o formulário.
   const [listaFechada, setListaFechada] = useState(false);
   useEffect(() => {
     if (ehSponsor) return;
-    setListaFechada(Date.now() >= new Date(site.listaEspera.fecha).getTime());
+    setListaFechada(Date.now() >= new Date(FIM_CAMPANHA_ISO).getTime());
   }, [ehSponsor]);
 
   const paisSelecionado = useMemo(
@@ -167,10 +172,6 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
     }
   }
 
-  const mensagemPartilha = encodeURIComponent(
-    `Acabei de entrar na lista de espera do ${site.nome} · ${site.subtitulo}. ${site.data.extenso}, ${site.local.completo}. Entra também: ${site.url}`
-  );
-
   /* ── Ecrã de confirmação ─────────────────────────────────── */
   if (estado === "sucesso") {
     return (
@@ -196,25 +197,14 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
         </div>
 
         <h3 className="display mt-7 text-3xl text-creme sm:text-4xl">
-          {jaInscrita ? "Já estavas connosco." : "O teu lugar está guardado."}
+          Parabéns por fazeres parte desta campanha!
         </h3>
 
-        {jaInscrita ? (
-          <p className="mx-auto mt-4 max-w-sm text-[0.9375rem] leading-relaxed text-creme/70">
-            Este email já estava registado. Atualizámos os teus dados e continuas entre
-            as primeiras a saber.
-          </p>
-        ) : (
-          <>
-            <p className="mx-auto mt-4 max-w-sm text-[0.9375rem] leading-relaxed text-creme/70">
-              Assim que as inscrições abrirem, és das primeiras a saber.
-            </p>
-            <p className="mx-auto mt-3 max-w-sm text-[0.9375rem] leading-relaxed text-creme/70">
-              Tu não precisas tornar-te outra mulher. Precisas apenas de voltar a
-              encontrar quem sempre foste.
-            </p>
-          </>
-        )}
+        <p className="mx-auto mt-4 max-w-sm text-[0.9375rem] leading-relaxed text-creme/70">
+          {jaInscrita
+            ? "Já fazias parte da lista. Fala connosco no WhatsApp para saberes tudo sobre a tua Ecobag."
+            : "A tua inscrição foi registada com sucesso. Fala connosco no WhatsApp para saberes tudo sobre a tua Ecobag."}
+        </p>
 
         {posicao !== null && (
           <p className="mt-7">
@@ -225,19 +215,15 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
           </p>
         )}
 
-        <div className="fio mx-auto mt-9 max-w-[12rem] text-creme" aria-hidden />
-
-        <p className="mt-8 text-[0.9375rem] text-creme/70">
-          Conheces alguém que precisa de estar nesta sala?
-        </p>
         <a
-          href={`https://wa.me/?text=${mensagemPartilha}`}
+          href={linkWhatsApp(SALON_WHATSAPP, MENSAGEM_ECOBAG)}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-5 inline-flex items-center gap-2.5 rounded-full border border-creme/25 px-7 py-3.5 text-[0.875rem] font-medium text-creme transition-colors duration-300 hover:border-creme/50 hover:bg-creme/5"
+          aria-label="Abrir conversa no WhatsApp da Essence of Beauty"
+          className="mt-9 inline-flex items-center gap-3 rounded-full bg-rosa px-8 py-4 text-[0.9375rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro hover:shadow-[0_12px_40px_-12px_rgba(196,126,138,0.7)]"
         >
-          Convidar por WhatsApp
-          <span aria-hidden>→</span>
+          <WhatsAppIcon className="h-5 w-5" />
+          Falar sobre a minha Ecobag
         </a>
       </motion.div>
     );

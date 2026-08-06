@@ -7,6 +7,14 @@ import { createPortal } from "react-dom";
 import WaitlistForm from "./WaitlistForm";
 import Countdown from "./Countdown";
 import { site } from "@/lib/site";
+import { FIM_CAMPANHA_ISO } from "@/lib/campanha";
+
+/** Fecho da lista de espera por extenso (ex.: "segunda-feira, 10 de agosto"). */
+const FECHO_LISTA_EXTENSO = new Intl.DateTimeFormat("pt-PT", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+}).format(new Date(FIM_CAMPANHA_ISO));
 
 type Props = {
   aberto: boolean;
@@ -166,7 +174,11 @@ export default function WaitlistModal({ aberto, fechar }: Props) {
                       {site.data.extenso} · {site.local.nome}, {site.local.cidade}
                     </span>
                     <div className="mt-3">
-                      <Countdown tom="claro" />
+                      <Countdown
+                        tom="claro"
+                        alvo={FIM_CAMPANHA_ISO}
+                        suporte={`Inscrições abertas até ${FECHO_LISTA_EXTENSO}.`}
+                      />
                     </div>
                   </div>
                 </div>

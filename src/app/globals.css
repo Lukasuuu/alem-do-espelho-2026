@@ -99,6 +99,12 @@
   --font-display: "Recline", "Cormorant Garamond", Georgia, serif;
   --font-sans: "Jost", "Helvetica Neue", Arial, sans-serif;
 
+  /* Causa social — Além de Mim */
+  --color-causa-tinta: #4F5847;
+  --color-causa-tinta-suave: #7A8272;
+  --color-causa-pessego: #FCD1C0;
+  --color-causa-verde-fundo: #4F604D;
+
   --ease-suave: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -194,6 +200,96 @@ body {
   );
 }
 
+/* ───────────────────────────────────────────────
+   VIDRO — Glassmorphism premium sobre fundo claro
+   (moldura da ecobag + cartões da Causa Social)
+   ─────────────────────────────────────────────── */
+
+/* Moldura de vidro: painel translúcido branco (12–22 %) com blur,
+   reflexo diagonal, brilho interior e glow dourado suave.
+   "Objeto premium suspenso" sobre os glows de cor. */
+.vidro {
+  position: relative;
+  background: linear-gradient(
+    145deg,
+    rgb(255 255 255 / 0.22) 0%,
+    rgb(255 255 255 / 0.12) 45%,
+    rgb(255 251 243 / 0.18) 100%
+  );
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid rgb(255 255 255 / 0.55);
+  box-shadow:
+    0 1px 0 0 rgb(255 255 255 / 0.65) inset,
+    0 0 70px -18px rgb(212 175 55 / 0.45),
+    0 30px 70px -24px rgb(92 50 62 / 0.28);
+}
+
+.vidro::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(
+    112deg,
+    transparent 0%,
+    transparent 42%,
+    rgb(255 255 255 / 0.45) 50%,
+    rgb(255 255 255 / 0.05) 58%,
+    transparent 68%
+  );
+  opacity: 0.7;
+}
+
+/* Cartões: vidro mais opaco, contorno dourado subtil. */
+.vidro-cartao {
+  position: relative;
+  background: linear-gradient(
+    145deg,
+    rgb(255 255 255 / 0.55) 0%,
+    rgb(255 255 255 / 0.32) 55%,
+    rgb(255 251 243 / 0.42) 100%
+  );
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgb(212 175 55 / 0.25);
+  box-shadow:
+    0 1px 0 0 rgb(255 255 255 / 0.55) inset,
+    0 18px 50px -22px rgb(92 50 62 / 0.22),
+    0 2px 10px -4px rgb(46 58 51 / 0.05);
+}
+
+/* Degradê dourado para títulos sobre fundo escuro */
+.text-ouro-degrade {
+  background: linear-gradient(
+    135deg,
+    var(--color-dourado) 0%,
+    var(--color-dourado-claro) 40%,
+    var(--color-creme) 80%,
+    var(--color-dourado) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Degradê dourado metálico para títulos sobre fundo claro (creme):
+   topo claro + base em dourado profundo, para manter legibilidade no
+   palete claro da landing (o gradiente vertical simula luz de topo). */
+.text-ouro-degrade-creme {
+  background: linear-gradient(
+    180deg,
+    #eedcaa 0%,
+    var(--color-dourado) 42%,
+    #b08c27 78%,
+    #9a7a1e 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 /* Fio ornamental fino */
 .fio {
   height: 1px;
@@ -255,6 +351,60 @@ body {
       transparent 0
     );
   background-size: 4px 4px;
+}
+
+/* ───────────────────────────────────────────────
+   CAUSA SOCIAL — Moldura SVG animada + dots
+   ─────────────────────────────────────────────── */
+/* Stroke draw animation — pathLength=1 normaliza o perimeter */
+.causa-moldura-stroke {
+  stroke-dashoffset: 1;
+  animation: causa-draw 1.6s var(--ease-suave) forwards;
+  animation-delay: 0.3s;
+}
+
+@keyframes causa-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Dots dos cantos — fade-in pós-stroke */
+.causa-dot {
+  animation: causa-dot-in 0.5s var(--ease-suave) forwards;
+  animation-delay: 1.8s;
+}
+
+@keyframes causa-dot-in {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Mobile: sem animação de stroke, sem dots (dots já hidden via md:block) */
+/* Recorte da ecobag — remove o enquadramento verde (#122D21, 8–18 px)
+   preservando ecobag, produtos e logótipo ONG Atos (interior).
+   Ajustar % se o PNG mudar. Ver .causa-moldura-stroke acima. */
+.causa-verde-corte {
+  clip-path: inset(1.95% 3.24% 1.67% 5.09%);
+}
+
+@media (max-width: 767px) {
+  .causa-moldura-stroke {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .causa-moldura-stroke {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .causa-dot {
+    animation: none;
+    opacity: 1;
+  }
 }
 
 /* Overlay do modal, abre SEMPRE ALINHADO AO TOPO (com respiro), nunca centrado.

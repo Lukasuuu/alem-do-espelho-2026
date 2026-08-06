@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Reveal from "./Reveal";
-import SponsorFlow from "./SponsorFlow";
+import CausaSocial from "./CausaSocial";
 
 type Entidade = {
   rotulo: string;
@@ -160,26 +160,8 @@ export default function Realizacao() {
           </div>
         </div>
 
-        {/* Chamada para patrocinadores, largura total e centrada */}
-        <Reveal delay={0.08}>
-          <div className="mx-auto mt-20 max-w-2xl text-center">
-            <h3 className="display text-[2rem] text-vinho">Junte-se à nossa missão.</h3>
-            <p className="mt-5 leading-relaxed text-carvao/70">
-              Ao tornar-se patrocinador desta iniciativa, a sua marca passa a fazer parte de um
-              projeto que transforma vidas, gera impacto social e fortalece comunidades em Portugal
-              e em Angola. Cada parceria ajuda-nos a chegar a mais mulheres.
-            </p>
-            <SponsorFlow />
-
-            {/* Elo entre as duas missões: cabeçalho de marca + reforço sob o CTA de patrocínio */}
-            <p className="display mt-[clamp(24px,3.5vw,40px)] text-[clamp(1.75rem,3.5vw,2.5rem)] uppercase leading-[1.05] text-vinho">
-              Além do Espelho 2026:
-            </p>
-            <p className="display mt-[clamp(14px,2vw,20px)] text-[clamp(1.25rem,2.5vw,1.5rem)] leading-[1.15] text-vinho">
-              Transformando mulheres em Portugal. Impactando vidas em Angola.
-            </p>
-          </div>
-        </Reveal>
+        {/* ── Causa social "Além de Mim": missão → causa → patrocínio ── */}
+        <CausaSocial />
 
         {/* ── Zona B: faixa das entidades, largura total, separada por um fio ── */}
         <div className="mt-[clamp(56px,8vw,104px)] border-t border-vinho/10 pt-[clamp(40px,5vw,64px)]">
