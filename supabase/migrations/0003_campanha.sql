@@ -6,14 +6,15 @@
 -- ═══════════════════════════════════════════════════════════════
 
 -- ── 1. Counter da campanha (público, sem expor dados) ──────
--- Conta quantas inscrições têm is_bonus = true (cap de 50).
+-- Conta quantas ecobags bónus foram reservadas.
+-- FLUXO APROVADO = lista de espera (sem pagamento): as inscrições entram em
+-- waitlist_subscribers, por isso o counter conta as ativas aí (cap de 50).
 -- Usado pelo endpoint GET /api/campanha/inscritos.
 create or replace function public.inscricoes_campanha_count()
 returns integer language sql security definer set search_path = '' stable as $$
   select count(*)::int
-    from public.inscricoes
-   where is_bonus = true
-     and status <> 'cancelado';
+    from public.waitlist_subscribers
+   where status <> 'unsubscribed';
 $$;
 
 revoke all on function public.inscricoes_campanha_count() from public;
