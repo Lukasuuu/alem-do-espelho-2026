@@ -125,6 +125,10 @@ export default function Countdown({
   const corValor = tom === "claro" ? "text-creme" : "text-vinho";
   const corRotulo = tom === "claro" ? "text-creme/55" : "text-musgo/80";
   const corFio = tom === "claro" ? "bg-creme/20" : "bg-dourado/30";
+  // Divisores do modo centrado (gradeMobile): mesma cor do fio, expressa como
+  // borda (divide-x). As classes completas são literais aqui para o Tailwind
+  // as gerar — nunca montar `sm:` + variável no className.
+  const corDivisao = tom === "claro" ? "sm:divide-creme/20" : "sm:divide-dourado/30";
   const corLabel = tom === "claro" ? "text-creme/35" : "text-musgo";
   const corSuporte = tom === "claro" ? "text-creme/50" : "text-carvao/75";
 
@@ -138,12 +142,12 @@ export default function Countdown({
   }
 
   return (
-    <div>
+    <div className={gradeMobile ? "text-center" : undefined}>
       <span className={`eyebrow ${corLabel}`}>{rotulo}</span>
       <div
         className={
           gradeMobile
-            ? "mt-3 grid grid-cols-2 gap-x-6 gap-y-6 sm:flex sm:items-stretch sm:gap-6"
+            ? `mt-3 grid w-full grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-4 sm:gap-x-0 sm:gap-y-0 sm:divide-x ${corDivisao}`
             : "mt-3 flex items-stretch gap-4 sm:gap-6"
         }
         role="timer"
@@ -152,7 +156,11 @@ export default function Countdown({
         {unidades.map((unidade, i) => (
           <div
             key={unidade.rotulo}
-            className="flex items-stretch justify-center gap-4 sm:gap-6"
+            className={
+              gradeMobile
+                ? "flex flex-col items-center justify-center px-1 sm:px-2"
+                : "flex items-stretch justify-center gap-4 sm:gap-6"
+            }
           >
             <div className="flex flex-col items-center">
               <span
@@ -165,9 +173,9 @@ export default function Countdown({
                 {unidade.rotulo}
               </span>
             </div>
-            {i < unidades.length - 1 && (
+            {!gradeMobile && i < unidades.length - 1 && (
               <div
-                className={`w-px self-stretch ${corFio} ${gradeMobile ? "max-sm:hidden" : ""}`}
+                className={`w-px self-stretch ${corFio}`}
                 aria-hidden
               />
             )}
