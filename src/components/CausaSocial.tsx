@@ -98,8 +98,8 @@ export default function CausaSocial() {
         <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
           {/* ── Cronómetro da campanha ── */}
           <Reveal delay={0.05}>
-            <div className="mb-12 lg:mb-16">
-              <div className="vidro w-full rounded-2xl p-6 sm:mx-auto sm:max-w-md sm:p-7 lg:ml-auto lg:mr-0 lg:max-w-sm">
+            <div className="mx-auto mb-12 w-full max-w-[34rem] lg:mb-16">
+              <div className="vidro-cartao rounded-2xl p-6 sm:p-8">
                 <Countdown
                   tom="escuro"
                   alvo={FIM_CAMPANHA_ISO}
@@ -111,6 +111,7 @@ export default function CausaSocial() {
                   minutos={campanha.minutos}
                   segundos={campanha.segundos}
                   encerrado={campanha.encerrado}
+                  gradeMobile
                 />
               </div>
             </div>

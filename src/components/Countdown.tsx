@@ -38,6 +38,10 @@ type Props = {
   minutos?: number | null;
   segundos?: number | null;
   encerrado?: boolean;
+
+  /** A <640px apresenta os 4 blocos em grelha 2×2. Para cards estreitos
+      (ex.: Causa Social) onde 4 colunas lado a lado não cabem com presença. */
+  gradeMobile?: boolean;
 };
 
 export default function Countdown({
@@ -52,6 +56,7 @@ export default function Countdown({
   minutos,
   segundos,
   encerrado,
+  gradeMobile = false,
 }: Props) {
   const alvoMs = useMemo(
     () => new Date(alvo ?? site.listaEspera.fecha).getTime(),
@@ -118,10 +123,10 @@ export default function Countdown({
   ];
 
   const corValor = tom === "claro" ? "text-creme" : "text-vinho";
-  const corRotulo = tom === "claro" ? "text-creme/55" : "text-sage";
-  const corFio = tom === "claro" ? "bg-creme/20" : "bg-vinho/15";
-  const corLabel = tom === "claro" ? "text-creme/35" : "text-sage/70";
-  const corSuporte = tom === "claro" ? "text-creme/50" : "text-carvao/55";
+  const corRotulo = tom === "claro" ? "text-creme/55" : "text-musgo/80";
+  const corFio = tom === "claro" ? "bg-creme/20" : "bg-dourado/30";
+  const corLabel = tom === "claro" ? "text-creme/35" : "text-musgo";
+  const corSuporte = tom === "claro" ? "text-creme/50" : "text-carvao/75";
 
   // Alvo ultrapassado: nada de contagem, só o aviso.
   if (jaEncerrado) {
@@ -136,24 +141,36 @@ export default function Countdown({
     <div>
       <span className={`eyebrow ${corLabel}`}>{rotulo}</span>
       <div
-        className="mt-3 flex items-stretch gap-4 sm:gap-6"
+        className={
+          gradeMobile
+            ? "mt-3 grid grid-cols-2 gap-x-6 gap-y-6 sm:flex sm:items-stretch sm:gap-6"
+            : "mt-3 flex items-stretch gap-4 sm:gap-6"
+        }
         role="timer"
         aria-label={`${rotulo} ${dataAlvoExtenso}`}
       >
         {unidades.map((unidade, i) => (
-          <div key={unidade.rotulo} className="flex items-stretch gap-4 sm:gap-6">
+          <div
+            key={unidade.rotulo}
+            className="flex items-stretch justify-center gap-4 sm:gap-6"
+          >
             <div className="flex flex-col items-center">
               <span
-                className={`display text-3xl sm:text-4xl tabular-nums ${corValor}`}
+                className={`display text-[clamp(1.75rem,5.5vw,2.5rem)] tabular-nums ${corValor}`}
                 suppressHydrationWarning
               >
                 {unidade.valor === undefined ? "––" : String(unidade.valor).padStart(2, "0")}
               </span>
-              <span className={`eyebrow mt-1.5 text-[0.5625rem] sm:text-[0.625rem] ${corRotulo}`}>
+              <span className={`eyebrow mt-1.5 text-[clamp(0.5rem,1.8vw,0.68rem)] ${corRotulo}`}>
                 {unidade.rotulo}
               </span>
             </div>
-            {i < unidades.length - 1 && <div className={`w-px self-stretch ${corFio}`} aria-hidden />}
+            {i < unidades.length - 1 && (
+              <div
+                className={`w-px self-stretch ${corFio} ${gradeMobile ? "max-sm:hidden" : ""}`}
+                aria-hidden
+              />
+            )}
           </div>
         ))}
       </div>
