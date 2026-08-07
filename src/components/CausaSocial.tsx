@@ -243,15 +243,15 @@ export default function CausaSocial() {
                   className="vidro relative rounded-[1.75rem] p-3 sm:p-4"
                 >
                   <div
-                    className="relative overflow-hidden rounded-[1.25rem] bg-[#FCF8F2]"
-                    style={{ aspectRatio: "432 / 717" }}
+                    className="relative overflow-hidden rounded-[1.25rem] bg-[#F7F1E8]"
+                    style={{ aspectRatio: "973 / 1617" }}
                   >
                     <Image
-                      src="/brand/causasocial.png"
+                      src="/brand/causasocial.webp"
                       alt="Ecobag do Além do Espelho 2026 com silhueta de mulher africana, girafas e produtos de higiene — kit de solidariedade"
                       fill
                       sizes="(max-width: 640px) 80vw, (max-width: 1024px) 42vw, 420px"
-                      className="object-contain causa-verde-corte"
+                      className="object-cover"
                     />
                   </div>
                 </motion.div>

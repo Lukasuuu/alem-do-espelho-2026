@@ -382,13 +382,6 @@ body {
 }
 
 /* Mobile: sem animação de stroke, sem dots (dots já hidden via md:block) */
-/* Recorte da ecobag — remove o enquadramento verde (#122D21, 8–18 px)
-   preservando ecobag, produtos e logótipo ONG Atos (interior).
-   Ajustar % se o PNG mudar. Ver .causa-moldura-stroke acima. */
-.causa-verde-corte {
-  clip-path: inset(1.95% 3.24% 1.67% 5.09%);
-}
-
 @media (max-width: 767px) {
   .causa-moldura-stroke {
     animation: none;
