@@ -15,3 +15,14 @@ public/brand/assets-final/
 public/brand/logos-transparentes/
 public/brand/logos-v2/
 public/brand/bandeira.png
+
+# Artefactos de dev e QA (screenshots, logs — nunca vão para o repo)
+*.log
+qa-*.png
+qa-*.jpeg
+localhost-*.png
+evidencia-*.jpeg
+investigation-*.png
+
+# Originais e material de referência movidos de public/ (fora do bundle de produção)
+docs/assets-fonte/
