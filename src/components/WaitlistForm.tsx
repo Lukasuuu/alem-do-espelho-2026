@@ -14,8 +14,14 @@ type Variante = "waitlist" | "sponsor";
 type Props = {
   /** waitlist (padrão) ou sponsor, muda textos, endpoint e sucesso. */
   variant?: Variante;
-  /** Chamado quando a submissão sponsor é aceite, o pai abre o modal de sucesso. */
-  onSucesso?: () => void;
+  /** Nível de parceria escolhido (só variant="sponsor") — lido apenas, nunca editável aqui. */
+  nivel?: number | null;
+  /**
+   * Chamado quando a submissão sponsor é aceite. Entrega os dados do registo
+   * (id + nível) para o pai abrir a modal de pagamento por cima. O waitlist
+   * não usa este callback.
+   */
+  onSucesso?: (dados?: { id: string; nivel: number; nome: string }) => void;
 };
 
 const NOME_COMPLETO = /^\p{L}[\p{L}'’.-]{1,}(?:\s+\p{L}[\p{L}'’.-]{1,})+$/u;
@@ -33,7 +39,7 @@ function lerUtm(): Record<string, string> {
   return utm;
 }
 
-export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props) {
+export default function WaitlistForm({ variant = "waitlist", nivel = null, onSucesso }: Props) {
   const ehSponsor = variant === "sponsor";
   const empresa = site.anfitria.empresa.replace("CEO e fundadora do ", "");
 
@@ -145,6 +151,9 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
           elapsedMs: Date.now() - montadoEm.current,
           locale: typeof navigator !== "undefined" ? navigator.language : undefined,
           utm: lerUtm(),
+          // Só no patrocínio: o nível escolhido entra no corpo. Sem nível a rota
+          // devolve 422 com campo claro — o pai só abre este formulário após escolher.
+          ...(ehSponsor && typeof nivel === "number" ? { nivel } : {}),
         }),
       });
 
@@ -158,9 +167,14 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
       }
 
       if (ehSponsor) {
-        // O fluxo de patrocínio fecha o modal e abre o de sucesso no pai.
+        // O fluxo de patrocínio mantém este modal aberto e abre o de pagamento
+        // por cima, entregando os dados do registo (id + nível) ao pai.
         setEstado("inativo");
-        onSucesso?.();
+        onSucesso?.({
+          id: dados.id,
+          nivel: dados.nivel,
+          nome: normalizarNome(fullName),
+        });
       } else {
         setPosicao(dados.posicao ?? null);
         setJaInscrita(dados.status === "already_registered");
@@ -414,10 +428,21 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
         </div>
       </div>
 
+      {ehSponsor && typeof nivel === "number" && (
+        <p className="mt-8 flex items-center justify-center gap-2.5 text-[0.875rem] text-creme/70">
+          <span className="eyebrow text-creme/45">Nível de parceria</span>
+          <span className="rounded-full border border-rosa/40 bg-rosa/10 px-3 py-1 font-medium tabular-nums text-creme">
+            {nivel}€
+          </span>
+        </p>
+      )}
+
       <button
         type="submit"
         disabled={estado === "a-enviar" || listaFechada}
-        className="group mt-8 flex w-full items-center justify-center gap-3 rounded-full bg-rosa px-8 py-4 text-[0.9375rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro hover:shadow-[0_12px_40px_-12px_rgba(186,121,132,0.7)] disabled:cursor-not-allowed disabled:opacity-60"
+        className={`group flex w-full items-center justify-center gap-3 rounded-full bg-rosa px-8 py-4 text-[0.9375rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro hover:shadow-[0_12px_40px_-12px_rgba(186,121,132,0.7)] disabled:cursor-not-allowed disabled:opacity-60 ${
+          ehSponsor && typeof nivel === "number" ? "mt-4" : "mt-8"
+        }`}
       >
         {estado === "a-enviar" ? (
           <>

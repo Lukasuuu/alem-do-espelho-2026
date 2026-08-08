@@ -122,6 +122,37 @@ export const metodoInscricaoSchema = z.object({
 
 export type MetodoInscricaoInput = z.input<typeof metodoInscricaoSchema>;
 
+/** Níveis de parceria do patrocínio — fechados a 75 / 150 / 200€ (FASE5). */
+export const NIVEIS_PARCERIA = [75, 150, 200] as const;
+export type NivelParceria = (typeof NIVEIS_PARCERIA)[number];
+
+/** Métodos do patrocínio — SEM cartão: só MB Way ou transferência. O SumUp é exclusivo da inscrição. */
+export const METODOS_SPONSOR = ["mbway", "transferencia"] as const;
+export type MetodoSponsor = (typeof METODOS_SPONSOR)[number];
+
+/**
+ * Registo de patrocínio: mesmos campos do waitlist (nome, email, telemóvel,
+ * consentimento, anti-bot) mais o nível de parceria escolhido.
+ */
+export const sponsorSchema = waitlistSchema.extend({
+  nivel: z.union(
+    [z.literal(75), z.literal(150), z.literal(200)],
+    { errorMap: () => ({ message: "Escolhe um nível de parceria." }) }
+  ),
+});
+
+export type SponsorInput = z.input<typeof sponsorSchema>;
+
+/** PATCH que marca o método do patrocínio (MB Way ou transferência). */
+export const metodoSponsorSchema = z.object({
+  sponsorId: z.string().uuid("Parceria inválida."),
+  metodo: z.enum(METODOS_SPONSOR, {
+    errorMap: () => ({ message: "Método de pagamento inválido." }),
+  }),
+});
+
+export type MetodoSponsorInput = z.input<typeof metodoSponsorSchema>;
+
 export type TelefoneValidado = {
   ok: boolean;
   e164?: string;

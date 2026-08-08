@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
+import { getSupabase } from "@/lib/supabase";
 import { hashIp, obterIp, rateLimit } from "@/lib/rate-limit";
-import { MENSAGENS, validarTelefone, waitlistSchema } from "@/lib/validation";
+import { MENSAGENS, sponsorSchema, validarTelefone } from "@/lib/validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+// Dados pessoais tratados na UE: função junto da base de dados (Supabase em Paris).
+export const preferredRegion = ["cdg1"];
 
 type Resposta =
-  | { ok: true; status: "sponsor" }
+  | { ok: true; status: "sponsor"; id: string; nivel: number }
   | { ok: false; mensagem: string; campos?: Record<string, string> };
 
 /** Tempo mínimo plausível entre carregar o formulário e submeter. */
@@ -25,15 +28,10 @@ function mascararEmail(email: string): string {
 }
 
 /**
- * Rota de manifestação de interesse em patrocínio.
- *
- * Reutiliza a validação e o anti-bot do formulário da lista de espera
- * (WaitlistForm variant="sponsor" envia exatamente o mesmo payload).
- *
- * Persistência: ainda não existe uma tabela de leads de patrocínio, por
- * isso o interesse é registado no log da função (com email mascarado).
- * Quando a tabela for criada, o passo 6 abaixo troca o console.info por
- * um insert, o resto da rota fica igual.
+ * Regista o interesse de patrocínio com o nível escolhido (75/150/200€) e
+ * status 'pendente'. O método de pagamento só é marcado depois, na modal
+ * (PATCH /api/sponsor/metodo). Mesmo padrão do waitlist/inscrição: RLS +
+ * função SECURITY DEFINER via RPC, sem service role.
  */
 export async function POST(request: Request): Promise<NextResponse<Resposta>> {
   // 1. Limite de tentativas por IP
@@ -60,10 +58,10 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
     return NextResponse.json({ ok: false, mensagem: MENSAGENS.invalido }, { status: 400 });
   }
 
-  // 3. Validação do formato, o mesmo esquema da lista de espera
+  // 3. Validação do formato — o esquema do patrocínio exige o nível escolhido
   let dados;
   try {
-    dados = waitlistSchema.parse(corpo);
+    dados = sponsorSchema.parse(corpo);
   } catch (erro) {
     if (erro instanceof ZodError) {
       const campos: Record<string, string> = {};
@@ -96,18 +94,72 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
     );
   }
 
-  // 6. Registo do lead, sem PII em claro (RGPD)
-  console.info(
-    "[sponsor] novo interesse de patrocínio",
-    JSON.stringify({
-      email: mascararEmail(dados.email),
-      pais: dados.phoneCountry,
-      utmSource: dados.utm?.utm_source ?? null,
-      ipHash: hashIp(ip),
-    })
-  );
+  // 6. Persistência
+  try {
+    const supabase = getSupabase();
 
-  return NextResponse.json({ ok: true, status: "sponsor" }, { status: 201 });
+    const { data, error } = await supabase.rpc("registar_sponsor", {
+      p_nome: dados.fullName,
+      p_email: dados.email,
+      p_telefone: telefone.e164,
+      p_nivel: dados.nivel,
+      p_ip_hash: hashIp(ip),
+    });
+
+    if (error) {
+      const codigo = error.message ?? "";
+      if (codigo.includes("invalid_email")) {
+        return NextResponse.json(
+          { ok: false, mensagem: MENSAGENS.invalido, campos: { email: "Este email não parece válido." } },
+          { status: 422 }
+        );
+      }
+      if (codigo.includes("invalid_phone")) {
+        return NextResponse.json(
+          { ok: false, mensagem: MENSAGENS.invalido, campos: { phone: "Este número não parece válido." } },
+          { status: 422 }
+        );
+      }
+      if (codigo.includes("invalid_full_name")) {
+        return NextResponse.json(
+          { ok: false, mensagem: MENSAGENS.invalido, campos: { fullName: "Escreve o teu nome completo." } },
+          { status: 422 }
+        );
+      }
+      if (codigo.includes("invalid_nivel")) {
+        return NextResponse.json(
+          { ok: false, mensagem: MENSAGENS.invalido, campos: { nivel: "Escolhe um nível de parceria." } },
+          { status: 422 }
+        );
+      }
+
+      console.error("[sponsor] erro do supabase:", error.message);
+      return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor }, { status: 502 });
+    }
+
+    const resultado = data as { status: "criada" | "ja_existente"; id: string; nivel: number };
+
+    // 7. Observabilidade, sem PII em claro (RGPD)
+    console.info(
+      "[sponsor] novo interesse de patrocínio",
+      JSON.stringify({
+        email: mascararEmail(dados.email),
+        nivel: resultado.nivel,
+        status: resultado.status,
+        pais: dados.phoneCountry,
+        utmSource: dados.utm?.utm_source ?? null,
+        ipHash: hashIp(ip),
+      })
+    );
+
+    return NextResponse.json(
+      { ok: true, status: "sponsor", id: resultado.id, nivel: resultado.nivel },
+      { status: 201 }
+    );
+  } catch (erro) {
+    console.error("[sponsor] falha inesperada:", erro);
+    return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor }, { status: 500 });
+  }
 }
 
 export async function GET() {
