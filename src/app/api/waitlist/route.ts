@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 import { getSupabase } from "@/lib/supabase";
 import { hashIp, obterIp, rateLimit } from "@/lib/rate-limit";
 import { MENSAGENS, validarTelefone, waitlistSchema } from "@/lib/validation";
+import { listaAtiva } from "@/lib/cutover";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -17,6 +18,16 @@ type Resposta =
 const TEMPO_MINIMO_MS = 2_500;
 
 export async function POST(request: Request): Promise<NextResponse<Resposta>> {
+  // 0. Fase ativa (server-first): a lista gratuita fecha em FIM_CAMPANHA_ISO
+  //    (10/08, 10:00 Lisbon) — depois disso, ou com
+  //    NEXT_PUBLIC_FASE_OVERRIDE=inscricao, a rota responde 410 Gone.
+  if (!listaAtiva()) {
+    return NextResponse.json(
+      { ok: false, mensagem: "As inscrições na lista de espera estão fechadas." },
+      { status: 410 }
+    );
+  }
+
   // 1. Limite de tentativas por IP
   const ip = obterIp(request.headers);
   const limite = rateLimit(`waitlist:${ip}`);

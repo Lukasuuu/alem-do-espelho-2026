@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 import { getSupabase } from "@/lib/supabase";
 import { hashIp, obterIp, rateLimit } from "@/lib/rate-limit";
 import { MENSAGENS, inscricaoSchema, validarTelefone } from "@/lib/validation";
+import { inscricaoAtiva } from "@/lib/cutover";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,6 +23,16 @@ const TEMPO_MINIMO_MS = 2_500;
  * waitlist: RLS + função SECURITY DEFINER via RPC, sem service role.
  */
 export async function POST(request: Request): Promise<NextResponse<Resposta>> {
+  // 0. Fase ativa (server-first): a inscrição paga só abre em FIM_CAMPANHA_ISO
+  //    (10/08, 10:00 Lisbon), ou antes com NEXT_PUBLIC_FASE_OVERRIDE=inscricao
+  //    (teste). Enquanto a lista gratuita estiver aberta, 410 Gone.
+  if (!inscricaoAtiva()) {
+    return NextResponse.json(
+      { ok: false, mensagem: "As inscrições pagas ainda não estão abertas." },
+      { status: 410 }
+    );
+  }
+
   // 1. Limite de tentativas por IP
   const ip = obterIp(request.headers);
   const limite = rateLimit(`inscricao:${ip}`);

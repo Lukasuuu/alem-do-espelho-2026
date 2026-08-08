@@ -1,16 +1,53 @@
 import { headers } from "next/headers";
 import { CORTE_ESPERA_ISO } from "@/lib/site";
+import { FIM_CAMPANHA_ISO } from "@/lib/campanha";
 
 /**
- * Corte cronometrado da landing (release manager).
+ * DOIS marcos cronometrados — NÃO são a mesma coisa, não unificar:
  *
- * Antes de CORTE_ESPERA_ISO: a lista de espera é a página ativa.
- * No corte e depois: redireciona para a versão do evento.
+ * · CORTE_ESPERA_ISO (03/08, 10:00 — já ocorreu): troca a PÁGINA ativa.
+ *     Antes  → a lista de espera é o destino (/alem-do-espelho-2026/lista).
+ *     Depois → a versão do evento é o destino (/alem-do-espelho-2026).
+ *     É o gate de ROTA, decidido pelo relógio do servidor (isDepoisDoCorte).
  *
- * A hora de corte é a MESMA do countdown (site.listaEspera.fecha), fonte
- * única em site.ts. Fuso Lisbon (Europe/Lisbon, +01:00 no verão).
+ * · FIM_CAMPANHA_ISO (10/08, 10:00): fecho da LISTA GRATUITA e abertura da
+ *     INSCRIÇÃO PAGA (40€).
+ *     Antes  → api/waitlist aceita; api/inscricao recusa (410) — o fluxo
+ *              ativo é a lista de espera gratuita (campanha Ecobag).
+ *     Depois → api/waitlist recusa (410, lista fechada); api/inscricao abre.
+ *              O fluxo de inscrição paga (Fase 3, PagamentoModal) liga-se
+ *              a este marco, não ao corte de rota.
+ *
+ * Fuso Lisbon (Europe/Lisbon, +01:00 no verão). Fontes únicas: site.ts
+ * (CORTE_ESPERA_ISO) e campanha.ts (FIM_CAMPANHA_ISO).
  */
 export const CORTE_ESPERA_MS = new Date(CORTE_ESPERA_ISO).getTime();
+export const FIM_CAMPANHA_MS = new Date(FIM_CAMPANHA_ISO).getTime();
+
+/**
+ * Override de fase para testes locais/preview — NUNCA em produção.
+ * NEXT_PUBLIC_FASE_OVERRIDE=lista   → força a lista gratuita a aberta
+ * NEXT_PUBLIC_FASE_OVERRIDE=inscricao → força a inscrição paga a aberta
+ * Sem variável (ou valor inválido) → decisão pelo relógio do servidor.
+ */
+export function faseForcada(): "lista" | "inscricao" | null {
+  const f = process.env.NEXT_PUBLIC_FASE_OVERRIDE;
+  return f === "lista" || f === "inscricao" ? f : null;
+}
+
+/** true quando a lista gratuita é a fase ativa (override incluído). */
+export function listaAtiva(agora: Date = new Date()): boolean {
+  const f = faseForcada();
+  if (f) return f === "lista";
+  return agora.getTime() < FIM_CAMPANHA_MS;
+}
+
+/** true quando a inscrição paga é a fase ativa (override incluído). */
+export function inscricaoAtiva(agora: Date = new Date()): boolean {
+  const f = faseForcada();
+  if (f) return f === "inscricao";
+  return agora.getTime() >= FIM_CAMPANHA_MS;
+}
 
 /**
  * Força o resultado do teste sem mexer no relógio do servidor:
