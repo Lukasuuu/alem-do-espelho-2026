@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { travarScroll, destravarScroll } from "@/lib/scroll-lock";
 
 type Props = {
   aberto: boolean;
@@ -58,11 +59,9 @@ export default function Modal({
 
     const abridor = document.activeElement as HTMLElement;
 
-    // Trava o scroll do fundo compensando a barra (sem salto de layout).
-    const larguraScroll = window.innerWidth - document.documentElement.clientWidth;
-    const paddingAnterior = document.body.style.paddingRight;
-    document.body.style.overflow = "hidden";
-    if (larguraScroll > 0) document.body.style.paddingRight = `${larguraScroll}px`;
+    // Trava o scroll do fundo (contador partilhado em lib/scroll-lock —
+    // permite empilhar modais e compensa a barra sem salto de layout).
+    travarScroll();
 
     const aoTecla = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -94,8 +93,7 @@ export default function Modal({
     return () => {
       document.removeEventListener("keydown", aoTecla);
       window.clearTimeout(t);
-      document.body.style.overflow = "";
-      document.body.style.paddingRight = paddingAnterior;
+      destravarScroll();
       abridor?.focus();
     };
   }, [aberto, fechar, focoInicial]);

@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { CORTE_ESPERA_ISO } from "@/lib/site";
 import { FIM_CAMPANHA_ISO } from "@/lib/campanha";
+import { faseForcada } from "@/lib/fase";
 
 /**
  * DOIS marcos cronometrados — NÃO são a mesma coisa, não unificar:
@@ -25,15 +26,10 @@ export const CORTE_ESPERA_MS = new Date(CORTE_ESPERA_ISO).getTime();
 export const FIM_CAMPANHA_MS = new Date(FIM_CAMPANHA_ISO).getTime();
 
 /**
- * Override de fase para testes locais/preview — NUNCA em produção.
- * NEXT_PUBLIC_FASE_OVERRIDE=lista   → força a lista gratuita a aberta
- * NEXT_PUBLIC_FASE_OVERRIDE=inscricao → força a inscrição paga a aberta
- * Sem variável (ou valor inválido) → decisão pelo relógio do servidor.
+ * Override de fase (lista|inscricao) — implementação em lib/fase.ts, módulo
+ * client-safe partilhado com os componentes de UI (EventoPage decide qual
+ * modal abre respeitando o override de teste). Sem variável → relógio.
  */
-export function faseForcada(): "lista" | "inscricao" | null {
-  const f = process.env.NEXT_PUBLIC_FASE_OVERRIDE;
-  return f === "lista" || f === "inscricao" ? f : null;
-}
 
 /** true quando a lista gratuita é a fase ativa (override incluído). */
 export function listaAtiva(agora: Date = new Date()): boolean {

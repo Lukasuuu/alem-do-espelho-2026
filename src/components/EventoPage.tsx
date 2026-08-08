@@ -10,23 +10,39 @@ import Realizacao from "@/components/Realizacao";
 import Footer from "@/components/Footer";
 import EcobagModal from "@/components/EcobagModal";
 import WaitlistModal from "@/components/WaitlistModal";
+import InscricaoModal from "@/components/InscricaoModal";
+import PagamentoModal from "@/components/PagamentoModal";
 import { definirAberturaModal } from "@/lib/modal";
+import { faseForcada } from "@/lib/fase";
 import { FIM_CAMPANHA_ISO, LIMITE_BONUS, CAMPAIGN_POLL_MS } from "@/lib/campanha";
 
 const fimCampanhaMs = new Date(FIM_CAMPANHA_ISO).getTime();
 
 /**
- * Versão do evento, a landing completa. Fluxo de pré-inscrição em dois passos:
- * a campanha "Ecobag Bónus" abre primeiro numa modal informativa (quando ativa),
- * depois a lista de espera (WaitlistModal). A inscrição definitiva com pagamento
- * (InscricaoModal + PagamentoModal, ainda em código) reabre após FIM_CAMPANHA_ISO.
+ * Versão do evento, a landing completa. Fluxo de pré-inscrição com gate de fase:
+ *  - campanha "Ecobag Bónus" ativa → abre primeiro a modal informativa, depois
+ *    a lista de espera (WaitlistModal);
+ *  - após FIM_CAMPANHA_ISO (10/08, 10:00) → a inscrição paga (InscricaoModal)
+ *    e a modal de pagamento (PagamentoModal), o mesmo gate das APIs.
+ * O override de teste NEXT_PUBLIC_FASE_OVERRIDE é respeitado no client
+ * (faseForcada em lib/fase) para testar o fluxo pago antes de 10/08.
  * Vive em /alem-do-espelho-2026 (após o corte da lista de espera).
  */
 export default function EventoPage() {
   const [bonusAberto, setBonusAberto] = useState(false);
   const [waitlistAberto, setWaitlistAberto] = useState(false);
+  const [inscricaoAberto, setInscricaoAberto] = useState(false);
+  const [pagamentoAberto, setPagamentoAberto] = useState(false);
+  const [inscricaoDados, setInscricaoDados] = useState<{ id: string; nome: string } | null>(null);
   const [inscritos, setInscritos] = useState<number | null>(null);
   const [encerrado, setEncerrado] = useState(false);
+
+  // Override de teste (lista|inscricao) — constante por build, lido no client.
+  const fase = faseForcada();
+  // Campanha ecobag ativa: bónus não esgotou E antes de FIM_CAMPANHA.
+  const campanhaEcobag = !encerrado && Date.now() < fimCampanhaMs;
+  // Lista gratuita aberta: qualquer momento antes de FIM_CAMPANHA (independente do bónus).
+  const listaAberta = Date.now() < fimCampanhaMs;
 
   // ── Polling do counter da campanha (vive aqui para o disclaimer do pagamento
   //    também saber quando a campanha deixa de estar ativa). ──
@@ -50,14 +66,45 @@ export default function EventoPage() {
     return () => clearInterval(id);
   }, [buscarCount]);
 
-  // ── Fluxo de entrada: campanha ativa abre o bónus, senão vai direto à inscrição. ──
+  // ── Fluxo de entrada, com consciência de fase (override de teste incluído). ──
   const abrirFluxo = useCallback(() => {
-    if (!encerrado && Date.now() < fimCampanhaMs) setBonusAberto(true);
-    else setWaitlistAberto(true);
-  }, [encerrado]);
+    if (fase === "inscricao") {
+      // Override pago (teste pré-10/08): vai direto à inscrição paga.
+      setInscricaoAberto(true);
+      return;
+    }
+    if (fase === "lista") {
+      // Override lista (teste pós-10/08): força a lista gratuita.
+      setWaitlistAberto(true);
+      return;
+    }
+    if (campanhaEcobag) {
+      setBonusAberto(true);
+      return;
+    }
+    if (listaAberta) {
+      // Campanha ecobag já esgotou mas a lista gratuita ainda está aberta.
+      setWaitlistAberto(true);
+      return;
+    }
+    // ≥ FIM_CAMPANHA → a inscrição paga é o fluxo ativo.
+    setInscricaoAberto(true);
+  }, [fase, campanhaEcobag, listaAberta]);
 
   const fecharBonus = useCallback(() => setBonusAberto(false), []);
   const fecharWaitlist = useCallback(() => setWaitlistAberto(false), []);
+  const fecharInscricao = useCallback(() => setInscricaoAberto(false), []);
+  const fecharPagamento = useCallback(() => {
+    setPagamentoAberto(false);
+    setInscricaoDados(null);
+  }, []);
+
+  // Inscrição submetida → fecha o formulário e abre o pagamento com os dados.
+  const aoInscricaoSucesso = useCallback((id: string, nome: string) => {
+    setInscricaoAberto(false);
+    setInscricaoDados({ id, nome });
+    setPagamentoAberto(true);
+  }, []);
 
   // "Quero fazer parte" na modal do bónus: fecha-a e abre a lista de espera.
   const aoQueroFazerParte = useCallback(() => {
@@ -67,12 +114,13 @@ export default function EventoPage() {
 
   const aoCampanhaEncerrar = useCallback(() => setEncerrado(true), []);
 
-  // ── Auto-abertura do EcobagModal ~3 s após carregar (se campanha ativa). ──
+  // ── Auto-abertura do EcobagModal ~3 s após carregar (só ecobag ativa;
+  //    o override pago nunca abre o bónus por cima do fluxo de inscrição). ──
   useEffect(() => {
-    if (encerrado || Date.now() >= fimCampanhaMs) return;
+    if (fase === "inscricao" || !campanhaEcobag) return;
     const t = window.setTimeout(() => setBonusAberto(true), 3000);
     return () => window.clearTimeout(t);
-  }, [encerrado]);
+  }, [fase, campanhaEcobag]);
 
   // O skip-link "Saltar para a inscrição" (layout) abre o fluxo via registo global.
   useEffect(() => {
@@ -101,6 +149,20 @@ export default function EventoPage() {
         onPular={fecharBonus}
       />
       <WaitlistModal aberto={waitlistAberto} fechar={fecharWaitlist} />
+      <InscricaoModal
+        aberto={inscricaoAberto}
+        fechar={fecharInscricao}
+        onSucesso={aoInscricaoSucesso}
+      />
+      {inscricaoDados && (
+        <PagamentoModal
+          aberto={pagamentoAberto}
+          fechar={fecharPagamento}
+          inscricaoId={inscricaoDados.id}
+          nome={inscricaoDados.nome}
+          campanhaAtiva={campanhaEcobag}
+        />
+      )}
     </>
   );
 }

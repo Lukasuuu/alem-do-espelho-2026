@@ -8,6 +8,7 @@ import WaitlistForm from "./WaitlistForm";
 import Countdown from "./Countdown";
 import { site } from "@/lib/site";
 import { FIM_CAMPANHA_ISO } from "@/lib/campanha";
+import { travarScroll, destravarScroll } from "@/lib/scroll-lock";
 
 /** Fecho da lista de espera por extenso (ex.: "segunda-feira, 10 de agosto"). */
 const FECHO_LISTA_EXTENSO = new Intl.DateTimeFormat("pt-PT", {
@@ -45,11 +46,9 @@ export default function WaitlistModal({ aberto, fechar }: Props) {
     // Quem abriu, devolve-se o foco ao fechar.
     abridorRef.current = document.activeElement as HTMLElement;
 
-    // Trava o scroll do fundo compensando a barra (sem salto de layout).
-    const larguraScroll = window.innerWidth - document.documentElement.clientWidth;
-    const paddingAnterior = document.body.style.paddingRight;
-    document.body.style.overflow = "hidden";
-    if (larguraScroll > 0) document.body.style.paddingRight = `${larguraScroll}px`;
+    // Trava o scroll do fundo (contador partilhado em lib/scroll-lock —
+    // permite empilhar modais e compensa a barra sem salto de layout).
+    travarScroll();
 
     const aoTecla = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -84,8 +83,7 @@ export default function WaitlistModal({ aberto, fechar }: Props) {
     return () => {
       document.removeEventListener("keydown", aoTecla);
       window.clearTimeout(t);
-      document.body.style.overflow = "";
-      document.body.style.paddingRight = paddingAnterior;
+      destravarScroll();
       abridorRef.current?.focus();
     };
   }, [aberto, fechar]);
