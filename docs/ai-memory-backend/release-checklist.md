@@ -40,7 +40,7 @@
 ```bash
 # inscrição válida (espera 201) — usar dados de teste
 curl -X POST https://essenceofbeautysalon.com/api/waitlist -H 'Content-Type: application/json' \
-  -d '{"fullName":"Teste QA","email":"qa@example.com","phone":"+351939009874","phoneCountry":"PT","consent":true}'
+  -d '{"fullName":"Teste QA","email":"qa@example.com","phone":"+351928400069","phoneCountry":"PT","consent":true}'
 
 # método não suportado (espera 405)
 curl -s https://essenceofbeautysalon.com/api/waitlist

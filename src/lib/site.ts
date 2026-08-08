@@ -3,7 +3,7 @@
  * Alterar aqui reflete em toda a landing page.
  */
 
-import { FIM_CAMPANHA_ISO } from "@/lib/campanha";
+import { FIM_CAMPANHA_ISO, SALON_WHATSAPP } from "@/lib/campanha";
 
 /**
  * Corte histórico da landing (release manager): 3 de agosto de 2026.
@@ -53,8 +53,12 @@ export const site = {
   contacto: {
     email: "essenceofbeauty.pt@gmail.com",
     whatsapp: {
-      // Mesmo número usado no footer; nunca criar um contacto novo.
-      numero: "351939009874",
+      /**
+       * Número ÚNICO de WhatsApp do projeto — o do salão (351 928 400 069).
+       * Fonte única em campanha.ts (SALON_WHATSAPP); aqui é só um re-export.
+       * Já divergiu uma vez (havia 2 números) — nunca mais.
+       */
+      numero: SALON_WHATSAPP,
       /** Mensagem pré-preenchida do fluxo "Quero Patrocinar". */
       mensagemSponsor: `Olá Vitória!\nCliquei em "Quero Patrocinar" na landing page e gostaria de saber mais informações sobre as oportunidades de patrocínio.\nObrigado.`,
     },

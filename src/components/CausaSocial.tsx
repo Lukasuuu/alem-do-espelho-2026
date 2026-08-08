@@ -7,6 +7,7 @@ import { BadgeCheck, Check, Heart } from "lucide-react";
 import Reveal from "./Reveal";
 import ModalPontosRecolha from "./ModalPontosRecolha";
 import SponsorFlow from "./SponsorFlow";
+import VitrinePatrocinadoras from "./VitrinePatrocinadoras";
 import Countdown from "./Countdown";
 import { useCampaignCountdown } from "@/hooks/useCampaignCountdown";
 import { FIM_CAMPANHA_ISO } from "@/lib/campanha";
@@ -272,6 +273,8 @@ export default function CausaSocial() {
                 social e fortalece comunidades em Portugal e em Angola. Cada
                 parceria ajuda-nos a chegar a mais mulheres.
               </p>
+              <VitrinePatrocinadoras />
+              {/* CTA de patrocínio mantido abaixo da vitrine (fluxo de aquisição) */}
               <SponsorFlow />
 
               <p className="display mt-[clamp(24px,3.5vw,40px)] text-[clamp(1.75rem,3.5vw,2.5rem)] uppercase leading-[1.05] text-ouro-degrade-creme">

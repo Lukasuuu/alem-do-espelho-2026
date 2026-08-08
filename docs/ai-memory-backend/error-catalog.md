@@ -30,7 +30,7 @@
 - **Gatilho:** `validarTelefone(phone, phoneCountry)` falha.
 - **Detector rápido:** `!telefone.ok || !telefone.e164`.
 - **Correção padrão:** 422 com `campos:{phone: telefone.erro}`; normalização E.164 quando válido.
-- **Teste mínimo:** `+351 123` (inválido PT) → 422; `+351 939 009 874` → OK.
+- **Teste mínimo:** `+351 123` (inválido PT) → 422; `+351 928 400 069` → OK.
 
 ## B-005 — Erro do Supabase (RPC) → 502 / 422 mapeado
 
