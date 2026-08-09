@@ -51,6 +51,16 @@ export default function Modal({
   const [montado, setMontado] = useState(false);
   const tituloId = useId();
 
+  // `fechar` e `focoInicial` são lidos via ref (não são deps do efeito). O pai
+  // pode re-renderizar a cada segundo (CausaSocial tem um countdown partilhado)
+  // e criar um `fechar` novo a cada render — se o efeito dependesse dele, o
+  // cleanup correria com o modal ABERTO e `abridor?.focus()` roubava o foco do
+  // input → blur → validação disparava sem o utilizador tocar em nada.
+  const fecharRef = useRef(fechar);
+  fecharRef.current = fechar;
+  const focoInicialRef = useRef(focoInicial);
+  focoInicialRef.current = focoInicial;
+
   // createPortal ao <body>, só depois de o cliente montar.
   useEffect(() => setMontado(true), []);
 
@@ -65,7 +75,7 @@ export default function Modal({
 
     const aoTecla = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        fechar();
+        fecharRef.current();
         return;
       }
       if (e.key === "Tab" && painelRef.current) {
@@ -87,16 +97,19 @@ export default function Modal({
 
     // Foco no primeiro elemento (input no formulário, botão/link nos restantes).
     const t = window.setTimeout(() => {
-      painelRef.current?.querySelector<HTMLElement>(focoInicial)?.focus();
+      painelRef.current?.querySelector<HTMLElement>(focoInicialRef.current)?.focus();
     }, 60);
 
+    // O efeito só depende de `aberto`: o cleanup corre apenas no fecho real
+    // (ou unmount), nunca em re-renders do pai — restaurar o foco aí seria
+    // roubá-lo de um campo já em uso (ver refs acima).
     return () => {
       document.removeEventListener("keydown", aoTecla);
       window.clearTimeout(t);
       destravarScroll();
       abridor?.focus();
     };
-  }, [aberto, fechar, focoInicial]);
+  }, [aberto]);
 
   function aoClicarFora(e: React.MouseEvent) {
     if (e.target === overlayRef.current) fechar();

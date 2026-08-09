@@ -14,14 +14,12 @@ type Variante = "waitlist" | "sponsor";
 type Props = {
   /** waitlist (padrão) ou sponsor, muda textos, endpoint e sucesso. */
   variant?: Variante;
-  /** Nível de parceria escolhido (só variant="sponsor") — lido apenas, nunca editável aqui. */
-  nivel?: number | null;
   /**
-   * Chamado quando a submissão sponsor é aceite. Entrega os dados do registo
-   * (id + nível) para o pai abrir a modal de pagamento por cima. O waitlist
-   * não usa este callback.
+   * Chamado quando a submissão sponsor é aceite. Entrega o id do registo para
+   * o pai abrir o passo B (escolha do nível) por cima. O waitlist não usa
+   * este callback.
    */
-  onSucesso?: (dados?: { id: string; nivel: number; nome: string }) => void;
+  onSucesso?: (dados?: { id: string; nome: string }) => void;
 };
 
 const NOME_COMPLETO = /^\p{L}[\p{L}'’.-]{1,}(?:\s+\p{L}[\p{L}'’.-]{1,})+$/u;
@@ -39,22 +37,24 @@ function lerUtm(): Record<string, string> {
   return utm;
 }
 
-export default function WaitlistForm({ variant = "waitlist", nivel = null, onSucesso }: Props) {
+export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props) {
   const ehSponsor = variant === "sponsor";
-  const empresa = site.anfitria.empresa.replace("CEO e fundadora do ", "");
+  const anfitria = site.anfitria.empresa.replace("CEO e fundadora do ", "");
 
   /** Textos e destino por variante, mesma lógica, sem duplicar código. */
   const config = ehSponsor
     ? {
         endpoint: "/api/sponsor",
-        botao: "Quero Patrocinar",
-        consentimento: `Autorizo o ${empresa} a contactar-me por email e telemóvel sobre oportunidades de patrocínio do ${site.nome}. Podes remover os teus dados quando quiseres.`,
+        // Passo A → B: depois de guardar os dados a pessoa continua para a
+        // escolha do nível. "Quero Patrocinar" já está no botão da página.
+        botao: "Continuar",
+        consentimento: `Autorizo o ${anfitria} a contactar-me por email e telemóvel sobre oportunidades de patrocínio do ${site.nome}. Podes remover os teus dados quando quiseres.`,
         listaFechada: "O registo de patrocínio está temporariamente indisponível.",
       }
     : {
         endpoint: "/api/waitlist",
         botao: "Quero fazer parte",
-        consentimento: `Autorizo o ${empresa} a contactar-me por email e telemóvel sobre o ${site.nome}.`,
+        consentimento: `Autorizo o ${anfitria} a contactar-me por email e telemóvel sobre o ${site.nome}.`,
         listaFechada: "As inscrições na lista de espera estão fechadas.",
       };
 
@@ -63,6 +63,7 @@ export default function WaitlistForm({ variant = "waitlist", nivel = null, onSuc
   const [phone, setPhone] = useState("");
   const [phoneCountry, setPhoneCountry] = useState<string>("PT");
   const [consent, setConsent] = useState(false);
+  const [empresa, setEmpresa] = useState(""); // só no patrocínio (opcional)
   const [website, setWebsite] = useState(""); // honeypot
 
   const [estado, setEstado] = useState<Estado>("inativo");
@@ -151,9 +152,9 @@ export default function WaitlistForm({ variant = "waitlist", nivel = null, onSuc
           elapsedMs: Date.now() - montadoEm.current,
           locale: typeof navigator !== "undefined" ? navigator.language : undefined,
           utm: lerUtm(),
-          // Só no patrocínio: o nível escolhido entra no corpo. Sem nível a rota
-          // devolve 422 com campo claro — o pai só abre este formulário após escolher.
-          ...(ehSponsor && typeof nivel === "number" ? { nivel } : {}),
+          // Só no patrocínio: nome da empresa/marca (opcional). O nível NÃO
+          // entra aqui — é escolhido no passo B (PATCH /api/sponsor/nivel).
+          empresa: ehSponsor ? empresa.trim() : undefined,
         }),
       });
 
@@ -167,12 +168,11 @@ export default function WaitlistForm({ variant = "waitlist", nivel = null, onSuc
       }
 
       if (ehSponsor) {
-        // O fluxo de patrocínio mantém este modal aberto e abre o de pagamento
-        // por cima, entregando os dados do registo (id + nível) ao pai.
+        // O fluxo de patrocínio mantém este modal aberto e abre o passo B
+        // (escolha do nível) por cima, entregando o id do registo ao pai.
         setEstado("inativo");
         onSucesso?.({
           id: dados.id,
-          nivel: dados.nivel,
           nome: normalizarNome(fullName),
         });
       } else {
@@ -303,34 +303,6 @@ export default function WaitlistForm({ variant = "waitlist", nivel = null, onSuc
           )}
         </div>
 
-        {/* Email */}
-        <div>
-          <label htmlFor="email" className="eyebrow mb-2.5 block text-creme/55">
-            Email
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            enterKeyHint="next"
-            className="campo disabled:cursor-not-allowed disabled:opacity-50"
-            placeholder="maria@exemplo.com"
-            disabled={listaFechada}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            onBlur={() => aoSair("email")}
-            aria-invalid={campoInvalido("email")}
-            aria-describedby={campoInvalido("email") ? "erro-email" : undefined}
-          />
-          {campoInvalido("email") && (
-            <p id="erro-email" className="mt-2 text-[0.8125rem] text-[#f3c0c0]">
-              {erros.email}
-            </p>
-          )}
-        </div>
-
         {/* Telemóvel */}
         <div>
           <label htmlFor="phone" className="eyebrow mb-2.5 block text-creme/55">
@@ -386,6 +358,58 @@ export default function WaitlistForm({ variant = "waitlist", nivel = null, onSuc
           )}
         </div>
 
+        {/* Email */}
+        <div>
+          <label htmlFor="email" className="eyebrow mb-2.5 block text-creme/55">
+            Email
+          </label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            enterKeyHint="next"
+            className="campo disabled:cursor-not-allowed disabled:opacity-50"
+            placeholder="maria@exemplo.com"
+            disabled={listaFechada}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onBlur={() => aoSair("email")}
+            aria-invalid={campoInvalido("email")}
+            aria-describedby={campoInvalido("email") ? "erro-email" : undefined}
+          />
+          {campoInvalido("email") && (
+            <p id="erro-email" className="mt-2 text-[0.8125rem] text-[#f3c0c0]">
+              {erros.email}
+            </p>
+          )}
+        </div>
+
+        {/* Empresa / marca — só no patrocínio, opcional (CORREÇÃO nº6) */}
+        {ehSponsor && (
+          <div>
+            <label htmlFor="empresa" className="eyebrow mb-2.5 block text-creme/55">
+              Nome da empresa ou marca{" "}
+              <span className="normal-case tracking-normal text-creme/40">
+                (opcional)
+              </span>
+            </label>
+            <input
+              id="empresa"
+              name="empresa"
+              type="text"
+              autoComplete="organization"
+              enterKeyHint="next"
+              className="campo disabled:cursor-not-allowed disabled:opacity-50"
+              placeholder="O teu negócio — ou deixa em branco se patrocinas a título individual"
+              disabled={listaFechada}
+              value={empresa}
+              onChange={(e) => setEmpresa(e.target.value)}
+            />
+          </div>
+        )}
+
         {/* Honeypot: invisível para pessoas, irresistível para robôs */}
         <div aria-hidden className="absolute left-[-9999px] h-0 w-0 overflow-hidden">
           <label htmlFor="website">Website</label>
@@ -428,21 +452,10 @@ export default function WaitlistForm({ variant = "waitlist", nivel = null, onSuc
         </div>
       </div>
 
-      {ehSponsor && typeof nivel === "number" && (
-        <p className="mt-8 flex items-center justify-center gap-2.5 text-[0.875rem] text-creme/70">
-          <span className="eyebrow text-creme/45">Nível de parceria</span>
-          <span className="rounded-full border border-rosa/40 bg-rosa/10 px-3 py-1 font-medium tabular-nums text-creme">
-            {nivel}€
-          </span>
-        </p>
-      )}
-
       <button
         type="submit"
         disabled={estado === "a-enviar" || listaFechada}
-        className={`group flex w-full items-center justify-center gap-3 rounded-full bg-rosa px-8 py-4 text-[0.9375rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro hover:shadow-[0_12px_40px_-12px_rgba(186,121,132,0.7)] disabled:cursor-not-allowed disabled:opacity-60 ${
-          ehSponsor && typeof nivel === "number" ? "mt-4" : "mt-8"
-        }`}
+        className="group mt-8 flex w-full items-center justify-center gap-3 rounded-full bg-rosa px-8 py-4 text-[0.9375rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro hover:shadow-[0_12px_40px_-12px_rgba(186,121,132,0.7)] active:scale-[0.985] motion-reduce:active:scale-100 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {estado === "a-enviar" ? (
           <>

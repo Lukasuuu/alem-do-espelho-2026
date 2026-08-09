@@ -13,31 +13,33 @@ function googleMapsUrl(morada: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(morada)}`;
 }
 
+// Logotipos em /public/causa/ (pasta partilhada com a página principal).
+// NÃO mover para public/alem-do-espelho-2026/ sem atualizar estes caminhos.
 const pontos = [
   {
     nome: "Box RM",
     morada: "Rua da Quinta do Feital 44, 4700-154 Braga",
-    logo: "/alem-do-espelho-2026/causa/ponto-boxrm.webp",
+    logo: "/causa/ponto-boxrm.webp",
   },
   {
     nome: "100 Culpa",
     morada: "Rua da Alegria 145, 4000-042 Porto",
-    logo: "/alem-do-espelho-2026/causa/ponto-100culpa.webp",
+    logo: "/causa/ponto-100culpa.webp",
   },
   {
     nome: "New Flower Studio",
     morada: "R. Cândido de Oliveira 119, 4715-213 Braga",
-    logo: "/alem-do-espelho-2026/causa/ponto-newflower.webp",
+    logo: "/causa/ponto-newflower.webp",
   },
   {
     nome: "Yeshua Care Center",
     morada: "R. Cruz de Pedra 94 Lj.47, 4700-213 Braga",
-    logo: "/alem-do-espelho-2026/causa/ponto-yeshua.webp",
+    logo: "/causa/ponto-yeshua.webp",
   },
   {
     nome: "Cadidja Araujo",
     morada: "R. Dom António Bento Martins Júnior 31, 4710-422 Braga",
-    logo: "/alem-do-espelho-2026/causa/ponto-cadidja.webp",
+    logo: "/causa/ponto-cadidja.webp",
   },
 ] as const;
 

@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export const preferredRegion = ["cdg1"];
 
 type Resposta =
-  | { ok: true; status: "sponsor"; id: string; nivel: number }
+  | { ok: true; status: "sponsor"; id: string; nivel: number | null }
   | { ok: false; mensagem: string; campos?: Record<string, string> };
 
 /** Tempo mínimo plausível entre carregar o formulário e submeter. */
@@ -28,10 +28,12 @@ function mascararEmail(email: string): string {
 }
 
 /**
- * Regista o interesse de patrocínio com o nível escolhido (75/150/200€) e
- * status 'pendente'. O método de pagamento só é marcado depois, na modal
- * (PATCH /api/sponsor/metodo). Mesmo padrão do waitlist/inscrição: RLS +
- * função SECURITY DEFINER via RPC, sem service role.
+ * Regista o interesse de patrocínio (CORREÇÃO nº3): no POST do formulário o
+ * nível AINDA não foi escolhido — fica null e é marcado depois, no passo B
+ * (PATCH /api/sponsor/nivel). A empresa/marca é opcional (CORREÇÃO nº6) e o
+ * consentimento RGPD é obrigatório, como na inscrição. O método de pagamento
+ * é marcado por fim (PATCH /api/sponsor/metodo). Mesmo padrão do
+ * waitlist/inscrição: RLS + função SECURITY DEFINER via RPC, sem service role.
  */
 export async function POST(request: Request): Promise<NextResponse<Resposta>> {
   // 1. Limite de tentativas por IP
@@ -102,7 +104,10 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
       p_nome: dados.fullName,
       p_email: dados.email,
       p_telefone: telefone.e164,
-      p_nivel: dados.nivel,
+      // Nível escolhido só no passo B — aqui ainda null.
+      p_nivel: dados.nivel ?? null,
+      p_empresa: dados.empresa || null,
+      p_consentimento: true,
       p_ip_hash: hashIp(ip),
     });
 
@@ -137,13 +142,19 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
       return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor }, { status: 502 });
     }
 
-    const resultado = data as { status: "criada" | "ja_existente"; id: string; nivel: number };
+    const resultado = data as {
+      status: "criada" | "ja_existente";
+      id: string;
+      nivel: number | null;
+    };
 
-    // 7. Observabilidade, sem PII em claro (RGPD)
+    // 7. Observabilidade, sem PII em claro (RGPD) — email mascarado; a empresa
+    //    é um nome de marca público, não dado pessoal, e ajuda a identificar.
     console.info(
       "[sponsor] novo interesse de patrocínio",
       JSON.stringify({
         email: mascararEmail(dados.email),
+        empresa: dados.empresa || null,
         nivel: resultado.nivel,
         status: resultado.status,
         pais: dados.phoneCountry,

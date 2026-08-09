@@ -28,3 +28,8 @@ export function destravarScroll() {
     document.body.style.paddingRight = paddingAnterior;
   }
 }
+
+/** Quantos modais estão abertos neste momento (contador partilhado). */
+export function contarModaisAbertos() {
+  return referencias;
+}

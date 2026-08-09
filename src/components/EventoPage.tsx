@@ -9,6 +9,7 @@ import Gallery from "@/components/Gallery";
 import Realizacao from "@/components/Realizacao";
 import Footer from "@/components/Footer";
 import EcobagModal from "@/components/EcobagModal";
+import { contarModaisAbertos } from "@/lib/scroll-lock";
 import WaitlistModal from "@/components/WaitlistModal";
 import InscricaoModal from "@/components/InscricaoModal";
 import PagamentoModal from "@/components/PagamentoModal";
@@ -116,9 +117,15 @@ export default function EventoPage() {
 
   // ── Auto-abertura do EcobagModal ~3 s após carregar (só ecobag ativa;
   //    o override pago nunca abre o bónus por cima do fluxo de inscrição). ──
+  // Se já houver outro modal aberto (ex. fluxo de patrocínio), não abrir o
+  // bónus por cima: o auto-foco roubaria o campo em uso e dispararia validação
+  // sem o utilizador tocar em nada (contador partilhado em lib/scroll-lock).
   useEffect(() => {
     if (fase === "inscricao" || !campanhaEcobag) return;
-    const t = window.setTimeout(() => setBonusAberto(true), 3000);
+    const t = window.setTimeout(() => {
+      if (contarModaisAbertos() > 0) return;
+      setBonusAberto(true);
+    }, 3000);
     return () => window.clearTimeout(t);
   }, [fase, campanhaEcobag]);
 

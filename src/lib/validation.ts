@@ -131,17 +131,47 @@ export const METODOS_SPONSOR = ["mbway", "transferencia"] as const;
 export type MetodoSponsor = (typeof METODOS_SPONSOR)[number];
 
 /**
- * Registo de patrocínio: mesmos campos do waitlist (nome, email, telemóvel,
- * consentimento, anti-bot) mais o nível de parceria escolhido.
+ * Registo de patrocínio (CORREÇÃO nº3): mesmos campos do waitlist (nome,
+ * email, telemóvel, consentimento, anti-bot) mais a empresa/marca OPCIONAL.
+ * O nível já NÃO entra aqui — a escolha passou para o passo B (depois do
+ * formulário) e é marcada num PATCH próprio (/api/sponsor/nivel).
  */
 export const sponsorSchema = waitlistSchema.extend({
+  // Campo novo (CORREÇÃO nº6): empresa/marca, opcional — quem patrocina a
+  // título individual deixa em branco.
+  empresa: z
+    .string()
+    .transform(normalizarNome)
+    .pipe(
+      z
+        .string()
+        .max(120, "Nome da empresa ou marca demasiado longo.")
+    )
+    .optional()
+    .default(""),
+
+  // Nível escolhido no passo B — ausente no POST do formulário (null),
+  // presente apenas se algo o enviar (mantém a validação de fronteira).
+  nivel: z
+    .union(
+      [z.literal(75), z.literal(150), z.literal(200)],
+      { errorMap: () => ({ message: "Escolhe um nível de parceria." }) }
+    )
+    .nullish(),
+});
+
+export type SponsorInput = z.input<typeof sponsorSchema>;
+
+/** PATCH que marca o nível escolhido no passo B (depois do formulário). */
+export const nivelSponsorSchema = z.object({
+  sponsorId: z.string().uuid("Parceria inválida."),
   nivel: z.union(
     [z.literal(75), z.literal(150), z.literal(200)],
     { errorMap: () => ({ message: "Escolhe um nível de parceria." }) }
   ),
 });
 
-export type SponsorInput = z.input<typeof sponsorSchema>;
+export type NivelSponsorInput = z.input<typeof nivelSponsorSchema>;
 
 /** PATCH que marca o método do patrocínio (MB Way ou transferência). */
 export const metodoSponsorSchema = z.object({

@@ -106,6 +106,17 @@
   --color-causa-verde-fundo: #4F604D;
 
   --ease-suave: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Faixa de logos de patrocinadores (REESCRITA) — marquee CSS puro:
+     translateX(-50%) sobre o bloco duplicado, linear. Ativa-se só com
+     >= 5 patrocinadores; com menos, a fila é estática (ver componente). */
+  --animate-marquee: marquee 28s linear infinite;
+
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
 }
 
 /* ───────────────────────────────────────────────
@@ -315,7 +326,8 @@ body {
   font-size: 1rem;
   transition:
     border-color 0.25s var(--ease-suave),
-    background-color 0.25s var(--ease-suave);
+    background-color 0.25s var(--ease-suave),
+    box-shadow 0.25s var(--ease-suave);
 }
 
 .campo::placeholder {
@@ -328,8 +340,10 @@ body {
 
 .campo:focus {
   outline: none;
-  border-color: var(--color-blush);
+  border-color: var(--color-rosa);
   background: rgb(255 247 233 / 0.11);
+  /* Halo de foco no rosa da marca — token, nunca hex (REESCRITA 2.4) */
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-rosa) 26%, transparent);
 }
 
 .campo[aria-invalid="true"] {
@@ -444,5 +458,10 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+  /* O marquee nunca dispara a meia-volta (translateX -50%) — desligado de todo.
+     O componente (useReducedMotion) troca para a fila estática centrada. */
+  .animate-marquee {
+    animation: none !important;
   }
 }

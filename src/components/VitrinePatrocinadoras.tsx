@@ -1,118 +1,42 @@
-"use client";
-
-import MolduraEspelho from "./MolduraEspelho";
-import LocalImage from "./LocalImage";
-import { patrocinadores, type Patrocinador } from "@/lib/patrocinadores";
-
-/** Altura fixa do tile do logo (px) — o azulejo e o nome partilham esta altura. */
-const ALTURA_LOGO = 40;
-
-const grupos = [
-  { categoria: "patrocinador", label: "Patrocinadores" },
-  { categoria: "apoio_tecnico", label: "Apoio técnico" },
-] as const;
+import AzulejoLogo from "./AzulejoLogo";
+import MarqueeLogos from "./MarqueeLogos";
+import { patrocinadores } from "@/lib/patrocinadores";
 
 /**
- * Vitrine de patrocinadoras e apoio técnico.
+ * Vitrine de patrocinadores (REESCRITA) — faixa de LOGOS apenas.
  *
- * Renderiza dois grupos separados (Patrocinadores / Apoio técnico) — nunca
- * misturados no mesmo grid. Cada cartão: foto 4:5 em moldura compacta,
- * azulejo do logo (altura fixa, fundo próprio) ao lado do nome, título
- * profissional, história curta e citação em destaque. História e citação só
- * são renderizadas quando aprovadas (vêm vazias em lib/patrocinadores.ts).
+ * Substitui os cartões (foto + nome + título) da landing por azulejos de marca:
+ * logo com o seu fundo próprio, altura fixa 72px, cantos arredondados, padding
+ * uniforme, object-fit contain. Sem fotos, sem nomes, sem títulos — a identidade
+ * fica toda no logo. (O Modal "Quero Patrocinar" mantém os cartões com foto.)
+ *
+ * Animação condicional lida a partir de PATROCINADORES em lib/patrocinadores.ts:
+ *   - < 5 patrocinadores → fila estática centrada, sem animação;
+ *   - >= 5              → marquee CSS contínuo (MarqueeLogos).
  */
-export default function VitrinePatrocinadoras() {
+const LIMITE_MARQUEE = 5;
+
+function FilaEstatica() {
   return (
-    <div className="mt-10 space-y-14">
-      {grupos.map((grupo) => {
-        const lista = patrocinadores.filter(
-          (p) => p.categoria === grupo.categoria
-        );
-        if (lista.length === 0) return null;
-
-        return (
-          <div key={grupo.categoria}>
-            {/* Rótulo do grupo, centrado, entre dois traços dourados */}
-            <div className="mb-7 flex items-center justify-center gap-4">
-              <span className="h-px w-10 bg-dourado/40" aria-hidden />
-              <span className="eyebrow text-musgo">{grupo.label}</span>
-              <span className="h-px w-10 bg-dourado/40" aria-hidden />
-            </div>
-
-            <div className="grid justify-items-center gap-8 md:grid-cols-2">
-              {lista.map((patrocinador) => (
-                <Cartao key={patrocinador.id} patrocinador={patrocinador} />
-              ))}
-            </div>
-          </div>
-        );
-      })}
+    <div className="flex flex-wrap items-center justify-center gap-6">
+      {patrocinadores.map((p) => (
+        <AzulejoLogo key={p.id} logo={p.logo} flexivel />
+      ))}
     </div>
   );
 }
 
-function Cartao({ patrocinador }: { patrocinador: Patrocinador }) {
-  const { foto, logo, nome, titulo, historia, citacao } = patrocinador;
-
-  // Azulejo do logo: altura fixa (ALTURA_LOGO), largura proporcional ao
-  // asset — assim um logótipo horizontal (Lígia) não encolhe dentro de um
-  // quadrado e mantém-se legível, sempre com o fundo baked-in combinado.
-  const larguraLogo = Math.round((ALTURA_LOGO * logo.width) / logo.height);
-
+export default function VitrinePatrocinadoras() {
   return (
-    <div className="vidro-cartao w-full max-w-md rounded-2xl p-6 text-left sm:p-7">
-      {/* Foto 4:5 em moldura compacta — centro do cartão */}
-      <MolduraEspelho variante="compact" className="mx-auto w-full max-w-[14rem] p-2">
-        <div
-          className="relative overflow-hidden rounded-sm bg-creme-profundo"
-          style={{ aspectRatio: "4 / 5" }}
-        >
-          <LocalImage
-            src={foto.src}
-            alt={foto.alt}
-            width={foto.width}
-            height={foto.height}
-            className="h-full w-full object-cover"
-          />
-        </div>
-      </MolduraEspelho>
-
-      {/* Azulejo do logo + nome — mesma altura (ALTURA_LOGO) */}
-      <div className="mt-5 flex h-10 items-center gap-3">
-        <span
-          className="flex h-10 shrink-0 items-center justify-center overflow-hidden rounded-md ring-1 ring-black/5"
-          style={{ backgroundColor: logo.fundoHex, width: larguraLogo }}
-        >
-          <LocalImage
-            src={logo.src}
-            alt={logo.alt}
-            width={logo.width}
-            height={logo.height}
-            className="h-full w-full object-contain"
-          />
-        </span>
-        <span className="display min-w-0 text-[1.125rem] leading-tight text-vinho">
-          {nome}
-        </span>
+    <div className="mx-auto mt-10 max-w-[42rem]">
+      {/* Rótulo do grupo, centrado, entre dois traços dourados */}
+      <div className="mb-7 flex items-center justify-center gap-4">
+        <span className="h-px w-10 bg-dourado/40" aria-hidden />
+        <span className="eyebrow text-musgo">Patrocinadoras</span>
+        <span className="h-px w-10 bg-dourado/40" aria-hidden />
       </div>
 
-      <p className="mt-1.5 text-[0.8125rem] leading-snug text-carvao/60">
-        {titulo}
-      </p>
-
-      {/* História curta — só quando aprovada (placeholder vazio não renderiza) */}
-      {historia && (
-        <p className="mt-3 text-[0.9375rem] leading-relaxed text-carvao/75">
-          {historia}
-        </p>
-      )}
-
-      {/* Citação em destaque — só quando aprovada */}
-      {citacao && (
-        <blockquote className="mt-4 border-l-2 border-dourado/50 pl-4 text-[0.9375rem] italic leading-relaxed text-vinho/85">
-          “{citacao}”
-        </blockquote>
-      )}
+      {patrocinadores.length >= LIMITE_MARQUEE ? <MarqueeLogos /> : <FilaEstatica />}
     </div>
   );
 }
