@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { BadgeCheck, Check, Heart } from "lucide-react";
 import Reveal from "./Reveal";
@@ -50,6 +51,22 @@ type Props = { faseInscricaoAtiva: boolean };
 export default function CausaSocial({ faseInscricaoAtiva }: Props) {
   const [pontosAberto, setPontosAberto] = useState(false);
   const campanha = useCampaignCountdown();
+  const router = useRouter();
+
+  // ── Viragem ao vivo (FIM_CAMPANHA_ISO = 10/08 10:00 Lisboa) ──
+  // Quando a contagem chega a zero, ~2 s depois fazemos router.refresh(): o
+  // servidor (force-dynamic + revalidate=0) volta a calcular a fase e a secção
+  // de patrocinadores liga sem reload forçado. A guarda refreshAgendado garante
+  // UMA única chamada por sessão de página — sem loop mesmo que o servidor
+  // responda "lista" (o refresh é idempotente e não volta a agendar).
+  const refreshAgendado = useRef(false);
+  useEffect(() => {
+    if (campanha.encerrado && !refreshAgendado.current) {
+      refreshAgendado.current = true;
+      const t = window.setTimeout(() => router.refresh(), 2000);
+      return () => window.clearTimeout(t);
+    }
+  }, [campanha.encerrado, router]);
 
   return (
     <>
