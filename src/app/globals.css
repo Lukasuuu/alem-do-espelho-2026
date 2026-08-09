@@ -107,16 +107,8 @@
 
   --ease-suave: cubic-bezier(0.22, 1, 0.36, 1);
 
-  /* Faixa de logos de patrocinadores (REESCRITA) — marquee CSS puro:
-     translateX(-50%) sobre o bloco duplicado, linear. Ativa-se só com
-     >= 5 patrocinadores; com menos, a fila é estática (ver componente). */
-  --animate-marquee: marquee 28s linear infinite;
-
-  @keyframes marquee {
-    to {
-      transform: translateX(-50%);
-    }
-  }
+  /* (O movimento da faixa de logos saiu do CSS para a Web Animations API —
+     ver MarqueeLogos.tsx e o isolamento de foco em .marquee-foco, abaixo.) */
 }
 
 /* ───────────────────────────────────────────────
@@ -351,6 +343,37 @@ body {
   background: rgb(232 139 139 / 0.08);
 }
 
+/* ───────────────────────────────────────────────
+   MARQUEE DE LOGOS — Isolamento de foco (REESCRITA 3)
+   Estado padrão: logos meio-apagados (0.4 + desfoque subtil).
+   Hover do contentor: apaga os vizinhos (0.25 + desfoque forte) e isola
+   o logo sob o cursor. Hover direto: revela 100% das cores, sem desfoque,
+   com leve aproximação.
+   A ORDEM das regras é o mecanismo: hover-direto vem por último e ganha
+   sobre o hover do contentor (mesma especificidade, fonte posterior vence).
+   O movimento em si é controlado por JS (Web Animations API) — ver
+   MarqueeLogos.tsx. Fora de .marquee-foco (fila estática, reduced-motion)
+   o azulejo fica neutro. */
+.marquee-foco .azulejo-logo {
+  opacity: 0.4;
+  filter: blur(1.5px) grayscale(30%);
+  transition:
+    opacity 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    filter 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.marquee-foco:hover .azulejo-logo {
+  opacity: 0.25;
+  filter: blur(2.5px) grayscale(100%);
+}
+
+.marquee-foco .azulejo-logo:hover {
+  opacity: 1;
+  filter: blur(0px) grayscale(0%);
+  transform: scale(1.08);
+}
+
 /* Grão sutil de papel */
 .grao::before {
   content: "";
@@ -459,9 +482,6 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-  /* O marquee nunca dispara a meia-volta (translateX -50%) — desligado de todo.
-     O componente (useReducedMotion) troca para a fila estática centrada. */
-  .animate-marquee {
-    animation: none !important;
-  }
+  /* O movimento do marquee é gerado pela Web Animations API (MarqueeLogos.tsx);
+     o componente (useReducedMotion) troca para a fila estática centrada. */
 }

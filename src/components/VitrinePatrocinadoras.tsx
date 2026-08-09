@@ -11,10 +11,10 @@ import { patrocinadores } from "@/lib/patrocinadores";
  * fica toda no logo. (O Modal "Quero Patrocinar" mantém os cartões com foto.)
  *
  * Animação condicional lida a partir de PATROCINADORES em lib/patrocinadores.ts:
- *   - < 5 patrocinadores → fila estática centrada, sem animação;
- *   - >= 5              → marquee CSS contínuo (MarqueeLogos).
+ *   - < 2 patrocinadores → fila estática centrada, sem animação (fallback);
+ *   - >= 2              → marquee contínuo suavizado (MarqueeLogos).
  */
-const LIMITE_MARQUEE = 5;
+const LIMITE_MARQUEE = 2;
 
 function FilaEstatica() {
   return (
