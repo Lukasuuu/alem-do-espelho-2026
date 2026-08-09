@@ -344,19 +344,21 @@ body {
 }
 
 /* ───────────────────────────────────────────────
-   MARQUEE DE LOGOS — Isolamento de foco (REESCRITA 3)
-   Estado padrão: logos meio-apagados (0.4 + desfoque subtil).
-   Hover do contentor: apaga os vizinhos (0.25 + desfoque forte) e isola
+   MARQUEE DE LOGOS — Isolamento de foco (REESCRITA 4)
+   Estado padrão: logos meio-apagados (0.55 + desfoque subtil).
+   Hover do contentor: apaga os vizinhos (0.3 + desfoque forte) e isola
    o logo sob o cursor. Hover direto: revela 100% das cores, sem desfoque,
-   com leve aproximação.
+   com leve aproximação (1.06).
+   SEM grayscale em nenhum estado — os logos têm fundo baked-in e a
+   dessaturação mancharia os blocos; opacity + blur bastam para o foco.
    A ORDEM das regras é o mecanismo: hover-direto vem por último e ganha
    sobre o hover do contentor (mesma especificidade, fonte posterior vence).
    O movimento em si é controlado por JS (Web Animations API) — ver
    MarqueeLogos.tsx. Fora de .marquee-foco (fila estática, reduced-motion)
    o azulejo fica neutro. */
 .marquee-foco .azulejo-logo {
-  opacity: 0.4;
-  filter: blur(1.5px) grayscale(30%);
+  opacity: 0.55;
+  filter: blur(1px);
   transition:
     opacity 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
     filter 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
@@ -364,14 +366,14 @@ body {
 }
 
 .marquee-foco:hover .azulejo-logo {
-  opacity: 0.25;
-  filter: blur(2.5px) grayscale(100%);
+  opacity: 0.3;
+  filter: blur(2px);
 }
 
 .marquee-foco .azulejo-logo:hover {
   opacity: 1;
-  filter: blur(0px) grayscale(0%);
-  transform: scale(1.08);
+  filter: blur(0px);
+  transform: scale(1.06);
 }
 
 /* Grão sutil de papel */
@@ -482,6 +484,9 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-  /* O movimento do marquee é gerado pela Web Animations API (MarqueeLogos.tsx);
-     o componente (useReducedMotion) troca para a fila estática centrada. */
+  /* O marquee (MarqueeLogos.tsx) NÃO é desligado aqui — é WAAPI
+     (element.animate()), imune a animation-duration/iteration-count de CSS, e
+     corre em TODAS as máquinas por decisão de produto (pausa por hover/focus/
+     fora-de-ecrã satisfaz WCAG 2.2.2). O resto da página mantém reduced-motion
+     (Reveal, modal, botões). */
 }

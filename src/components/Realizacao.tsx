@@ -164,7 +164,7 @@ export default function Realizacao() {
         <CausaSocial />
 
         {/* ── Zona B: faixa das entidades, largura total, separada por um fio ── */}
-        <div className="mt-[clamp(56px,8vw,104px)] border-t border-vinho/10 pt-[clamp(40px,5vw,64px)]">
+        <div className="mt-[clamp(32px,4vw,56px)] border-t border-vinho/10 pt-[clamp(40px,5vw,64px)]">
           <Reveal>
             <ul className="grid grid-cols-1 gap-10 sm:grid-cols-3 sm:gap-6">
               {entidades.map((entidade) => (

@@ -1,6 +1,4 @@
-import AzulejoLogo from "./AzulejoLogo";
 import MarqueeLogos from "./MarqueeLogos";
-import { patrocinadores } from "@/lib/patrocinadores";
 
 /**
  * Vitrine de patrocinadores (REESCRITA) — faixa de LOGOS apenas.
@@ -10,22 +8,14 @@ import { patrocinadores } from "@/lib/patrocinadores";
  * uniforme, object-fit contain. Sem fotos, sem nomes, sem títulos — a identidade
  * fica toda no logo. (O Modal "Quero Patrocinar" mantém os cartões com foto.)
  *
- * Animação condicional lida a partir de PATROCINADORES em lib/patrocinadores.ts:
- *   - < 2 patrocinadores → fila estática centrada, sem animação (fallback);
- *   - >= 2              → marquee contínuo suavizado (MarqueeLogos).
+ * O marquee é o ÚNICO caminho de render — não há fila estática nem condicional
+ * de contagem mínima. O número de blocos é calculado para a pista encher sempre
+ * o contentor (ver "REPETIÇÕES CALCULADAS" em MarqueeLogos): funciona com 2 ou
+ * com 20 patrocinadores, sem flag. O único render estático é o pré-hidratação
+ * (antes do setMontado). Não há ramo prefers-reduced-motion no marquee (decisão
+ * de produto: corre em todas as máquinas; pausa por hover/focus/IO cobre WCAG
+ * 2.2.2).
  */
-const LIMITE_MARQUEE = 2;
-
-function FilaEstatica() {
-  return (
-    <div className="flex flex-wrap items-center justify-center gap-6">
-      {patrocinadores.map((p) => (
-        <AzulejoLogo key={p.id} logo={p.logo} flexivel />
-      ))}
-    </div>
-  );
-}
-
 export default function VitrinePatrocinadoras() {
   return (
     <div className="mx-auto mt-10 max-w-[42rem]">
@@ -36,7 +26,7 @@ export default function VitrinePatrocinadoras() {
         <span className="h-px w-10 bg-dourado/40" aria-hidden />
       </div>
 
-      {patrocinadores.length >= LIMITE_MARQUEE ? <MarqueeLogos /> : <FilaEstatica />}
+      <MarqueeLogos />
     </div>
   );
 }
