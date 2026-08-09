@@ -9,7 +9,9 @@ import CausaSocial from "./CausaSocial";
  * Wrapper client-side da página /causa-social — adiciona Header e Footer
  * à secção CausaSocial, seguindo o padrão de EventoPage e ListaEsperaPage.
  */
-export default function CausaSocialPage() {
+type Props = { faseInscricaoAtiva: boolean };
+
+export default function CausaSocialPage({ faseInscricaoAtiva }: Props) {
   const [modalAberto, setModalAberto] = useState(false);
   const abrirModal = useCallback(() => setModalAberto(true), []);
 
@@ -17,7 +19,7 @@ export default function CausaSocialPage() {
     <>
       <Header abrirModal={abrirModal} />
       <main>
-        <CausaSocial />
+        <CausaSocial faseInscricaoAtiva={faseInscricaoAtiva} />
       </main>
       <Footer abrirModal={abrirModal} />
     </>

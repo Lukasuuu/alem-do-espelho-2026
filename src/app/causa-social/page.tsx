@@ -1,6 +1,15 @@
 import type { Metadata } from "next";
 import { site } from "@/lib/site";
+import { inscricaoAtiva } from "@/lib/cutover";
 import CausaSocialPage from "@/components/CausaSocialPage";
+
+/**
+ * Render dinâmico por request: a secção de patrocinadores (dentro de CausaSocial)
+ * é gated pela fase de inscrição (10/08 10:00 Lisboa). Sem isto, o build estático
+ * congelaria o gate e a vitrine não apareceria pós-10/08 sem um novo deploy.
+ */
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 const ROTA = "/causa-social";
 
@@ -39,5 +48,7 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-  return <CausaSocialPage />;
+  // Gate de patrocinadores pelo relógio do servidor (override incluído).
+  const faseInscricaoAtiva = inscricaoAtiva();
+  return <CausaSocialPage faseInscricaoAtiva={faseInscricaoAtiva} />;
 }

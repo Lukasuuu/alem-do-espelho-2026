@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { permanentRedirect } from "next/navigation";
 import { site } from "@/lib/site";
-import { isDepoisDoCorte } from "@/lib/cutover";
+import { isDepoisDoCorte, inscricaoAtiva } from "@/lib/cutover";
 import ListaEsperaPage from "@/components/ListaEsperaPage";
 
 /**
@@ -56,5 +56,11 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Page() {
   if (await isDepoisDoCorte()) permanentRedirect(ROTA_EVENTO);
-  return <ListaEsperaPage />;
+
+  // Gate de patrocinadores pelo relógio do servidor (override incluído).
+  // Na fase pré-corte (lista gratuita) a inscrição paga ainda não abriu, logo
+  // a vitrine de logos não aparece — consistente com a versão do evento.
+  const faseInscricaoAtiva = inscricaoAtiva();
+
+  return <ListaEsperaPage faseInscricaoAtiva={faseInscricaoAtiva} />;
 }

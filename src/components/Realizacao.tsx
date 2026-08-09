@@ -56,7 +56,14 @@ const entidades: Entidade[] = [
   },
 ];
 
-export default function Realizacao() {
+type Props = { faseInscricaoAtiva: boolean };
+
+/**
+ * Gate da secção de patrocinadores decidido no SERVIDOR (page.tsx):
+ * faseInscricaoAtiva=true só a partir de FIM_CAMPANHA_ISO (10/08 10:00 Lisboa,
+ * override NEXT_PUBLIC_FASE_OVERRIDE incluído). Apenas encadeado até CausaSocial.
+ */
+export default function Realizacao({ faseInscricaoAtiva }: Props) {
   return (
     <section className="grao relative overflow-hidden bg-creme py-24 sm:py-32">
       {/* fio de abertura em sage, destaca a secção das vizinhas sem mudar de tom */}
@@ -161,7 +168,7 @@ export default function Realizacao() {
         </div>
 
         {/* ── Causa social "Além de Mim": missão → causa → patrocínio ── */}
-        <CausaSocial />
+        <CausaSocial faseInscricaoAtiva={faseInscricaoAtiva} />
 
         {/* ── Zona B: faixa das entidades, largura total, separada por um fio ── */}
         <div className="mt-[clamp(32px,4vw,56px)] border-t border-vinho/10 pt-[clamp(40px,5vw,64px)]">

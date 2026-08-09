@@ -38,7 +38,16 @@ const EASE = [0.22, 1, 0.36, 1] as const;
  * metálico. O verde fica reservado a acentos (título, texto do selo), nunca
  * ao fundo. Conteúdo e funcionalidade mantidos intactos.
  */
-export default function CausaSocial() {
+type Props = { faseInscricaoAtiva: boolean };
+
+/**
+ * Gate de patrocinadores: faseInscricaoAtiva chega do SERVIDOR (page.tsx →
+ * cutover.inscricaoAtiva) e é TRUE apenas quando a inscrição paga está ativa
+ * (10/08 10:00 Lisboa; override NEXT_PUBLIC_FASE_OVERRIDE incluído). Enquanto
+ * false, o bloco de patrocínio (título, vitrine/marquee, "Quero Patrocinar")
+ * não é renderizado — sem relógio no client, sem buracos de layout.
+ */
+export default function CausaSocial({ faseInscricaoAtiva }: Props) {
   const [pontosAberto, setPontosAberto] = useState(false);
   const campanha = useCampaignCountdown();
 
@@ -261,32 +270,36 @@ export default function CausaSocial() {
             </motion.div>
           </div>
 
-          {/* ═══ Bloco citação: patrocínio ═══ */}
-          <Reveal delay={0.08}>
-            <div className="mx-auto mt-20 max-w-2xl text-center">
-              <h3 className="display text-[2rem] text-vinho">
-                Junte-se à nossa missão.
-              </h3>
-              <p className="mt-5 leading-relaxed text-carvao/65">
-                Ao tornar-se patrocinador desta iniciativa, a sua marca passa
-                a fazer parte de um projeto que transforma vidas, gera impacto
-                social e fortalece comunidades em Portugal e em Angola. Cada
-                parceria ajuda-nos a chegar a mais mulheres.
-              </p>
-              <VitrinePatrocinadoras />
-              {/* CTA de patrocínio mantido abaixo da vitrine (fluxo de aquisição) */}
-              <SponsorFlow />
+          {/* ═══ Bloco citação: patrocínio — GATED pela fase de inscrição (server).
+              Antes de FIM_CAMPANHA_ISO a secção termina na ecobag: countdown,
+              cards de inscrição/gesto e selo ONG Atos, sem a vitrine de logos. ═══ */}
+          {faseInscricaoAtiva && (
+            <Reveal delay={0.08}>
+              <div className="mx-auto mt-20 max-w-2xl text-center">
+                <h3 className="display text-[2rem] text-vinho">
+                  Junte-se à nossa missão.
+                </h3>
+                <p className="mt-5 leading-relaxed text-carvao/65">
+                  Ao tornar-se patrocinador desta iniciativa, a sua marca passa
+                  a fazer parte de um projeto que transforma vidas, gera impacto
+                  social e fortalece comunidades em Portugal e em Angola. Cada
+                  parceria ajuda-nos a chegar a mais mulheres.
+                </p>
+                <VitrinePatrocinadoras />
+                {/* CTA de patrocínio mantido abaixo da vitrine (fluxo de aquisição) */}
+                <SponsorFlow />
 
-              <p className="display mt-[clamp(24px,3.5vw,40px)] text-[clamp(1.75rem,3.5vw,2.5rem)] uppercase leading-[1.05] text-ouro-degrade-creme">
-                Além do Espelho 2026:
-              </p>
-              <p className="display mt-[clamp(14px,2vw,20px)] text-[clamp(1.25rem,2.5vw,1.5rem)] leading-[1.15] text-vinho">
-                Transformando mulheres em Portugal.
-                <br />
-                Impactando vidas em Angola.
-              </p>
-            </div>
-          </Reveal>
+                <p className="display mt-[clamp(24px,3.5vw,40px)] text-[clamp(1.75rem,3.5vw,2.5rem)] uppercase leading-[1.05] text-ouro-degrade-creme">
+                  Além do Espelho 2026:
+                </p>
+                <p className="display mt-[clamp(14px,2vw,20px)] text-[clamp(1.25rem,2.5vw,1.5rem)] leading-[1.15] text-vinho">
+                  Transformando mulheres em Portugal.
+                  <br />
+                  Impactando vidas em Angola.
+                </p>
+              </div>
+            </Reveal>
+          )}
         </div>
       </section>
 

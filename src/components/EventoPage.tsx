@@ -28,8 +28,14 @@ const fimCampanhaMs = new Date(FIM_CAMPANHA_ISO).getTime();
  * O override de teste NEXT_PUBLIC_FASE_OVERRIDE é respeitado no client
  * (faseForcada em lib/fase) para testar o fluxo pago antes de 10/08.
  * Vive em /alem-do-espelho-2026 (após o corte da lista de espera).
+ *
+ * faseInscricaoAtiva é decidido pelo SERVIDOR (page.tsx → cutover.inscricaoAtiva,
+ * relógio + override) e apenas encadeado aqui até à secção de patrocinadores —
+ * o client não recalcula com Date.now().
  */
-export default function EventoPage() {
+type Props = { faseInscricaoAtiva: boolean };
+
+export default function EventoPage({ faseInscricaoAtiva }: Props) {
   const [bonusAberto, setBonusAberto] = useState(false);
   const [waitlistAberto, setWaitlistAberto] = useState(false);
   const [inscricaoAberto, setInscricaoAberto] = useState(false);
@@ -143,7 +149,7 @@ export default function EventoPage() {
         <Experience />
         <Anfitria />
         <Gallery />
-        <Realizacao />
+        <Realizacao faseInscricaoAtiva={faseInscricaoAtiva} />
       </main>
       <Footer abrirModal={abrirFluxo} />
       <EcobagModal

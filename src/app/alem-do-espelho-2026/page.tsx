@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { permanentRedirect } from "next/navigation";
 import { site } from "@/lib/site";
-import { isDepoisDoCorte } from "@/lib/cutover";
+import { isDepoisDoCorte, inscricaoAtiva } from "@/lib/cutover";
 import EventoPage from "@/components/EventoPage";
 
 /**
@@ -55,5 +55,12 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function Page() {
   // Antes do corte, a página ativa é a lista de espera.
   if (!(await isDepoisDoCorte())) permanentRedirect(ROTA_LISTA);
-  return <EventoPage />;
+
+  // Fase decidida pelo RELÓGIO DO SERVIDOR (override NEXT_PUBLIC_FASE_OVERRIDE
+  // incluído via cutover.inscricaoAtiva). É o gate da secção de patrocinadores:
+  // só aparece quando a inscrição paga está ativa (10/08 10:00 Lisboa). Nada de
+  // Date.now() no client — seria repetir o hydration mismatch já corrigido.
+  const faseInscricaoAtiva = inscricaoAtiva();
+
+  return <EventoPage faseInscricaoAtiva={faseInscricaoAtiva} />;
 }

@@ -16,7 +16,9 @@ import { definirAberturaModal } from "@/lib/modal";
  * Footer. Todos os CTAs abrem a WaitlistModal (mesma lógica da EventoPage),
  * sem formulário inline no corpo da página.
  */
-export default function ListaEsperaPage() {
+type Props = { faseInscricaoAtiva: boolean };
+
+export default function ListaEsperaPage({ faseInscricaoAtiva }: Props) {
   const [modalAberto, setModalAberto] = useState(false);
   const abrirModal = useCallback(() => setModalAberto(true), []);
 
@@ -34,7 +36,7 @@ export default function ListaEsperaPage() {
         <Experience />
         <Anfitria />
         <Gallery />
-        <Realizacao />
+        <Realizacao faseInscricaoAtiva={faseInscricaoAtiva} />
       </main>
       <Footer abrirModal={abrirModal} />
       <WaitlistModal aberto={modalAberto} fechar={() => setModalAberto(false)} />
