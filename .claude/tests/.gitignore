@@ -1,0 +1,4 @@
+# Evidência de QA (screenshots) — não são regressão, não vão para o repo.
+*.png
+*.jpeg
+*.jpg
