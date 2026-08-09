@@ -14,10 +14,12 @@ import type { Patrocinador } from "@/lib/patrocinadores";
  * no hover) são aplicadas por CSS contextual em .marquee-foco (globals.css) —
  * fora do marquee (fila estática em prefers-reduced-motion) o tile fica neutro.
  */
-const ALTURA_AZULEJO = 72;
-
 type Props = {
   logo: Patrocinador["logo"];
+  /**
+   * Altura do azulejo em px (responsive). Default 72 (desktop).
+   */
+  altura?: number;
   /**
    * alt="" nas cópias duplicadas do marquee — não repetir a mesma marca no
    * leitor de ecrã. O contentor duplicado leva também aria-hidden (ver componente).
@@ -30,13 +32,18 @@ type Props = {
   flexivel?: boolean;
 };
 
-export default function AzulejoLogo({ logo, altOculto = false, flexivel = false }: Props) {
+export default function AzulejoLogo({
+  logo,
+  altura = 72,
+  altOculto = false,
+  flexivel = false,
+}: Props) {
   return (
     <span
       className={`azulejo-logo flex items-center justify-center overflow-hidden rounded-lg px-4 ${
         flexivel ? "max-w-full" : "shrink-0"
       }`}
-      style={{ height: ALTURA_AZULEJO, backgroundColor: logo.fundoHex }}
+      style={{ height: altura, backgroundColor: logo.fundoHex }}
     >
       <LocalImage
         src={logo.src}
@@ -45,11 +52,11 @@ export default function AzulejoLogo({ logo, altOculto = false, flexivel = false 
         height={logo.height}
         className="w-auto object-contain"
         style={{
-          // Altura DEFINIDA (72px) + width auto → a largura deriva da proporção
+          // Altura DEFINIDA + width auto → a largura deriva da proporção
           // intrínseca (atributos width/height). maxWidth: 100% só limita quando
           // o azulejo encolhe (mobile); o object-contain evita distorção/clipping
           // e o letterbox fica invisível porque o fundo do tile = fundo do logo.
-          height: ALTURA_AZULEJO,
+          height: altura,
           maxWidth: "100%",
         }}
       />
