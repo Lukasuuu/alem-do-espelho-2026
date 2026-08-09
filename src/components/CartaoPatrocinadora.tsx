@@ -60,7 +60,7 @@ export default function CartaoPatrocinadora({
             alt={foto.alt}
             width={foto.width}
             height={foto.height}
-            className={`absolute inset-0 h-full w-full object-cover ${
+            className={`absolute inset-0 h-full w-full object-cover object-top ${
               claro ? "" : "opacity-90"
             }`}
           />
