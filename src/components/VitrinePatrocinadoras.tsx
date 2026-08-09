@@ -32,7 +32,7 @@ export default function VitrinePatrocinadoras() {
       {/* Rótulo do grupo, centrado, entre dois traços dourados */}
       <div className="mb-7 flex items-center justify-center gap-4">
         <span className="h-px w-10 bg-dourado/40" aria-hidden />
-        <span className="eyebrow text-musgo">Patrocinadoras</span>
+        <span className="eyebrow text-musgo">Patrocinadores</span>
         <span className="h-px w-10 bg-dourado/40" aria-hidden />
       </div>
 

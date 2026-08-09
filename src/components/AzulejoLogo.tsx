@@ -1,3 +1,4 @@
+import { useReducedMotion } from "framer-motion";
 import LocalImage from "./LocalImage";
 import type { Patrocinador } from "@/lib/patrocinadores";
 
@@ -6,12 +7,12 @@ import type { Patrocinador } from "@/lib/patrocinadores";
  * de altura fixa, cantos arredondados e padding interno uniforme.
  *
  * ⚠️ FUNDO DELIBERADO: os logos têm fundo baked-in e incompatível entre si
- * (Chama navy #0D1A2C, Lígia creme #E4D9C9). Remover o fundo eliminaria parte
+ * (Chama navy #00040c, Lígia creme #EDE6D8). Remover o fundo eliminaria parte
  * do desenho (testado: -10,4% no Chama) e opacity/grayscale produziriam blocos
  * cinzentos sobre fundos opacos. Por isso o fundo de cada logo fica VISÍVEL.
  *
  * Quando existirem versões com fundo transparente, trocar os ficheiros em
- * /public/patrocinadoras e remover este azulejo (o <img> passa a ficar direto
+ * /public/patrocinadores e remover este azulejo (o <img> passa a ficar direto
  * na faixa).
  */
 const ALTURA_AZULEJO = 72;
@@ -32,11 +33,13 @@ type Props = {
 };
 
 export default function AzulejoLogo({ logo, altOculto = false, flexivel = false }: Props) {
+  const reduzido = useReducedMotion();
+
   return (
     <span
-      className={`flex items-center justify-center overflow-hidden rounded-lg px-4 ${
-        flexivel ? "max-w-full" : "shrink-0"
-      }`}
+      className={`group/logo flex items-center justify-center overflow-hidden rounded-lg px-4 transition-all duration-300 ease-out ${
+        reduzido ? "" : "hover:scale-[1.04] hover:shadow-lg"
+      } ${flexivel ? "max-w-full" : "shrink-0"}`}
       style={{ height: ALTURA_AZULEJO, backgroundColor: logo.fundoHex }}
     >
       <LocalImage
@@ -44,7 +47,9 @@ export default function AzulejoLogo({ logo, altOculto = false, flexivel = false 
         alt={altOculto ? "" : logo.alt}
         width={logo.width}
         height={logo.height}
-        className="w-auto object-contain"
+        className={`w-auto object-contain transition-[filter] duration-300 ease-out ${
+          reduzido ? "" : "group-hover/logo:brightness-110"
+        }`}
         style={{
           // Altura DEFINIDA (72px) + width auto → a largura deriva da proporção
           // intrínseca (atributos width/height). maxWidth: 100% só limita quando

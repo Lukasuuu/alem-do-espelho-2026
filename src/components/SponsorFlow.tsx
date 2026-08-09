@@ -112,13 +112,13 @@ export default function SponsorFlow() {
       <Modal
         aberto={apresentacaoAberto}
         fechar={() => setApresentacaoAberto(false)}
-        titulo="Junta-te às patrocinadoras do Além do Espelho"
+        titulo="Junta-te aos patrocinadores do Além do Espelho"
         eyebrow="Quero Patrocinar"
         larguraMax="64rem"
         focoInicial="input:not([disabled])"
       >
         <div className="flex flex-col gap-6 md:grid md:grid-cols-2 md:items-start md:gap-10">
-          {/* ESQUERDA — subtítulo + cartões das patrocinadoras (com foto, como sempre) */}
+          {/* ESQUERDA — subtítulo + cartões dos patrocinadores (com foto, como sempre) */}
           <div className="min-w-0">
             <p className="text-[0.9375rem] leading-relaxed text-creme/70">
               O Além do Espelho é uma campanha que leva uma mensagem de coragem e

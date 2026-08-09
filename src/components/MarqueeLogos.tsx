@@ -67,7 +67,7 @@ export default function MarqueeLogos() {
     <div className="group relative overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
       <div
         className="flex w-max animate-marquee items-center gap-6 hover:[animation-play-state:paused] focus-within:[animation-play-state:paused]"
-        aria-label="Marcas patrocinadoras do Além do Espelho"
+        aria-label="Marcas patrocinadores do Além do Espelho"
       >
         {Array.from({ length: copias }).map((_, copia) => (
           <div
