@@ -88,7 +88,7 @@ begin
     raise exception 'invalid_phone' using errcode = '22023';
   end if;
 
-  select * into v_existing from public.waitlist_subscribers where email = p_email::citext;
+  select * into v_existing from public.waitlist_subscribers where email = p_email;
 
   if found then
     update public.waitlist_subscribers
@@ -105,7 +105,7 @@ begin
       utm_source, utm_medium, utm_campaign, utm_term, utm_content,
       referrer, user_agent, ip_hash
     ) values (
-      p_full_name, p_email::citext, p_phone, p_phone_country, coalesce(p_consent, true),
+      p_full_name, p_email, p_phone, p_phone_country, coalesce(p_consent, true),
       p_locale, coalesce(p_source, 'waitlist-lp'),
       nullif(p_utm->>'utm_source',''), nullif(p_utm->>'utm_medium',''),
       nullif(p_utm->>'utm_campaign',''), nullif(p_utm->>'utm_term',''),

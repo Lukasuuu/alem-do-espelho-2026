@@ -76,7 +76,7 @@ begin
     raise exception 'invalid_phone' using errcode = '22023';
   end if;
 
-  select * into v_existing from public.inscricoes where email = p_email::citext;
+  select * into v_existing from public.inscricoes where email = p_email;
 
   if found then
     -- Quem voltou (ex. pagamento falhou e recomeçou) atualiza os dados.
@@ -91,7 +91,7 @@ begin
     v_status := 'ja_inscrita';
   else
     insert into public.inscricoes (nome, email, telefone, ip_hash)
-    values (p_nome, p_email::citext, p_telefone, p_ip_hash)
+    values (p_nome, p_email, p_telefone, p_ip_hash)
     returning id into v_id;
     v_status := 'criada';
   end if;

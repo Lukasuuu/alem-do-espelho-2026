@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { getSupabase } from "@/lib/supabase";
 import { hashIp, obterIp, rateLimit } from "@/lib/rate-limit";
-import { MENSAGENS, inscricaoSchema, validarTelefone } from "@/lib/validation";
+import { MENSAGENS, inscricaoSchema, validarTelefone, type TipoErro } from "@/lib/validation";
 import { inscricaoAtiva } from "@/lib/cutover";
 
 export const runtime = "nodejs";
@@ -12,7 +12,7 @@ export const preferredRegion = ["cdg1"];
 
 type Resposta =
   | { ok: true; status: "criada" | "ja_inscrita"; id: string }
-  | { ok: false; mensagem: string; campos?: Record<string, string> };
+  | { ok: false; mensagem: string; tipo: TipoErro; campos?: Record<string, string> };
 
 /** Tempo mínimo plausível entre carregar o formulário e submeter. */
 const TEMPO_MINIMO_MS = 2_500;
@@ -28,7 +28,7 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
   //    (teste). Enquanto a lista gratuita estiver aberta, 410 Gone.
   if (!inscricaoAtiva()) {
     return NextResponse.json(
-      { ok: false, mensagem: "As inscrições pagas ainda não estão abertas." },
+      { ok: false, mensagem: "As inscrições pagas ainda não estão abertas.", tipo: "fase" },
       { status: 410 }
     );
   }
@@ -39,7 +39,7 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
 
   if (!limite.permitido) {
     return NextResponse.json(
-      { ok: false, mensagem: MENSAGENS.rateLimit },
+      { ok: false, mensagem: MENSAGENS.rateLimit, tipo: "rate" },
       {
         status: 429,
         headers: {
@@ -54,7 +54,7 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
   try {
     corpo = await request.json();
   } catch {
-    return NextResponse.json({ ok: false, mensagem: MENSAGENS.invalido }, { status: 400 });
+    return NextResponse.json({ ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao" }, { status: 400 });
   }
 
   // 3. Validação do formato
@@ -69,26 +69,26 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
         if (!campos[chave]) campos[chave] = issue.message;
       }
       return NextResponse.json(
-        { ok: false, mensagem: MENSAGENS.invalido, campos },
+        { ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao", campos },
         { status: 422 }
       );
     }
-    return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor }, { status: 500 });
+    return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 500 });
   }
 
   // 4. Armadilhas anti-bot, resposta genérica de propósito
   if (dados.website && dados.website.length > 0) {
-    return NextResponse.json({ ok: false, mensagem: MENSAGENS.bot }, { status: 400 });
+    return NextResponse.json({ ok: false, mensagem: MENSAGENS.bot, tipo: "bot" }, { status: 400 });
   }
   if (typeof dados.elapsedMs === "number" && dados.elapsedMs < TEMPO_MINIMO_MS) {
-    return NextResponse.json({ ok: false, mensagem: MENSAGENS.bot }, { status: 400 });
+    return NextResponse.json({ ok: false, mensagem: MENSAGENS.bot, tipo: "bot" }, { status: 400 });
   }
 
   // 5. Telemóvel: validação real por país e normalização E.164
   const telefone = validarTelefone(dados.phone, dados.phoneCountry);
   if (!telefone.ok || !telefone.e164) {
     return NextResponse.json(
-      { ok: false, mensagem: MENSAGENS.invalido, campos: { phone: telefone.erro! } },
+      { ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao", campos: { phone: telefone.erro! } },
       { status: 422 }
     );
   }
@@ -108,25 +108,25 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
       const codigo = error.message ?? "";
       if (codigo.includes("invalid_email")) {
         return NextResponse.json(
-          { ok: false, mensagem: MENSAGENS.invalido, campos: { email: "Este email não parece válido." } },
+          { ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao", campos: { email: "Este email não parece válido." } },
           { status: 422 }
         );
       }
       if (codigo.includes("invalid_phone")) {
         return NextResponse.json(
-          { ok: false, mensagem: MENSAGENS.invalido, campos: { phone: "Este número não parece válido." } },
+          { ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao", campos: { phone: "Este número não parece válido." } },
           { status: 422 }
         );
       }
       if (codigo.includes("invalid_full_name")) {
         return NextResponse.json(
-          { ok: false, mensagem: MENSAGENS.invalido, campos: { nome: "Escreve o teu nome completo." } },
+          { ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao", campos: { nome: "Escreve o teu nome completo." } },
           { status: 422 }
         );
       }
 
       console.error("[inscricao] erro do supabase:", error.message);
-      return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor }, { status: 502 });
+      return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 502 });
     }
 
     const resultado = data as { status: "criada" | "ja_inscrita"; id: string };
@@ -137,7 +137,7 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
     );
   } catch (erro) {
     console.error("[inscricao] falha inesperada:", erro);
-    return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor }, { status: 500 });
+    return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 500 });
   }
 }
 

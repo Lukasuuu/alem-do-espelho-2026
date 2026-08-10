@@ -61,7 +61,7 @@ begin
     raise exception 'invalid_nivel' using errcode = '22023';
   end if;
 
-  select * into v_existing from public.sponsors where email = p_email::citext;
+  select * into v_existing from public.sponsors where email = p_email;
 
   if found then
     -- Quem voltou (ex. mudou de nível e recomeçou) atualiza os dados.
@@ -79,7 +79,7 @@ begin
     v_status := 'ja_existente';
   else
     insert into public.sponsors (nome, email, telefone, nivel, empresa, consentimento, ip_hash)
-    values (p_nome, p_email::citext, p_telefone, p_nivel, p_empresa, p_consentimento, p_ip_hash)
+    values (p_nome, p_email, p_telefone, p_nivel, p_empresa, p_consentimento, p_ip_hash)
     returning id into v_id;
     v_status := 'criada';
   end if;

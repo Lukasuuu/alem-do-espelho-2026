@@ -12,6 +12,7 @@ import VitrinePatrocinadoras from "./VitrinePatrocinadoras";
 import Countdown from "./Countdown";
 import { useCampaignCountdown } from "@/hooks/useCampaignCountdown";
 import { FIM_CAMPANHA_ISO } from "@/lib/campanha";
+import { SPONSORS_ATIVOS } from "@/lib/sponsors";
 
 const kitItens = [
   "Escovas de dente (Dentax)",
@@ -287,10 +288,11 @@ export default function CausaSocial({ faseInscricaoAtiva }: Props) {
             </motion.div>
           </div>
 
-          {/* ═══ Bloco citação: patrocínio — GATED pela fase de inscrição (server).
-              Antes de FIM_CAMPANHA_ISO a secção termina na ecobag: countdown,
-              cards de inscrição/gesto e selo ONG Atos, sem a vitrine de logos. ═══ */}
-          {faseInscricaoAtiva && (
+          {/* ═══ Bloco citação: patrocínio — GATED pela fase de inscrição (server)
+              E por SPONSORS_ATIVOS (FIX-2: desligado até a FIX-1 validar as RPCs
+              de patrocínio no Supabase). Antes disso a secção termina na ecobag:
+              countdown, cards de inscrição/gesto e selo ONG Atos, sem a vitrine. ═══ */}
+          {faseInscricaoAtiva && SPONSORS_ATIVOS && (
             <Reveal delay={0.08}>
               <div className="mx-auto mt-20 max-w-2xl text-center">
                 <h3 className="display text-[2rem] text-vinho">

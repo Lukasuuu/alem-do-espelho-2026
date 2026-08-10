@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { linkWhatsApp, paises, site } from "@/lib/site";
 import { FIM_CAMPANHA_ISO, MENSAGEM_ECOBAG, SALON_WHATSAPP } from "@/lib/campanha";
-import { normalizarNome, validarTelefone } from "@/lib/validation";
+import { MENSAGENS, normalizarNome, validarTelefone } from "@/lib/validation";
 import { WhatsAppIcon } from "./icons";
 
 type Estado = "inativo" | "a-enviar" | "sucesso" | "erro";
@@ -71,6 +71,8 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
   const [tocados, setTocados] = useState<Record<string, boolean>>({});
   const [posicao, setPosicao] = useState<number | null>(null);
   const [jaInscrita, setJaInscrita] = useState(false);
+  /** FIX-3: falha de servidor/ligação — mostra o caminho humano (WhatsApp). */
+  const [falhaServidor, setFalhaServidor] = useState(false);
 
   const montadoEm = useRef<number>(Date.now());
   const regiaoEstado = useRef<HTMLDivElement>(null);
@@ -161,7 +163,42 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
       const dados = await resposta.json();
 
       if (!resposta.ok || !dados.ok) {
+        // FIX-3: o servidor classifica o erro (dados.tipo). Tipo ausente ou
+        // desconhecido → "servidor" (default seguro): nunca deixar a pessoa
+        // sem caminho humano quando algo corre mal do nosso lado.
+        const tipo: string = dados.tipo ?? "servidor";
+
+        if (tipo === "servidor") {
+          setEstado("erro");
+          setFalhaServidor(true);
+          setErros({
+            form:
+              "Não conseguimos guardar o teu registo agora. Para não perderes o contacto, fala connosco no WhatsApp e tratamos de tudo.",
+          });
+          regiaoEstado.current?.focus();
+          return;
+        }
+
+        if (tipo === "fase") {
+          setEstado("erro");
+          setFalhaServidor(false);
+          setErros({ form: config.listaFechada });
+          regiaoEstado.current?.focus();
+          return;
+        }
+
+        if (tipo === "rate") {
+          setEstado("erro");
+          setFalhaServidor(false);
+          setErros({ form: MENSAGENS.rateLimit });
+          regiaoEstado.current?.focus();
+          return;
+        }
+
+        // validacao / bot → comportamento actual: assinala os campos e mostra
+        // a mensagem do servidor.
         setEstado("erro");
+        setFalhaServidor(false);
         setErros({ ...(dados.campos ?? {}), form: dados.mensagem ?? "Algo correu mal." });
         regiaoEstado.current?.focus();
         return;
@@ -182,7 +219,11 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
       }
     } catch {
       setEstado("erro");
-      setErros({ form: "Sem ligação ao servidor. Verifica a internet e tenta novamente." });
+      setFalhaServidor(true);
+      setErros({
+        form:
+          "Sem ligação ao servidor. Verifica a internet e tenta novamente — ou fala connosco no WhatsApp.",
+      });
     }
   }
 
@@ -270,6 +311,21 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
               className="mb-6 rounded-sm border border-[#e88b8b]/40 bg-[#e88b8b]/10 px-4 py-3 text-[0.875rem] text-[#f3c0c0]"
             >
               {erros.form}
+              {falhaServidor && (
+                <a
+                  href={linkWhatsApp(
+                    SALON_WHATSAPP,
+                    "Olá! Ao preencher o formulário no site do Além do Espelho 2026 a gravação falhou e preciso de ajuda."
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Abrir conversa no WhatsApp para tratar do meu registo"
+                  className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#f3c0c0]/40 px-4 py-2 text-[0.8125rem] font-medium text-[#f3c0c0] transition-colors duration-300 hover:border-[#f3c0c0] hover:bg-[#f3c0c0]/10"
+                >
+                  <WhatsAppIcon className="h-4 w-4" />
+                  Falar no WhatsApp
+                </a>
+              )}
             </motion.p>
           )}
         </AnimatePresence>

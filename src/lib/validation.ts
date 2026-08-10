@@ -208,6 +208,15 @@ export function validarTelefone(numero: string, pais: string): TelefoneValidado 
   return { ok: true, e164: parsed.number };
 }
 
+/**
+ * Classifica o erro devolvido pelas rotas para o formulário decidir a mensagem
+ * e o caminho humano (FIX-3): "fase" (410), "rate" (429), "validacao"
+ * (422/400 de formato ou telemóvel), "bot" (400 anti-bot), "servidor"
+ * (502/500). O formulário trata qualquer tipo desconhecido ou ausente como
+ * "servidor" — default seguro, com contacto humano via WhatsApp.
+ */
+export type TipoErro = "fase" | "rate" | "validacao" | "bot" | "servidor";
+
 /** Mensagens de erro do servidor, já em português e prontas para o ecrã. */
 export const MENSAGENS = {
   rateLimit: "Demasiadas tentativas. Aguarda um minuto e tenta novamente.",

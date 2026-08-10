@@ -2,8 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { paises } from "@/lib/site";
-import { normalizarNome, validarTelefone } from "@/lib/validation";
+import { linkWhatsApp, paises } from "@/lib/site";
+import { SALON_WHATSAPP } from "@/lib/campanha";
+import { MENSAGENS, normalizarNome, validarTelefone } from "@/lib/validation";
+import { WhatsAppIcon } from "./icons";
 
 type Estado = "inativo" | "a-enviar" | "erro";
 type Erros = Partial<Record<"nome" | "email" | "phone" | "form", string>>;
@@ -31,6 +33,8 @@ export default function InscricaoForm({ onSucesso }: Props) {
   const [estado, setEstado] = useState<Estado>("inativo");
   const [erros, setErros] = useState<Erros>({});
   const [tocados, setTocados] = useState<Record<string, boolean>>({});
+  /** FIX-3: falha de servidor/ligação — mostra o caminho humano (WhatsApp). */
+  const [falhaServidor, setFalhaServidor] = useState(false);
 
   const montadoEm = useRef<number>(Date.now());
   const regiaoEstado = useRef<HTMLDivElement>(null);
@@ -102,7 +106,45 @@ export default function InscricaoForm({ onSucesso }: Props) {
       const dados = await resposta.json();
 
       if (!resposta.ok || !dados.ok) {
+        // FIX-3: o servidor classifica o erro (dados.tipo). Tipo ausente ou
+        // desconhecido → "servidor" (default seguro): nunca deixar a pessoa
+        // sem caminho humano quando algo corre mal do nosso lado.
+        const tipo: string = dados.tipo ?? "servidor";
+
+        if (tipo === "servidor") {
+          setEstado("erro");
+          setFalhaServidor(true);
+          setErros({
+            form:
+              "Não conseguimos guardar a tua inscrição agora. Para não perderes o teu lugar, fala connosco no WhatsApp e resolvemos contigo.",
+          });
+          regiaoEstado.current?.focus();
+          return;
+        }
+
+        if (tipo === "fase") {
+          setEstado("erro");
+          setFalhaServidor(false);
+          setErros({
+            form:
+              "A campanha mudou de fase e as inscrições estão neste momento fechadas. Se já tinhas começado, fala connosco no WhatsApp.",
+          });
+          regiaoEstado.current?.focus();
+          return;
+        }
+
+        if (tipo === "rate") {
+          setEstado("erro");
+          setFalhaServidor(false);
+          setErros({ form: MENSAGENS.rateLimit });
+          regiaoEstado.current?.focus();
+          return;
+        }
+
+        // validacao / bot → comportamento actual: assinala os campos e mostra
+        // a mensagem do servidor.
         setEstado("erro");
+        setFalhaServidor(false);
         setErros({ ...(dados.campos ?? {}), form: dados.mensagem ?? "Algo correu mal." });
         regiaoEstado.current?.focus();
         return;
@@ -112,7 +154,11 @@ export default function InscricaoForm({ onSucesso }: Props) {
       onSucesso(dados.id as string, normalizarNome(nome));
     } catch {
       setEstado("erro");
-      setErros({ form: "Sem ligação ao servidor. Verifica a internet e tenta novamente." });
+      setFalhaServidor(true);
+      setErros({
+        form:
+          "Sem ligação ao servidor. Verifica a internet e tenta novamente — ou fala connosco no WhatsApp.",
+      });
     }
   }
 
@@ -135,6 +181,21 @@ export default function InscricaoForm({ onSucesso }: Props) {
               className="mb-6 rounded-sm border border-[#e88b8b]/40 bg-[#e88b8b]/10 px-4 py-3 text-[0.875rem] text-[#f3c0c0]"
             >
               {erros.form}
+              {falhaServidor && (
+                <a
+                  href={linkWhatsApp(
+                    SALON_WHATSAPP,
+                    "Olá! Ao inscrever-me no Além do Espelho 2026 a gravação falhou e preciso de ajuda para garantir o meu lugar."
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Abrir conversa no WhatsApp para tratar da minha inscrição"
+                  className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#f3c0c0]/40 px-4 py-2 text-[0.8125rem] font-medium text-[#f3c0c0] transition-colors duration-300 hover:border-[#f3c0c0] hover:bg-[#f3c0c0]/10"
+                >
+                  <WhatsAppIcon className="h-4 w-4" />
+                  Falar no WhatsApp
+                </a>
+              )}
             </motion.p>
           )}
         </AnimatePresence>

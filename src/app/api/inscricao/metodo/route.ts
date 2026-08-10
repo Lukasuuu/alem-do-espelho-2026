@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { getSupabase } from "@/lib/supabase";
 import { hashIp, obterIp, rateLimit } from "@/lib/rate-limit";
-import { MENSAGENS, metodoInscricaoSchema, type MetodoPagamento } from "@/lib/validation";
+import { MENSAGENS, metodoInscricaoSchema, type MetodoPagamento, type TipoErro } from "@/lib/validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,7 +10,7 @@ export const preferredRegion = ["cdg1"];
 
 type Resposta =
   | { ok: true; inscricaoId: string; metodo: MetodoPagamento }
-  | { ok: false; mensagem: string; campos?: Record<string, string> };
+  | { ok: false; mensagem: string; tipo: TipoErro; campos?: Record<string, string> };
 
 /**
  * Marca o método de pagamento escolhido na modal. Chamado ANTES de
@@ -24,7 +24,7 @@ export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
 
   if (!limite.permitido) {
     return NextResponse.json(
-      { ok: false, mensagem: MENSAGENS.rateLimit },
+      { ok: false, mensagem: MENSAGENS.rateLimit, tipo: "rate" },
       {
         status: 429,
         headers: {
@@ -39,7 +39,7 @@ export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
   try {
     corpo = await request.json();
   } catch {
-    return NextResponse.json({ ok: false, mensagem: MENSAGENS.invalido }, { status: 400 });
+    return NextResponse.json({ ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao" }, { status: 400 });
   }
 
   // 3. Validação do formato (uuid + método)
@@ -54,11 +54,11 @@ export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
         if (!campos[chave]) campos[chave] = issue.message;
       }
       return NextResponse.json(
-        { ok: false, mensagem: MENSAGENS.invalido, campos },
+        { ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao", campos },
         { status: 422 }
       );
     }
-    return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor }, { status: 500 });
+    return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 500 });
   }
 
   // 4. Persistência
@@ -74,19 +74,19 @@ export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
       const codigo = error.message ?? "";
       if (codigo.includes("invalid_metodo")) {
         return NextResponse.json(
-          { ok: false, mensagem: MENSAGENS.invalido, campos: { metodo: "Método de pagamento inválido." } },
+          { ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao", campos: { metodo: "Método de pagamento inválido." } },
           { status: 422 }
         );
       }
       if (codigo.includes("inscricao_nao_encontrada")) {
         return NextResponse.json(
-          { ok: false, mensagem: "Não encontrámos a tua inscrição. Recarrega e tenta novamente." },
+          { ok: false, mensagem: "Não encontrámos a tua inscrição. Recarrega e tenta novamente.", tipo: "validacao" },
           { status: 404 }
         );
       }
 
       console.error("[inscricao-metodo] erro do supabase:", error.message);
-      return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor }, { status: 502 });
+      return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 502 });
     }
 
     const resultado = data as { status: "ok"; id: string; metodo: MetodoPagamento };
@@ -94,7 +94,7 @@ export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
     return NextResponse.json({ ok: true, inscricaoId: resultado.id, metodo: resultado.metodo });
   } catch (erro) {
     console.error("[inscricao-metodo] falha inesperada:", erro);
-    return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor }, { status: 500 });
+    return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 500 });
   }
 }
 
