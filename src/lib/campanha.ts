@@ -15,7 +15,7 @@ export const FIM_CAMPANHA_ISO = "2026-08-10T10:00:00+01:00";
 /** Máximo de ecobags bónus.  Atribuição é server-side em registar_inscricao(). */
 export const LIMITE_BONUS = 50;
 
-/** Texto descritivo do bónus, usado no EcobagModal e no disclaimer do PagamentoModal. */
+/** Texto descritivo do bónus (lista de espera), usado no EcobagModal. */
 export const TEXTO_BONUS = "Ecobag exclusiva Além do Espelho + kit de solidariedade";
 
 /** Intervalo de polling do counter no client (ms). */
@@ -27,3 +27,11 @@ export const SALON_WHATSAPP = "351928400069";
 /** Mensagem pré-preenchida do botão Ecobag pós-inscrição. */
 export const MENSAGEM_ECOBAG =
   "Olá pessoal da Essence of Beauty, faço parte do evento e gostaria de saber mais sobre a minha Ecobag.";
+
+/** Itens do kit de solidariedade — fonte única (CausaSocial e ParabensModal). */
+export const KIT_ITENS = [
+  "Escovas de dente (Dentax)",
+  "Pasta de dente (Anticáries)",
+  "Sabonete (Margarida Cosmética)",
+  "Absorvente (Leve & Segura)",
+] as const;

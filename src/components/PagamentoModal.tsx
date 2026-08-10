@@ -1,11 +1,12 @@
 "use client";
 
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { ArrowLeft, ChevronRight, Check, X } from "lucide-react";
+import { ArrowLeft, ChevronRight, Check, QrCode, RefreshCw, X } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { WhatsAppIcon, GlobeIcon, MbWayIcon, TransferenciaIcon } from "./icons";
+import PaymentProofUpload from "./PaymentProofUpload";
 import { travarScroll, destravarScroll } from "@/lib/scroll-lock";
 import {
   MBWAY_NUMERO,
@@ -25,8 +26,12 @@ type Props = {
   nome: string;
   /** Tema da modal: vinho (escuro) ou claro. */
   tom?: "vinho" | "claro";
-  /** Se a campanha ecobag está ativa (mostra disclaimer no rodapé). */
-  campanhaAtiva?: boolean;
+  /**
+   * Chamado ÚNICAMENTE quando estado_inscricao reporta pagamento_estado ===
+   * "confirmed". Nunca a partir de proof_uploaded / under_review / payment_started.
+   * O isBonus vem da DB — a modal nunca o calcula no frontend.
+   */
+  onConfirmado: (dados: { isBonus: boolean }) => void;
 };
 
 /** Elementos focáveis dentro do painel, para o foco circular (trap). */
@@ -38,19 +43,44 @@ function focaveis(raiz: HTMLElement): HTMLElement[] {
   ).filter((el) => el.offsetParent !== null || el === document.activeElement);
 }
 
-type Passo = "metodos" | "mbway" | "transferencia" | "obrigado";
+/**
+ * Passos da modal:
+ *  - metodos: escolha da forma de pagamento (SumUp / MB Way / QR / Transferência);
+ *  - sumup / mbway / qr / transferencia: instruções do método + "Já efetuei o pagamento";
+ *  - comprovativo: upload do comprovativo (PaymentProofUpload);
+ *  - recebido: "Comprovativo recebido" + polling gentil até confirmed/rejected.
+ */
+type Passo = "metodos" | "sumup" | "mbway" | "qr" | "transferencia" | "comprovativo" | "recebido";
 
 const TITULO_MODAL = "pagamento-titulo";
 
+/** Intervalo de polling do estado (não-agressivo: ~15 s, um pedido por ciclo). */
+const ESTADO_POLL_MS = 15_000;
+
+type EstadoInscricao = {
+  ok: boolean;
+  pagamento_estado?: string;
+  is_bonus?: boolean;
+  motivo_rejeicao?: string | null;
+};
+
 /**
- * Modal de pagamento (FASE4) — padrão do projeto: portal, focus trap, ESC,
- * clique fora e scroll-lock com contador de referências (para poder abrir por
- * cima de outro modal sem desbloquear o fundo). Três métodos:
- *  - SumUp: marca o método e redireciona para o checkout (mesma aba);
- *  - MB Way / Transferência: instruções + confirmação por WhatsApp;
- *  - Ecrã de agradecimento após escolher o método.
+ * Modal de pagamento (FASE2) — padrão do projeto: portal, focus trap, ESC,
+ * clique fora e scroll-lock com contador de referências. Fluxo:
+ *  1. escolher método → PATCH /api/inscricao/metodo cria o pagamento (payment_started);
+ *  2. instruções do método (SumUp abre numa nova aba; QR placeholder honesto);
+ *  3. "Já efetuei o pagamento" → comprovativo (upload validado no servidor);
+ *  4. recebido → polling de estado até confirmed (→ onConfirmado) ou rejected
+ *     (→ reenvio de comprovativo). Nunca "Pagamento confirmado" nesta etapa.
  */
-export default function PagamentoModal({ aberto, fechar, inscricaoId, nome, tom = "vinho", campanhaAtiva = true }: Props) {
+export default function PagamentoModal({
+  aberto,
+  fechar,
+  inscricaoId,
+  nome,
+  tom = "vinho",
+  onConfirmado,
+}: Props) {
   const claro = tom === "claro";
   const overlayRef = useRef<HTMLDivElement>(null);
   const painelRef = useRef<HTMLDivElement>(null);
@@ -60,15 +90,22 @@ export default function PagamentoModal({ aberto, fechar, inscricaoId, nome, tom 
 
   const [passo, setPasso] = useState<Passo>("metodos");
   const [metodo, setMetodo] = useState<MetodoPagamento | null>(null);
+  const [pagamentoId, setPagamentoId] = useState<string | null>(null);
   const [marcando, setMarcando] = useState(false);
   const [erroMetodo, setErroMetodo] = useState<string | null>(null);
+  const [motivoRejeicao, setMotivoRejeicao] = useState<string | null>(null);
 
   // createPortal ao <body>, só depois de o cliente montar.
   useEffect(() => setMontado(true), []);
 
-  // Cada abertura volta ao primeiro passo.
+  // Cada abertura volta ao primeiro passo e limpa o estado da sessão anterior.
   useEffect(() => {
-    if (aberto) setPasso("metodos");
+    if (!aberto) return;
+    setPasso("metodos");
+    setMetodo(null);
+    setPagamentoId(null);
+    setErroMetodo(null);
+    setMotivoRejeicao(null);
   }, [aberto]);
 
   useEffect(() => {
@@ -117,11 +154,54 @@ export default function PagamentoModal({ aberto, fechar, inscricaoId, nome, tom 
     };
   }, [aberto, fechar]);
 
+  /**
+   * Polling gentil do estado — ativo SÓ no passo "recebido" (modal aberta).
+   * Para em confirmed (→ onConfirmado), rejected (→ reenvio) e cancelled.
+   * Sempre um ciclo de cada vez; nunca corre em paralelo com o upload.
+   */
+  useEffect(() => {
+    if (passo !== "recebido" || !aberto || !inscricaoId) return;
+    let ativo = true;
+
+    async function verificar() {
+      try {
+        const res = await fetch(
+          `/api/inscricao/estado?inscricaoId=${encodeURIComponent(inscricaoId)}`,
+          { cache: "no-store" }
+        );
+        const dados = (await res.json()) as EstadoInscricao;
+        if (!ativo || !dados.ok) return;
+
+        if (dados.pagamento_estado === "confirmed") {
+          onConfirmado({ isBonus: dados.is_bonus === true });
+          return;
+        }
+        if (dados.pagamento_estado === "rejected") {
+          setMotivoRejeicao(dados.motivo_rejeicao ?? null);
+          setPasso("comprovativo");
+          return;
+        }
+        if (dados.pagamento_estado === "cancelled") {
+          return; // parar polling — a gestão cancelou o pagamento.
+        }
+      } catch {
+        // Silencioso — tenta de novo no próximo ciclo.
+      }
+    }
+
+    verificar();
+    const id = window.setInterval(verificar, ESTADO_POLL_MS);
+    return () => {
+      ativo = false;
+      window.clearInterval(id);
+    };
+  }, [passo, aberto, inscricaoId, onConfirmado]);
+
   function aoClicarFora(e: React.MouseEvent) {
     if (e.target === overlayRef.current) fechar();
   }
 
-  /** Marca o método no Supabase e segue o fluxo do método escolhido. */
+  /** Marca o método no Supabase (cria o pagamento) e segue o fluxo. */
   async function escolherMetodo(escolhido: MetodoPagamento) {
     setMarcando(true);
     setErroMetodo(null);
@@ -140,20 +220,38 @@ export default function PagamentoModal({ aberto, fechar, inscricaoId, nome, tom 
         return;
       }
 
+      setMetodo(escolhido);
+      setPagamentoId(dados.pagamento.pagamentoId);
+
       if (escolhido === "sumup") {
-        // Marca primeiro, redireciona depois — mesma aba, como definido.
-        window.location.assign(SUMUP_URL);
+        // Checkout numa nova aba — a modal fica aberta para o comprovativo.
+        window.open(SUMUP_URL, "_blank", "noopener");
+        setPasso("sumup");
         return;
       }
 
-      setMetodo(escolhido);
-      setPasso(escolhido === "mbway" ? "mbway" : "transferencia");
+      setPasso(escolhido === "mbway" ? "mbway" : escolhido === "qr" ? "qr" : "transferencia");
     } catch {
       setErroMetodo("Sem ligação ao servidor. Tenta novamente.");
     } finally {
       setMarcando(false);
     }
   }
+
+  /** Voltar do comprovativo para o ecrã de instruções do método escolhido. */
+  function voltarAoMetodo() {
+    if (metodo === "sumup") setPasso("sumup");
+    else if (metodo === "mbway") setPasso("mbway");
+    else if (metodo === "qr") setPasso("qr");
+    else if (metodo === "transferencia") setPasso("transferencia");
+    else setPasso("metodos");
+  }
+
+  /** Upload concluído → "Comprovativo recebido" (nunca "Pagamento confirmado"). */
+  const aoUploadSucesso = useCallback(() => {
+    setMotivoRejeicao(null);
+    setPasso("recebido");
+  }, []);
 
   /* ── Ecrãs ────────────────────────────────────────────────── */
 
@@ -345,8 +443,6 @@ export default function PagamentoModal({ aberto, fechar, inscricaoId, nome, tom 
                       </figure>
                     </div>
 
-                    {/* P3 — bónus de sinalização / ecobag: entra aqui (slot reservado). */}
-
                     {/* Métodos de pagamento */}
                     <div className="mt-8 space-y-3">
                       <CartaoMetodo
@@ -360,6 +456,12 @@ export default function PagamentoModal({ aberto, fechar, inscricaoId, nome, tom 
                         titulo="MB Way"
                         descricao="Pagas com o telemóvel e confirmas na app."
                         icone={<MbWayIcon className="h-6 w-6" />}
+                      />
+                      <CartaoMetodo
+                        metodo="qr"
+                        titulo="Código QR"
+                        descricao="Pagas por leitura do código QR no telemóvel."
+                        icone={<QrCode className="h-6 w-6" />}
                       />
                       <CartaoMetodo
                         metodo="transferencia"
@@ -377,18 +479,74 @@ export default function PagamentoModal({ aberto, fechar, inscricaoId, nome, tom 
                         {erroMetodo}
                       </p>
                     )}
+                  </div>
+                )}
 
-                    {/* Disclaimer da campanha ecobag */}
-                    {campanhaAtiva && (
-                      <p
-                        className={`mt-8 text-center text-[0.75rem] leading-relaxed ${
-                          claro ? "text-carvao/45" : "text-creme/45"
-                        }`}
-                      >
-                        🎁 Oferta válida apenas para as primeiras 50 inscrições na Lista de
-                        Espera e enquanto a campanha estiver ativa.
-                      </p>
-                    )}
+                {/* ── PASSO: SumUp ── */}
+                {passo === "sumup" && (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setPasso("metodos")}
+                      className={`inline-flex min-h-11 items-center gap-2 text-[0.8125rem] ${
+                        claro ? "text-vinho/60 hover:text-vinho" : "text-creme/60 hover:text-creme"
+                      }`}
+                    >
+                      <ArrowLeft className="h-4 w-4" aria-hidden />
+                      Voltar aos métodos
+                    </button>
+
+                    <h2
+                      id={TITULO_MODAL}
+                      className={`display mt-5 flex items-center gap-3 text-[1.75rem] leading-[1.05] sm:text-[2.125rem] ${
+                        claro ? "text-vinho" : "text-creme"
+                      }`}
+                    >
+                      <GlobeIcon className="h-7 w-7 text-blush" />
+                      Pagamento por cartão
+                    </h2>
+
+                    <ol
+                      className={`mt-6 space-y-4 text-[0.9375rem] leading-relaxed ${
+                        claro ? "text-carvao/75" : "text-creme/75"
+                      }`}
+                    >
+                      <li className="flex gap-3">
+                        <span className="font-medium text-blush">1.</span>
+                        Abrimos o checkout seguro da SumUp numa nova aba.
+                      </li>
+                      <li className="flex gap-3">
+                        <span className="font-medium text-blush">2.</span>
+                        Pagas com cartão (o valor é {VALOR_INSCRICAO_TEXT}).
+                      </li>
+                      <li className="flex gap-3">
+                        <span className="font-medium text-blush">3.</span>
+                        Volta a esta janela e envia o comprovativo do pagamento.
+                      </li>
+                    </ol>
+
+                    <a
+                      href={SUMUP_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-7 inline-flex w-full items-center justify-center gap-3 rounded-full bg-rosa px-7 py-4 text-[0.9375rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro"
+                    >
+                      <GlobeIcon className="h-4.5 w-4.5" />
+                      Reabrir o checkout SumUp
+                    </a>
+
+                    <button
+                      type="button"
+                      onClick={() => setPasso("comprovativo")}
+                      className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full border px-7 py-4 text-[0.9375rem] font-medium transition-colors duration-300 ${
+                        claro
+                          ? "border-vinho/25 text-vinho hover:border-vinho/45"
+                          : "border-creme/25 text-creme/80 hover:border-creme/50 hover:bg-creme/5"
+                      }`}
+                    >
+                      Já fiz o pagamento
+                      <ChevronRight className="h-4 w-4" aria-hidden />
+                    </button>
                   </div>
                 )}
 
@@ -432,8 +590,7 @@ export default function PagamentoModal({ aberto, fechar, inscricaoId, nome, tom 
                       </li>
                       <li className="flex gap-3">
                         <span className="font-medium text-blush">3.</span>
-                        Depois de pagar, combina a confirmação por WhatsApp para garantirmos o
-                        teu lugar.
+                        Depois de pagar, envia o comprovativo para garantirmos o teu lugar.
                       </li>
                     </ol>
 
@@ -460,7 +617,76 @@ export default function PagamentoModal({ aberto, fechar, inscricaoId, nome, tom 
 
                     <button
                       type="button"
-                      onClick={() => setPasso("obrigado")}
+                      onClick={() => setPasso("comprovativo")}
+                      className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full border px-7 py-4 text-[0.9375rem] font-medium transition-colors duration-300 ${
+                        claro
+                          ? "border-vinho/25 text-vinho hover:border-vinho/45"
+                          : "border-creme/25 text-creme/80 hover:border-creme/50 hover:bg-creme/5"
+                      }`}
+                    >
+                      Já fiz o pagamento
+                      <ChevronRight className="h-4 w-4" aria-hidden />
+                    </button>
+                  </div>
+                )}
+
+                {/* ── PASSO: Código QR ── */}
+                {passo === "qr" && (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setPasso("metodos")}
+                      className={`inline-flex min-h-11 items-center gap-2 text-[0.8125rem] ${
+                        claro ? "text-vinho/60 hover:text-vinho" : "text-creme/60 hover:text-creme"
+                      }`}
+                    >
+                      <ArrowLeft className="h-4 w-4" aria-hidden />
+                      Voltar aos métodos
+                    </button>
+
+                    <h2
+                      id={TITULO_MODAL}
+                      className={`display mt-5 flex items-center gap-3 text-[1.75rem] leading-[1.05] sm:text-[2.125rem] ${
+                        claro ? "text-vinho" : "text-creme"
+                      }`}
+                    >
+                      <QrCode className="h-7 w-7 text-blush" />
+                      Código QR
+                    </h2>
+
+                    <p
+                      className={`mt-6 text-[0.9375rem] leading-relaxed ${
+                        claro ? "text-carvao/75" : "text-creme/75"
+                      }`}
+                    >
+                      O código QR está a ser configurado para este evento. Brevemente poderás
+                      pagar por leitura direta no telemóvel.
+                    </p>
+
+                    <p
+                      className={`mt-4 rounded-sm border px-4 py-3 text-[0.8125rem] leading-relaxed ${
+                        claro
+                          ? "border-vinho/15 bg-creme-profundo/60 text-carvao/70"
+                          : "border-creme/20 bg-creme/5 text-creme/70"
+                      }`}
+                    >
+                      Método em configuração. Entretanto usa outro método ou fala connosco no
+                      WhatsApp para garantir o teu lugar.
+                    </p>
+
+                    <a
+                      href={linkWhatsAppPagamento("qr")}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-7 inline-flex w-full items-center justify-center gap-3 rounded-full bg-[#4fce5d] px-7 py-4 text-[0.9375rem] font-medium text-carvao transition-all duration-300 hover:brightness-105"
+                    >
+                      <WhatsAppIcon className="h-4.5 w-4.5" />
+                      Combinar confirmação por WhatsApp
+                    </a>
+
+                    <button
+                      type="button"
+                      onClick={() => setPasso("comprovativo")}
                       className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full border px-7 py-4 text-[0.9375rem] font-medium transition-colors duration-300 ${
                         claro
                           ? "border-vinho/25 text-vinho hover:border-vinho/45"
@@ -578,7 +804,7 @@ export default function PagamentoModal({ aberto, fechar, inscricaoId, nome, tom 
 
                     <button
                       type="button"
-                      onClick={() => setPasso("obrigado")}
+                      onClick={() => setPasso("comprovativo")}
                       className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full border px-7 py-4 text-[0.9375rem] font-medium transition-colors duration-300 ${
                         claro
                           ? "border-vinho/25 text-vinho hover:border-vinho/45"
@@ -591,8 +817,74 @@ export default function PagamentoModal({ aberto, fechar, inscricaoId, nome, tom 
                   </div>
                 )}
 
-                {/* ── PASSO: obrigado ── */}
-                {passo === "obrigado" && (
+                {/* ── PASSO: comprovativo (upload) ── */}
+                {passo === "comprovativo" && (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={voltarAoMetodo}
+                      className={`inline-flex min-h-11 items-center gap-2 text-[0.8125rem] ${
+                        claro ? "text-vinho/60 hover:text-vinho" : "text-creme/60 hover:text-creme"
+                      }`}
+                    >
+                      <ArrowLeft className="h-4 w-4" aria-hidden />
+                      Voltar às instruções
+                    </button>
+
+                    <h2
+                      id={TITULO_MODAL}
+                      className={`display mt-5 text-[1.75rem] leading-[1.05] sm:text-[2.125rem] ${
+                        claro ? "text-vinho" : "text-creme"
+                      }`}
+                    >
+                      Envia o comprovativo
+                    </h2>
+
+                    <p
+                      className={`mt-4 text-[0.9375rem] leading-relaxed ${
+                        claro ? "text-carvao/70" : "text-creme/70"
+                      }`}
+                    >
+                      Anexa o comprovativo do pagamento (captura de ecrã, recibo ou PDF) para
+                      validarmos o teu lugar. Fica guardado em segurança e só nós o vemos.
+                    </p>
+
+                    {motivoRejeicao && (
+                      <div
+                        role="alert"
+                        className="mt-5 rounded-sm border border-[#e88b8b]/40 bg-[#e88b8b]/10 px-4 py-3 text-[0.875rem] text-[#f3c0c0]"
+                      >
+                        <p>
+                          <strong className="font-medium">O comprovativo anterior foi rejeitado.</strong>{" "}
+                          {motivoRejeicao} Envia um novo comprovativo válido.
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="mt-6">
+                      {pagamentoId ? (
+                        <PaymentProofUpload
+                          inscricaoId={inscricaoId}
+                          pagamentoId={pagamentoId}
+                          onSucesso={aoUploadSucesso}
+                        />
+                      ) : (
+                        <p
+                          className={`rounded-sm border px-4 py-3 text-[0.875rem] leading-relaxed ${
+                            claro
+                              ? "border-vinho/15 bg-creme-profundo/60 text-carvao/70"
+                              : "border-creme/20 bg-creme/5 text-creme/70"
+                          }`}
+                        >
+                          Não conseguimos preparar o upload. Volta aos métodos e tenta de novo.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* ── PASSO: recebido ── */}
+                {passo === "recebido" && (
                   <div className="text-center">
                     <div
                       className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full border ${
@@ -610,7 +902,7 @@ export default function PagamentoModal({ aberto, fechar, inscricaoId, nome, tom 
                         claro ? "text-vinho" : "text-creme"
                       }`}
                     >
-                      Inscrição registada!
+                      Comprovativo recebido
                     </h2>
 
                     <p
@@ -618,30 +910,28 @@ export default function PagamentoModal({ aberto, fechar, inscricaoId, nome, tom 
                         claro ? "text-carvao/75" : "text-creme/70"
                       }`}
                     >
-                      {primeiroNome ? `${primeiroNome}, assim que` : "Assim que"} o pagamento for
-                      confirmado, garantimos o teu lugar.
+                      Estamos a validar o teu pagamento.
                     </p>
 
-                    <ul
-                      className={`mx-auto mt-7 max-w-sm space-y-3 text-left text-[0.875rem] leading-relaxed ${
-                        claro ? "text-carvao/75" : "text-creme/75"
+                    <p
+                      className={`mx-auto mt-3 max-w-sm text-[0.8125rem] leading-relaxed ${
+                        claro ? "text-carvao/55" : "text-creme/50"
                       }`}
                     >
-                      <li className="flex gap-3">
-                        <span aria-hidden>✓</span>
-                        Confirma o pagamento por WhatsApp para validarmos o teu lugar.
-                      </li>
-                      <li className="flex gap-3">
-                        <span aria-hidden>✓</span>
-                        Recebes a confirmação e o acesso ao ponto de recolha do kit de higiene.
-                      </li>
-                      <li className="flex gap-3">
-                        <span aria-hidden>✓</span>
-                        Estamos contigo até lá — guarda a data do {""}evento.
-                      </li>
-                    </ul>
+                      Assim que confirmarmos (normalmente em poucas horas), o teu lugar fica
+                      garantido e avisamos-te aqui — podes deixar esta janela aberta.
+                    </p>
 
-                    <div className="fio mx-auto mt-8 max-w-[12rem] text-blush" aria-hidden />
+                    <p
+                      className={`mt-6 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[0.8125rem] ${
+                        claro
+                          ? "border-vinho/15 text-vinho/60"
+                          : "border-creme/20 text-creme/60"
+                      }`}
+                    >
+                      <RefreshCw className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                      A aguardar confirmação…
+                    </p>
 
                     <a
                       href={linkWhatsAppPagamento(metodo ?? "mbway")}
@@ -650,7 +940,7 @@ export default function PagamentoModal({ aberto, fechar, inscricaoId, nome, tom 
                       className="mt-8 inline-flex w-full items-center justify-center gap-3 rounded-full bg-[#4fce5d] px-7 py-4 text-[0.9375rem] font-medium text-carvao transition-all duration-300 hover:brightness-105"
                     >
                       <WhatsAppIcon className="h-4.5 w-4.5" />
-                      Falar com a Vitória
+                      Falar connosco no WhatsApp
                     </a>
 
                     <button

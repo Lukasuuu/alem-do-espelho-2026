@@ -9,13 +9,19 @@ export const dynamic = "force-dynamic";
 export const preferredRegion = ["cdg1"];
 
 type Resposta =
-  | { ok: true; inscricaoId: string; metodo: MetodoPagamento }
+  | {
+      ok: true;
+      inscricaoId: string;
+      metodo: MetodoPagamento;
+      pagamento: { pagamentoId: string; estado: string };
+    }
   | { ok: false; mensagem: string; tipo: TipoErro; campos?: Record<string, string> };
 
 /**
- * Marca o método de pagamento escolhido na modal. Chamado ANTES de
- * redirecionar para o SumUp e ao abrir MB Way / Transferência, para a
- * reconciliação manual saber por onde cada pessoa pagou.
+ * Marca o método de pagamento escolhido na modal e cria o pagamento
+ * (estado payment_started). Chamado ANTES de redirecionar para o SumUp e ao
+ * abrir MB Way / QR / Transferência, para a reconciliação manual saber por
+ * onde cada pessoa pagou. O proof_token é gerado no servidor e nunca sai daqui.
  */
 export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
   // 1. Limite de tentativas por IP
@@ -91,7 +97,51 @@ export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
 
     const resultado = data as { status: "ok"; id: string; metodo: MetodoPagamento };
 
-    return NextResponse.json({ ok: true, inscricaoId: resultado.id, metodo: resultado.metodo });
+    // FASE2: cria o pagamento (payment_started) e devolve o id para o fluxo
+    // de comprovativo. Ownership verificado por ip_hash (dono da inscrição).
+    const { data: pagamento, error: erroPagamento } = await supabase.rpc("criar_pagamento", {
+      p_inscricao_id: resultado.id,
+      p_metodo: resultado.metodo,
+      p_ip_hash: hashIp(ip),
+    });
+
+    if (erroPagamento) {
+      const codigo = erroPagamento.message ?? "";
+      if (codigo.includes("invalid_metodo")) {
+        return NextResponse.json(
+          { ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao", campos: { metodo: "Método de pagamento inválido." } },
+          { status: 422 }
+        );
+      }
+      if (codigo.includes("inscricao_nao_encontrada")) {
+        return NextResponse.json(
+          { ok: false, mensagem: "Não encontrámos a tua inscrição. Recarrega e tenta novamente.", tipo: "validacao" },
+          { status: 404 }
+        );
+      }
+      if (codigo.includes("inscricao_cancelada")) {
+        return NextResponse.json(
+          { ok: false, mensagem: "A tua inscrição foi cancelada. Fala connosco no WhatsApp.", tipo: "fase" },
+          { status: 422 }
+        );
+      }
+      if (codigo.includes("acesso_negado")) {
+        console.error("[inscricao-metodo] acesso_negado ao criar pagamento");
+        return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 403 });
+      }
+
+      console.error("[inscricao-metodo] erro ao criar pagamento:", erroPagamento.message);
+      return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 502 });
+    }
+
+    const pagamentoData = pagamento as { status: string; pagamento_id: string; estado: string };
+
+    return NextResponse.json({
+      ok: true,
+      inscricaoId: resultado.id,
+      metodo: resultado.metodo,
+      pagamento: { pagamentoId: pagamentoData.pagamento_id, estado: pagamentoData.estado },
+    });
   } catch (erro) {
     console.error("[inscricao-metodo] falha inesperada:", erro);
     return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 500 });

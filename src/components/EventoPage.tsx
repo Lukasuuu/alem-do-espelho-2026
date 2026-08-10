@@ -13,6 +13,7 @@ import { contarModaisAbertos } from "@/lib/scroll-lock";
 import WaitlistModal from "@/components/WaitlistModal";
 import InscricaoModal from "@/components/InscricaoModal";
 import PagamentoModal from "@/components/PagamentoModal";
+import ParabensModal from "@/components/ParabensModal";
 import { definirAberturaModal } from "@/lib/modal";
 import { faseForcada } from "@/lib/fase";
 import { FIM_CAMPANHA_ISO, LIMITE_BONUS, CAMPAIGN_POLL_MS } from "@/lib/campanha";
@@ -41,6 +42,7 @@ export default function EventoPage({ faseInscricaoAtiva }: Props) {
   const [inscricaoAberto, setInscricaoAberto] = useState(false);
   const [pagamentoAberto, setPagamentoAberto] = useState(false);
   const [inscricaoDados, setInscricaoDados] = useState<{ id: string; nome: string } | null>(null);
+  const [parabensDados, setParabensDados] = useState<{ nome: string; isBonus: boolean } | null>(null);
   const [inscritos, setInscritos] = useState<number | null>(null);
   const [encerrado, setEncerrado] = useState(false);
 
@@ -51,8 +53,7 @@ export default function EventoPage({ faseInscricaoAtiva }: Props) {
   // Lista gratuita aberta: qualquer momento antes de FIM_CAMPANHA (independente do bónus).
   const listaAberta = Date.now() < fimCampanhaMs;
 
-  // ── Polling do counter da campanha (vive aqui para o disclaimer do pagamento
-  //    também saber quando a campanha deixa de estar ativa). ──
+  // ── Polling do counter da campanha ecobag (bónus da lista de espera) ──
   const buscarCount = useCallback(async () => {
     try {
       const res = await fetch("/api/campanha/inscritos", { cache: "no-store" });
@@ -112,6 +113,20 @@ export default function EventoPage({ faseInscricaoAtiva }: Props) {
     setInscricaoDados({ id, nome });
     setPagamentoAberto(true);
   }, []);
+
+  // Pagamento confirmado (estado_inscricao === "confirmed", via polling do
+  // PagamentoModal) → fecha o pagamento e abre os parabéns com o isBonus da DB.
+  const aoPagamentoConfirmado = useCallback(
+    (dados: { isBonus: boolean }) => {
+      if (!inscricaoDados) return;
+      setPagamentoAberto(false);
+      setInscricaoDados(null);
+      setParabensDados({ nome: inscricaoDados.nome, isBonus: dados.isBonus });
+    },
+    [inscricaoDados]
+  );
+
+  const fecharParabens = useCallback(() => setParabensDados(null), []);
 
   // "Quero fazer parte" na modal do bónus: fecha-a e abre a lista de espera.
   const aoQueroFazerParte = useCallback(() => {
@@ -173,9 +188,15 @@ export default function EventoPage({ faseInscricaoAtiva }: Props) {
           fechar={fecharPagamento}
           inscricaoId={inscricaoDados.id}
           nome={inscricaoDados.nome}
-          campanhaAtiva={campanhaEcobag}
+          onConfirmado={aoPagamentoConfirmado}
         />
       )}
+      <ParabensModal
+        aberto={!!parabensDados}
+        fechar={fecharParabens}
+        nome={parabensDados?.nome ?? ""}
+        isBonus={parabensDados?.isBonus ?? false}
+      />
     </>
   );
 }

@@ -109,7 +109,7 @@ export const inscricaoSchema = z.object({
 export type InscricaoInput = z.input<typeof inscricaoSchema>;
 
 /** Métodos de pagamento da modal — são também os valores da coluna da base. */
-export const METODOS_PAGAMENTO = ["sumup", "mbway", "transferencia"] as const;
+export const METODOS_PAGAMENTO = ["sumup", "mbway", "qr", "transferencia"] as const;
 export type MetodoPagamento = (typeof METODOS_PAGAMENTO)[number];
 
 /** PATCH que marca o método escolhido (chamado ao abrir cada método). */

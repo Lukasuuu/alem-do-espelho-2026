@@ -11,15 +11,8 @@ import SponsorFlow from "./SponsorFlow";
 import VitrinePatrocinadoras from "./VitrinePatrocinadoras";
 import Countdown from "./Countdown";
 import { useCampaignCountdown } from "@/hooks/useCampaignCountdown";
-import { FIM_CAMPANHA_ISO } from "@/lib/campanha";
+import { FIM_CAMPANHA_ISO, KIT_ITENS } from "@/lib/campanha";
 import { SPONSORS_ATIVOS } from "@/lib/sponsors";
-
-const kitItens = [
-  "Escovas de dente (Dentax)",
-  "Pasta de dente (Anticáries)",
-  "Sabonete (Margarida Cosmética)",
-  "Absorvente (Leve & Segura)",
-] as const;
 
 const vantagensInscricao = [
   "Acesso ao evento Além do Espelho 2026",
@@ -215,7 +208,7 @@ export default function CausaSocial({ faseInscricaoAtiva }: Props) {
                   </p>
 
                   <ul className="space-y-2.5">
-                    {kitItens.map((item) => (
+                    {KIT_ITENS.map((item) => (
                       <li key={item} className="flex items-center gap-3">
                         <span
                           aria-hidden

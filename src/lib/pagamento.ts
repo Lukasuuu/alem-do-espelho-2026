@@ -76,6 +76,7 @@ if (!validarIban(TRANSFERENCIA.iban)) {
 const NOME_METODO: Record<MetodoPagamento, string> = {
   sumup: "SumUp",
   mbway: "MB Way",
+  qr: "Código QR",
   transferencia: "Transferência Bancária",
 };
 
