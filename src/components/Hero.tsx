@@ -38,7 +38,7 @@ export default function Hero({ abrirModal }: Props) {
           <motion.div {...surgir(0.05)} className="flex items-center gap-4">
             <span className="eyebrow text-dourado-claro/80">{site.edicao}</span>
             <span className="h-px w-12 bg-creme/20" aria-hidden />
-            <span className="eyebrow text-creme/40">Lista de espera aberta</span>
+            <span className="eyebrow text-creme/40">Inscrições abertas</span>
           </motion.div>
 
           <motion.h1 {...surgir(0.15)} className="display mt-7 tracking-[-0.01em] text-creme">
@@ -67,17 +67,17 @@ export default function Hero({ abrirModal }: Props) {
           >
             A segunda edição do Além do Espelho acontece a{" "}
             <strong className="font-medium text-creme">{site.data.extenso}</strong>, no{" "}
-            {site.local.nome}, em {site.local.cidade}. Entra agora na Lista de Espera e garante
-            prioridade para receber o bónus exclusivo da campanha.
+            {site.local.nome}, em {site.local.cidade}. As inscrições estão abertas — são 100
+            lugares, garantidos por ordem de pagamento.
           </motion.p>
 
-          {/* Contagem regressiva para o dia do evento (só lugares, sem preço) */}
+          {/* Contagem regressiva para o dia do evento (lugares + preço da inscrição) */}
           <motion.div {...surgir(0.4)} className="mt-8">
             <Countdown
               tom="claro"
               alvo={site.data.iso}
               rotulo="Faltam"
-              suporte={`${site.vagas} lugares`}
+              suporte={`${site.vagas} lugares · inscrição 40€`}
               mensagemEncerrado="O dia chegou — vemo-nos lá!"
             />
           </motion.div>

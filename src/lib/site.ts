@@ -25,6 +25,9 @@ export const site = {
   data: {
     // 17 de outubro de 2026, hora local de Braga (WEST, UTC+1)
     iso: "2026-10-17T09:00:00+01:00",
+    // Hora de fim (09:00–18:00, dia completo) — confirmada por Lucas a 11/08;
+    // usada no endDate do JSON-LD (o Google descarta eventos sem data de fim).
+    fim: "2026-10-17T18:00:00+01:00",
     extenso: "17 de outubro de 2026",
     curta: "17 OUT 2026",
     dia: "17",

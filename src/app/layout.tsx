@@ -4,12 +4,12 @@ import MotionProvider from "@/components/MotionProvider";
 import SaltarParaInscricao from "@/components/SaltarParaInscricao";
 import "./globals.css";
 
-const descricao = `A 2ª edição do Além do Espelho acontece a ${site.data.extenso}, no ${site.local.nome}, em ${site.local.cidade}. Um dia de desenvolvimento pessoal feminino, autoestima e networking para mulheres que querem voltar a encontrar-se. Entra na lista de espera.`;
+const descricao = `A 2ª edição do Além do Espelho acontece a ${site.data.extenso}, no ${site.local.nome}, em ${site.local.cidade}. Um dia de desenvolvimento pessoal feminino, autoestima e networking para mulheres que querem voltar a encontrar-se. As inscrições estão abertas — 100 lugares, garantidos por ordem de pagamento.`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
-    default: `${site.nome} · ${site.subtitulo} | Lista de espera`,
+    default: `${site.nome} · ${site.subtitulo} | Inscrições abertas`,
     template: `%s | ${site.nome}`,
   },
   description: descricao,
@@ -62,6 +62,7 @@ const dadosEstruturados = {
   name: `${site.nome} · ${site.subtitulo}`,
   description: descricao,
   startDate: site.data.iso,
+  endDate: site.data.fim,
   eventStatus: "https://schema.org/EventScheduled",
   eventAttendanceMode: "https://schema.org/OfflineEventAttendanceMode",
   location: {
@@ -80,6 +81,13 @@ const dadosEstruturados = {
   },
   performer: { "@type": "Person", name: site.anfitria.nome },
   image: [`${site.url}/og-image.jpg`],
+  offers: {
+    "@type": "Offer",
+    price: "40",
+    priceCurrency: "EUR",
+    availability: "https://schema.org/InStock",
+    url: `${site.url}/alem-do-espelho-2026`,
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
