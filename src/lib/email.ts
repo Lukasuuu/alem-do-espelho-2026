@@ -1,18 +1,18 @@
 /**
- * Email transacional (FASE2) — ENV-GATED via EmailJS.
+ * Email transacional (FASE2) — via EmailJS, com as credenciais reais
+ * fornecidas pelo Lucas (11/08/2026): SERVICE_ID service_09wx5bn,
+ * TEMPLATE_ID template_ix2xnxj ("Confirmação de Inscrição"), PUBLIC_KEY
+ * pública por design do EmailJS (nunca pedir/armazenar senha SMTP).
  *
- * 🔴 NÃO ATIVAR envio real enquanto as credenciais não forem fornecidas pelo
- *    Lucas. As três variáveis abaixo são as ÚNICAS autorizadas (públicas do
- *    EmailJS — nunca pedir nem armazenar senha):
- *      NEXT_PUBLIC_EMAILJS_SERVICE_ID  — Service ID da conta EmailJS
- *      NEXT_PUBLIC_EMAILJS_TEMPLATE_ID — Template ID do email do evento
- *      NEXT_PUBLIC_EMAILJS_PUBLIC_KEY  — Public key do EmailJS (safe p/ client)
+ * INVARIANTE DE SEGURANÇA (directiva): o envio de email é PARALELO e
+ * INDEPENDENTE da confirmação do pagamento. Se o email falhar, a inscrição
+ * já confirmada na DB continua confirmada — este módulo nunca bloqueia nem
+ * reverte nada: captura o erro, regista e devolve false.
  *
- * Enquanto não estiverem configuradas, enviarEmailNotificacao() é um no-op
- * seguro: nunca lança, nunca toca a rede, nunca rebenta o chamador. Assim que
- * as credenciais chegarem, implementar o corpo em "quandoConfigurado" e só
- * então o envio passa a disparar. Este é o ÚNICO ponto de saída de email do
- * projeto.
+ * ENV-GATED: se faltar QUALQUER uma das três variáveis, enviarEmailNotificacao()
+ * é um no-op seguro (retorna false, nunca lança, nunca toca a rede). Só passa
+ * a enviar com as três configuradas (NEXT_PUBLIC, inlined em build).
+ * Este é o ÚNICO ponto de saída de email do projeto.
  */
 
 const SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID ?? "";
@@ -22,13 +22,24 @@ const PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY ?? "";
 /** true apenas quando as três credenciais EmailJS existem (vazias → desligado). */
 export const EMAILJS_CONFIGURADO = Boolean(SERVICE_ID && TEMPLATE_ID && PUBLIC_KEY);
 
-export type ParametrosEmail = Record<string, string | number | boolean>;
+/**
+ * Parâmetros do template "Confirmação de Inscrição - Além do Espelho"
+ * (template_ix2xnxj). Nomes EXATOS do template — não renomear.
+ */
+export type ParametrosEmail = {
+  to_name: string; // nome do inscrito
+  to_email: string; // email do inscrito
+  amount: string | number; // valor pago (40)
+  order_id: string; // referência — id da inscrição
+  event_link: string; // link do evento
+};
 
 /**
- * Envia um email transacional se (e só se) o EmailJS estiver configurado.
- * Sem credenciais → no-op seguro (retorna false), silencioso em produção e com
- * aviso único em dev. Com credenciais presentes mas implementação pendente →
- * lança um erro alto (tripwire), para nunca haver envio "morto" por engano.
+ * Envia o email de confirmação de inscrição (fire-and-forget).
+ * - Sem credenciais → no-op seguro (false), silencioso.
+ * - Com credenciais → importa @emailjs/browser só nesta chamada (não pesa o
+ *   bundle de quem nunca envia) e envia; qualquer falha é capturada aqui —
+ *   o chamador nunca rebenta por causa de email.
  */
 export async function enviarEmailNotificacao(
   parametros: ParametrosEmail
@@ -42,18 +53,15 @@ export async function enviarEmailNotificacao(
     return false;
   }
 
-  // quandoConfigurado — com as credenciais presentes, importar dinamicamente
-  // @emailjs/browser (não está instalado de propósito) e enviar:
-  //
-  //   const { default: emailjs } = await import("@emailjs/browser");
-  //   await emailjs.send(SERVICE_ID, TEMPLATE_ID, parametros, {
-  //     publicKey: PUBLIC_KEY,
-  //   });
-  //   return true;
-  //
-  // Se o envio falhar, registar o erro e devolver false — nunca rebentar o
-  // fluxo de inscrição/pagamento que o chamou.
-  throw new Error(
-    "[email] Credenciais presentes mas envio ainda não implementado. PARAR e pedir os dados reais antes de ativar."
-  );
+  try {
+    const { default: emailjs } = await import("@emailjs/browser");
+    await emailjs.send(SERVICE_ID, TEMPLATE_ID, parametros, {
+      publicKey: PUBLIC_KEY,
+    });
+    return true;
+  } catch (err) {
+    // Directiva: email nunca bloqueia a confirmação de pagamento já processada.
+    console.error("[email] Falha ao enviar email de confirmação:", err);
+    return false;
+  }
 }

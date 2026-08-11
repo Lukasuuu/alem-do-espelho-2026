@@ -9,6 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@emailjs/browser": "^4.4.1",
     "@supabase/supabase-js": "^2.58.0",
     "framer-motion": "^12.23.12",
     "libphonenumber-js": "^1.12.10",

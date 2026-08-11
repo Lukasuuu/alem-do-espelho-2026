@@ -1,17 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { BadgeCheck, Check, Heart } from "lucide-react";
 import Reveal from "./Reveal";
 import ModalPontosRecolha from "./ModalPontosRecolha";
 import SponsorFlow from "./SponsorFlow";
 import VitrinePatrocinadoras from "./VitrinePatrocinadoras";
-import Countdown from "./Countdown";
-import { useCampaignCountdown } from "@/hooks/useCampaignCountdown";
-import { FIM_CAMPANHA_ISO, KIT_ITENS } from "@/lib/campanha";
+import { KIT_ITENS } from "@/lib/campanha";
 import { SPONSORS_ATIVOS } from "@/lib/sponsors";
 
 const vantagensInscricao = [
@@ -27,8 +24,8 @@ const EASE = [0.22, 1, 0.36, 1] as const;
  * Secção "Além de Mim" — causa social solidária.
  *
  * Refatoração premium (ago 2026): integração total com a identidade da
- * landing. Fundo claro (creme → creme profundo) em vez do verde; moldura da
- * ecobag em vidro translúcido com blur + glow dourado e flutuação subtil;
+ * landing. Fundo claro (creme → creme profundo) em vez do verde; moldura do
+ * kit de solidariedade em vidro translúcido com blur + glow dourado e flutuação;
  * cartões em glassmorphism com contorno dourado; título verde-musgo + dourado
  * metálico. O verde fica reservado a acentos (título, texto do selo), nunca
  * ao fundo. Conteúdo e funcionalidade mantidos intactos.
@@ -44,23 +41,6 @@ type Props = { faseInscricaoAtiva: boolean };
  */
 export default function CausaSocial({ faseInscricaoAtiva }: Props) {
   const [pontosAberto, setPontosAberto] = useState(false);
-  const campanha = useCampaignCountdown();
-  const router = useRouter();
-
-  // ── Viragem ao vivo (FIM_CAMPANHA_ISO = 10/08 10:00 Lisboa) ──
-  // Quando a contagem chega a zero, ~2 s depois fazemos router.refresh(): o
-  // servidor (force-dynamic + revalidate=0) volta a calcular a fase e a secção
-  // de patrocinadores liga sem reload forçado. A guarda refreshAgendado garante
-  // UMA única chamada por sessão de página — sem loop mesmo que o servidor
-  // responda "lista" (o refresh é idempotente e não volta a agendar).
-  const refreshAgendado = useRef(false);
-  useEffect(() => {
-    if (campanha.encerrado && !refreshAgendado.current) {
-      refreshAgendado.current = true;
-      const t = window.setTimeout(() => router.refresh(), 2000);
-      return () => window.clearTimeout(t);
-    }
-  }, [campanha.encerrado, router]);
 
   return (
     <>
@@ -117,28 +97,7 @@ export default function CausaSocial({ faseInscricaoAtiva }: Props) {
         </svg>
 
         <div className="relative mx-auto max-w-6xl px-5 sm:px-8">
-          {/* ── Cronómetro da campanha ── */}
-          <Reveal delay={0.05}>
-            <div className="mx-auto mb-12 w-full max-w-[34rem] lg:mb-16">
-              <div className="vidro-cartao rounded-2xl p-6 sm:p-8">
-                <Countdown
-                  tom="escuro"
-                  alvo={FIM_CAMPANHA_ISO}
-                  rotulo="A campanha termina em"
-                  suporte="Lista de espera aberta até segunda-feira, 10 de agosto, às 10:00."
-                  mensagemEncerrado="A campanha terminou."
-                  dias={campanha.dias}
-                  horas={campanha.horas}
-                  minutos={campanha.minutos}
-                  segundos={campanha.segundos}
-                  encerrado={campanha.encerrado}
-                  gradeMobile
-                />
-              </div>
-            </div>
-          </Reveal>
-
-          {/* ── Layout duas colunas: conteúdo à esquerda, ecobag centrada ── */}
+          {/* ── Layout duas colunas: conteúdo à esquerda, kit à direita ── */}
           <div className="grid items-center gap-14 lg:grid-cols-[1fr_clamp(300px,36vw,460px)] lg:gap-16">
             {/* ═══ Coluna esquerda ═══ */}
             <div className="order-2 lg:order-1">
@@ -242,7 +201,7 @@ export default function CausaSocial({ faseInscricaoAtiva }: Props) {
               </Reveal>
             </div>
 
-            {/* ═══ Coluna direita: ecobag em moldura de vidro, centrada ═══ */}
+            {/* ═══ Coluna direita: kit de solidariedade em moldura de vidro, centrado ═══ */}
             <motion.div
               initial={{ opacity: 0, y: 28, scale: 0.96 }}
               whileInView={{ opacity: 1, y: 0, scale: 1 }}
@@ -270,7 +229,7 @@ export default function CausaSocial({ faseInscricaoAtiva }: Props) {
                   >
                     <Image
                       src="/brand/causasocial.webp"
-                      alt="Ecobag do Além do Espelho 2026 com silhueta de mulher africana, girafas e produtos de higiene — kit de solidariedade"
+                      alt="Kit de solidariedade do Além do Espelho 2026 com silhueta de mulher africana, girafas e produtos de higiene"
                       fill
                       sizes="(max-width: 640px) 80vw, (max-width: 1024px) 42vw, 420px"
                       className="object-cover"
@@ -282,9 +241,9 @@ export default function CausaSocial({ faseInscricaoAtiva }: Props) {
           </div>
 
           {/* ═══ Bloco citação: patrocínio — GATED pela fase de inscrição (server)
-              E por SPONSORS_ATIVOS (FIX-2: desligado até a FIX-1 validar as RPCs
-              de patrocínio no Supabase). Antes disso a secção termina na ecobag:
-              countdown, cards de inscrição/gesto e selo ONG Atos, sem a vitrine. ═══ */}
+              E por SPONSORS_ATIVOS (interruptor de emergência FIX-2, agora true
+              por decisão Lucas 11/08). True PRESSUPÕE as RPCs de patrocínio
+              aplicadas na Supabase antes de qualquer deploy (ver lib/sponsors.ts). ═══ */}
           {faseInscricaoAtiva && SPONSORS_ATIVOS && (
             <Reveal delay={0.08}>
               <div className="mx-auto mt-20 max-w-2xl text-center">

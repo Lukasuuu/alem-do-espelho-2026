@@ -1,88 +1,120 @@
 "use client";
 
-import { Check, Gift, PartyPopper } from "lucide-react";
-import { linkWhatsApp } from "@/lib/site";
-import { KIT_ITENS, MENSAGEM_ECOBAG, SALON_WHATSAPP } from "@/lib/campanha";
+import { MessageCircle, PartyPopper } from "lucide-react";
+import { SALON_WHATSAPP } from "@/lib/campanha";
 import Modal from "./Modal";
+import { WhatsAppIcon } from "./icons";
 
-type Props = {
+type PropsBase = {
   aberto: boolean;
   fechar: () => void;
-  nome: string;
-  /**
-   * A ecobag bónus SÓ aparece quando is_bonus === true — valor que vem da DB
-   * (estado_inscricao). Nunca calcular o bónus no frontend.
-   */
-  isBonus: boolean;
+  /** Link wa.me completo com a mensagem pré-preenchida (decidido pelo pai). */
+  ctaWhatsApp: string;
 };
 
+type Props =
+  | (PropsBase & {
+      /** Fluxo de inscrição (40€): comprovativo + email no momento do Parabéns. */
+      contexto: "inscricao";
+      /** false = o upload falhou → linha de fallback (enviar pelo WhatsApp). */
+      comprovativoOk: boolean;
+    })
+  | (PropsBase & {
+      /** Fluxo de patrocínio: sem comprovativo e sem email (por agora). */
+      contexto: "patrocinio";
+      /** Nome do nível escolhido (Apoio / Parceiro / Parceiro Principal). */
+      nivelLabel: string;
+    });
+
 /**
- * Modal de parabéns — abre ÚNICAMENTE quando estado_inscricao reporta
- * pagamento_estado === "confirmed". Nunca a partir de proof_uploaded,
- * under_review ou payment_started. Contém: agradecimento, confirmação do
- * pagamento, causa social, kit de higiene e (se is_bonus) a ecobag.
+ * Modal de PARABÉNS — o ÚNICO ecrã de confirmação dos dois fluxos do evento
+ * (inscrição 40€ e patrocínio). Reutilizado, nunca duplicado: muda só o texto
+ * e o que o dispara.
+ *
+ * 🔴 INVARIANTE: este ecrã NUNCA afirma que o pagamento já está confirmado.
+ * Não há webhook — MB Way e transferência são verificados à mão pela Vitória;
+ * tudo o que este ecrã pode dizer é "recebemos". O pai decide quando o abre e
+ * que link WhatsApp usa.
+ *
+ *  - inscrição: abre no momento em que o upload do comprovativo responde
+ *    (OK → comprovativoOk=true, ou falha → comprovativoOk=false). Se falhou,
+ *    uma linha pede o envio pelo WhatsApp. O pai dispara o EmailJS
+ *    (fire-and-forget) só quando comprovativoOk=true.
+ *  - patrocínio: abre no clique de "Já fiz o pagamento". Sem comprovativo e
+ *    sem email por agora — o ponto de extensão fica marcado em comentário.
  */
-export default function ParabensModal({ aberto, fechar, nome, isBonus }: Props) {
-  const primeiroNome = nome.trim().split(/\s+/)[0] ?? "";
+export default function ParabensModal(props: Props) {
+  const { aberto, fechar, ctaWhatsApp } = props;
+
+  // "351928400069" → "928 400 069" — derivado da fonte de verdade
+  // (SALON_WHATSAPP), nunca hardcoded no ecrã.
+  const numeroVisivel = SALON_WHATSAPP.replace(/^351/, "").replace(
+    /(\d{3})(\d{3})(\d{3})/,
+    "$1 $2 $3"
+  );
+
+  const titulo =
+    props.contexto === "inscricao"
+      ? "Parabéns por fazeres parte desta campanha!"
+      : "Obrigado por te juntares a esta causa!";
+
+  const eyebrow =
+    props.contexto === "inscricao" ? "Inscrição recebida" : "Patrocínio recebido";
 
   return (
-    <Modal
-      aberto={aberto}
-      fechar={fechar}
-      titulo="Faz parte deste dia!"
-      eyebrow="Pagamento confirmado"
-      larguraMax="34rem"
-    >
+    <Modal aberto={aberto} fechar={fechar} titulo={titulo} eyebrow={eyebrow} larguraMax="34rem">
       <div className="mt-2 space-y-5">
-        <p className="text-[0.9375rem] leading-relaxed text-creme/75">
-          Obrigada{primeiroNome ? `, ${primeiroNome}` : ""}. A tua inscrição está{" "}
-          <strong className="font-medium text-creme">confirmada</strong> e o teu lugar
-          no {`Além do Espelho 2026`} está garantido.
-        </p>
-
-        {/* Causa social */}
-        <p className="text-[0.875rem] leading-relaxed text-creme/65">
-          E o melhor: a tua inscrição já está a transformar vidas. Ao inscreveres-te,
-          apoias a criação de{" "}
-          <strong className="font-medium text-creme/85">kits de solidariedade</strong>{" "}
-          (higiene feminina) para mulheres em vulnerabilidade em Angola, em parceria
-          com a ONG Atos.
-        </p>
-
-        {/* Kit de higiene */}
-        <div className="rounded-sm border border-creme/15 bg-creme/[0.04] p-4">
-          <p className="eyebrow mb-3 text-dourado-claro/80">Cada kit inclui</p>
-          <ul className="space-y-2.5">
-            {KIT_ITENS.map((item) => (
-              <li key={item} className="flex items-center gap-2.5 text-[0.875rem] text-creme/80">
-                <Check className="h-4 w-4 shrink-0 text-dourado-claro" aria-hidden />
-                {item}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Ecobag — só com is_bonus verdadeiro vindo da DB */}
-        {isBonus && (
-          <div className="rounded-sm border border-dourado-claro/30 bg-dourado-claro/[0.07] p-4">
-            <p className="flex items-start gap-3 text-[0.875rem] leading-relaxed text-creme/85">
-              <Gift className="mt-0.5 h-5 w-5 shrink-0 text-dourado-claro" aria-hidden />
-              <span>
-                Recebes também a <strong className="font-medium text-creme">Ecobag exclusiva</strong>{" "}
-                Além do Espelho + kit de solidariedade.{" "}
-                <a
-                  href={linkWhatsApp(SALON_WHATSAPP, MENSAGEM_ECOBAG)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blush underline decoration-dotted underline-offset-4 transition-colors hover:text-creme"
-                >
-                  Fala connosco no WhatsApp
-                </a>{" "}
-                para a levantares.
-              </span>
+        {props.contexto === "inscricao" ? (
+          <>
+            <p className="text-[0.9375rem] leading-relaxed text-creme/75">
+              Recebemos a tua inscrição e o teu comprovativo. A{" "}
+              <strong className="font-medium text-creme">Essence of Beauty</strong> confirma o
+              pagamento e o teu lugar fica garantido.
             </p>
-          </div>
+
+            {/* Upload falhou → linha de fallback: enviar pelo WhatsApp. O CTA
+                verde abaixo já leva à conversa. Uma pagante nunca fica sem
+                confirmação por causa de um upload. */}
+            {!props.comprovativoOk && (
+              <div className="rounded-sm border border-dourado-claro/30 bg-dourado-claro/[0.07] p-4">
+                <p className="flex items-start gap-3 text-[0.875rem] leading-relaxed text-creme/85">
+                  <MessageCircle className="mt-0.5 h-5 w-5 shrink-0 text-dourado-claro" aria-hidden />
+                  <span>
+                    Não conseguimos receber o teu comprovativo aqui. Envia-o pelo WhatsApp{" "}
+                    <strong className="font-medium text-creme">{numeroVisivel}</strong> e
+                    confirmamos o teu pagamento.
+                  </span>
+                </p>
+              </div>
+            )}
+
+            {/* Kit de higiene — texto exato do ecrã (spec Lucas, 11/08) */}
+            <div className="rounded-sm border border-creme/15 bg-creme/[0.04] p-4">
+              <p className="text-[0.875rem] leading-relaxed text-creme/80">
+                No dia traz o teu kit de higiene — 1 sabonete, 1 escova de dentes, 1 pasta de
+                dentes e 1 absorvente. Segue para Angola.
+              </p>
+            </div>
+          </>
+        ) : (
+          <p className="text-[0.9375rem] leading-relaxed text-creme/75">
+            Recebemos o teu patrocínio de{" "}
+            <strong className="font-medium text-creme">{props.nivelLabel}</strong>. Assim que a
+            Essence of Beauty confirmar o teu pagamento, a tua marca entra nos materiais do
+            evento.
+          </p>
         )}
+
+        {/* CTA WhatsApp — o caminho humano está sempre à vista */}
+        <a
+          href={ctaWhatsApp}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-[#4fce5d] px-7 py-4 text-[0.9375rem] font-medium text-carvao transition-all duration-300 hover:brightness-105"
+        >
+          <WhatsAppIcon className="h-4.5 w-4.5" />
+          WhatsApp {numeroVisivel}
+        </a>
 
         <button
           onClick={fechar}
@@ -91,6 +123,13 @@ export default function ParabensModal({ aberto, fechar, nome, isBonus }: Props) 
           <PartyPopper className="h-4 w-4" aria-hidden />
           Concluir
         </button>
+
+        {/* ── PONTO DE EXTENSÃO EMAILJS (patrocínio) ───────────────────────
+            Sem email por agora (Lucas, 11/08). Quando a Vitória definir o
+            template, disparar aqui enviarEmailNotificacao(...) com os dados do
+            patrocínio — mesmo padrão do fluxo de inscrição: fire-and-forget,
+            try/catch isolado e guard contra duplo envio por id. Nada a mudar
+            neste ecrã. */}
       </div>
     </Modal>
   );

@@ -8,6 +8,7 @@ import {
   type NivelParceria,
   type TipoErro,
 } from "@/lib/validation";
+import { SPONSOR_MOCK_ATIVO } from "@/lib/sponsor-mock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -67,6 +68,11 @@ export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
   }
 
   // 4. Persistência
+  if (SPONSOR_MOCK_ATIVO) {
+    // QA em localhost (ver lib/sponsor-mock.ts) — sem tocar na Supabase.
+    return NextResponse.json({ ok: true, sponsorId: dados.sponsorId, nivel: dados.nivel });
+  }
+
   try {
     const supabase = getSupabase();
 

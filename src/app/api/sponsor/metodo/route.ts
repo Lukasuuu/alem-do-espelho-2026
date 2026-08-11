@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 import { getSupabase } from "@/lib/supabase";
 import { obterIp, rateLimit } from "@/lib/rate-limit";
 import { MENSAGENS, metodoSponsorSchema, type MetodoSponsor, type TipoErro } from "@/lib/validation";
+import { SPONSOR_MOCK_ATIVO } from "@/lib/sponsor-mock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -63,6 +64,11 @@ export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
   }
 
   // 4. Persistência
+  if (SPONSOR_MOCK_ATIVO) {
+    // QA em localhost (ver lib/sponsor-mock.ts) — sem tocar na Supabase.
+    return NextResponse.json({ ok: true, sponsorId: dados.sponsorId, metodo: dados.metodo });
+  }
+
   try {
     const supabase = getSupabase();
 

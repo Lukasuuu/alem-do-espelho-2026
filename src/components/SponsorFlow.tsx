@@ -6,9 +6,10 @@ import { Check, ChevronRight } from "lucide-react";
 import Modal from "./Modal";
 import WaitlistForm from "./WaitlistForm";
 import PatrocinioPagamentoModal from "./PatrocinioPagamentoModal";
+import ParabensModal from "./ParabensModal";
 import CartaoPatrocinadora from "./CartaoPatrocinadora";
-import { NIVEIS_PARCERIA_COPY } from "@/lib/sponsor";
-import { NIVEIS_PARCERIA, type NivelParceria } from "@/lib/validation";
+import { NIVEIS_PARCERIA_COPY, linkWhatsAppPatrocinio } from "@/lib/sponsor";
+import { NIVEIS_PARCERIA, type MetodoSponsor, type NivelParceria } from "@/lib/validation";
 import { patrocinadores } from "@/lib/patrocinadores";
 
 const EASE_SUAVE: [number, number, number, number] = [0.22, 1, 0.36, 1];
@@ -43,8 +44,10 @@ const variantesItem = {
  * Comportamento de fecho (igual ao anterior, agora a 3 modais):
  *   - ✕ / clique fora fecham só o modal do topo → volta ao passo anterior;
  *   - ESC fecha a cadeia toda (todos os modais escutam ESC ao mesmo tempo).
- * Não há 4º modal de "obrigado": o patrocínio só fica confirmado depois do
- * pagamento (CORREÇÃO nº5) — fechar na confirmação de pagamento termina o fluxo.
+ * O fluxo fecha no PARABÉNS partilhado (ParabensModal, contexto "patrocinio"):
+ * o "Já fiz o pagamento" abre-o por cima e termina a cadeia. Sem comprovativo
+ * e sem email por agora (ponto de extensão do EmailJS marcado no ParabensModal).
+ * Nunca afirma pagamento confirmado — a Vitória verifica à mão.
  */
 export default function SponsorFlow() {
   // prefers-reduced-motion: sem cascata nem movimento (a cascata fica estática).
@@ -61,10 +64,22 @@ export default function SponsorFlow() {
   const [escolhendoNivel, setEscolhendoNivel] = useState(false);
   const [erroNivel, setErroNivel] = useState<string | null>(null);
 
+  const [parabensAberto, setParabensAberto] = useState(false);
+  const [metodo, setMetodo] = useState<MetodoSponsor | null>(null);
+
   function fecharTudo() {
     setApresentacaoAberto(false);
     setNivelAberto(false);
     setPagamentoAberto(false);
+  }
+
+  /** Fim do fluxo: fecha o Parabéns e limpa o estado para o próximo patrocínio. */
+  function fecharParabens() {
+    setParabensAberto(false);
+    setNivel(null);
+    setSponsorId("");
+    setNome("");
+    setMetodo(null);
   }
 
   /** Passo B: marca o nível no registo (POST ainda tinha nivel null). */
@@ -268,7 +283,22 @@ export default function SponsorFlow() {
           sponsorId={sponsorId}
           nome={nome}
           nivel={nivel}
-          onPago={() => fecharTudo()}
+          onPago={(metodoEscolhido) => {
+            setMetodo(metodoEscolhido);
+            fecharTudo(); // a cadeia A/B/C fecha — o Parabéns fica sozinho no topo
+            setParabensAberto(true);
+          }}
+        />
+      )}
+
+      {/* ── PARABÉNS (partilhado) — fecha o fluxo de patrocínio ─────────── */}
+      {metodo !== null && nivel !== null && (
+        <ParabensModal
+          aberto={parabensAberto}
+          fechar={fecharParabens}
+          contexto="patrocinio"
+          nivelLabel={NIVEIS_PARCERIA_COPY[nivel].titulo}
+          ctaWhatsApp={linkWhatsAppPatrocinio(metodo, nivel)}
         />
       )}
     </>

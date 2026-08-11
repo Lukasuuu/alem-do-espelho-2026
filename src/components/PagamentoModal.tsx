@@ -1,18 +1,22 @@
 "use client";
 
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { ArrowLeft, ChevronRight, Check, QrCode, RefreshCw, X } from "lucide-react";
+import { ArrowLeft, ChevronRight, Check, QrCode, X } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { WhatsAppIcon, GlobeIcon, MbWayIcon, TransferenciaIcon } from "./icons";
+import LocalImage from "./LocalImage";
 import PaymentProofUpload from "./PaymentProofUpload";
 import { travarScroll, destravarScroll } from "@/lib/scroll-lock";
 import {
   MBWAY_NUMERO,
+  MBWAY_NUMERO_COPIAR,
   SUMUP_URL,
   TRANSFERENCIA,
+  VALOR_INSCRICAO,
   VALOR_INSCRICAO_TEXT,
+  formatarIban,
   linkWhatsAppPagamento,
 } from "@/lib/pagamento";
 import type { MetodoPagamento } from "@/lib/validation";
@@ -27,12 +31,73 @@ type Props = {
   /** Tema da modal: vinho (escuro) ou claro. */
   tom?: "vinho" | "claro";
   /**
-   * Chamado ÚNICAMENTE quando estado_inscricao reporta pagamento_estado ===
-   * "confirmed". Nunca a partir de proof_uploaded / under_review / payment_started.
-   * O isBonus vem da DB — a modal nunca o calcula no frontend.
+   * Upload do comprovativo respondeu OK → o pai fecha esta modal e mostra o
+   * PARABÉNS (e dispara o email "recebemos a tua inscrição" — directiva §3).
    */
-  onConfirmado: (dados: { isBonus: boolean }) => void;
+  onComprovativoSucesso: () => void;
+  /**
+   * Upload falhou (servidor/rede/rate) OU a pessoa prefere enviar o comprovativo
+   * pelo WhatsApp → o pai fecha esta modal e mostra o PARABÉNS com a linha de
+   * fallback. Nunca se deixa uma pagante presa no upload.
+   */
+  onComprovativoFalha: () => void;
 };
+
+/**
+ * Botão de copiar (navigator.clipboard) — usado nos passos MB Way e
+ * transferência para colar o valor EXATO SEM espaços (nº MB Way, IBAN, "40").
+ * Estados: "Copiar" → "Copiado!"; falha de clipboard (contexto não seguro)
+ * → silêncio, não rebenta o fluxo.
+ */
+function BotaoCopiar({
+  texto,
+  claro,
+}: {
+  /** Valor exato a colar (ex.: "928400069", "IE60SUMU…", "40"). */
+  texto: string;
+  claro?: boolean;
+}) {
+  const [copiado, setCopiado] = useState(false);
+  const timeoutRef = useRef<number | null>(null);
+
+  // Limpa o timeout do "Copiado!" se a modal desmontar a meio.
+  useEffect(
+    () => () => {
+      if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
+    },
+    []
+  );
+
+  async function copiar() {
+    try {
+      await navigator.clipboard.writeText(texto);
+    } catch {
+      return; // clipboard indisponível → não bloquear o pagamento por causa disto
+    }
+    setCopiado(true);
+    if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
+    timeoutRef.current = window.setTimeout(() => setCopiado(false), 2000);
+  }
+
+  const borda = copiado
+    ? "border-[#4fce5d]/60"
+    : claro
+      ? "border-vinho/25 text-vinho/75 hover:border-vinho/45 hover:text-vinho"
+      : "border-creme/30 text-creme/70 hover:border-creme/50 hover:text-creme";
+  const textoEstado = copiado ? (claro ? "text-[#2f9e3a]" : "text-[#6fd97b]") : "";
+
+  return (
+    <button
+      type="button"
+      onClick={copiar}
+      aria-label={`Copiar ${texto}`}
+      className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[0.75rem] font-medium transition-colors duration-300 ${borda} ${textoEstado}`}
+    >
+      {copiado && <Check className="h-3.5 w-3.5" aria-hidden />}
+      {copiado ? "Copiado!" : "Copiar"}
+    </button>
+  );
+}
 
 /** Elementos focáveis dentro do painel, para o foco circular (trap). */
 function focaveis(raiz: HTMLElement): HTMLElement[] {
@@ -45,33 +110,29 @@ function focaveis(raiz: HTMLElement): HTMLElement[] {
 
 /**
  * Passos da modal:
- *  - metodos: escolha da forma de pagamento (SumUp / MB Way / QR / Transferência);
- *  - sumup / mbway / qr / transferencia: instruções do método + "Já efetuei o pagamento";
- *  - comprovativo: upload do comprovativo (PaymentProofUpload);
- *  - recebido: "Comprovativo recebido" + polling gentil até confirmed/rejected.
+ *  - metodos: escolha da forma de pagamento (SumUp / MB Way / Transferência);
+ *  - sumup: checkout SumUp (nova aba) + toggle "Mostrar código QR" do mesmo link;
+ *  - mbway / transferencia: instruções + dados para copiar + "Já efetuei o pagamento";
+ *  - comprovativo: upload do comprovativo (PaymentProofUpload) — o resultado
+ *    (OK ou falha) fecha a modal e abre o PARABÉNS (decide o pai).
  */
-type Passo = "metodos" | "sumup" | "mbway" | "qr" | "transferencia" | "comprovativo" | "recebido";
+type Passo = "metodos" | "sumup" | "mbway" | "transferencia" | "comprovativo";
 
 const TITULO_MODAL = "pagamento-titulo";
-
-/** Intervalo de polling do estado (não-agressivo: ~15 s, um pedido por ciclo). */
-const ESTADO_POLL_MS = 15_000;
-
-type EstadoInscricao = {
-  ok: boolean;
-  pagamento_estado?: string;
-  is_bonus?: boolean;
-  motivo_rejeicao?: string | null;
-};
 
 /**
  * Modal de pagamento (FASE2) — padrão do projeto: portal, focus trap, ESC,
  * clique fora e scroll-lock com contador de referências. Fluxo:
  *  1. escolher método → PATCH /api/inscricao/metodo cria o pagamento (payment_started);
- *  2. instruções do método (SumUp abre numa nova aba; QR placeholder honesto);
+ *  2. instruções do método (SumUp abre o checkout; MB Way e transferência com
+ *     dados para copiar; o cartão expõe ainda o QR do mesmo link SumUp, num
+ *     cartão branco e sem gerador de QR);
  *  3. "Já efetuei o pagamento" → comprovativo (upload validado no servidor);
- *  4. recebido → polling de estado até confirmed (→ onConfirmado) ou rejected
- *     (→ reenvio de comprovativo). Nunca "Pagamento confirmado" nesta etapa.
+ *  4. upload OK → onComprovativoSucesso (o pai fecha e mostra o PARABÉNS, que
+ *     dispara o email "recebemos a tua inscrição" — directiva §3). Upload
+ *     falhou ou a pessoa prefere o WhatsApp → onComprovativoFalha (o pai mostra
+ *     o PARABÉNS com fallback). SEM ecrã de espera e SEM polling: ninguém fica
+ *     à mercê de uma verificação manual que pode demorar horas.
  */
 export default function PagamentoModal({
   aberto,
@@ -79,7 +140,8 @@ export default function PagamentoModal({
   inscricaoId,
   nome,
   tom = "vinho",
-  onConfirmado,
+  onComprovativoSucesso,
+  onComprovativoFalha,
 }: Props) {
   const claro = tom === "claro";
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -94,6 +156,7 @@ export default function PagamentoModal({
   const [marcando, setMarcando] = useState(false);
   const [erroMetodo, setErroMetodo] = useState<string | null>(null);
   const [motivoRejeicao, setMotivoRejeicao] = useState<string | null>(null);
+  const [mostrarQr, setMostrarQr] = useState(false);
 
   // createPortal ao <body>, só depois de o cliente montar.
   useEffect(() => setMontado(true), []);
@@ -106,6 +169,7 @@ export default function PagamentoModal({
     setPagamentoId(null);
     setErroMetodo(null);
     setMotivoRejeicao(null);
+    setMostrarQr(false);
   }, [aberto]);
 
   useEffect(() => {
@@ -154,49 +218,6 @@ export default function PagamentoModal({
     };
   }, [aberto, fechar]);
 
-  /**
-   * Polling gentil do estado — ativo SÓ no passo "recebido" (modal aberta).
-   * Para em confirmed (→ onConfirmado), rejected (→ reenvio) e cancelled.
-   * Sempre um ciclo de cada vez; nunca corre em paralelo com o upload.
-   */
-  useEffect(() => {
-    if (passo !== "recebido" || !aberto || !inscricaoId) return;
-    let ativo = true;
-
-    async function verificar() {
-      try {
-        const res = await fetch(
-          `/api/inscricao/estado?inscricaoId=${encodeURIComponent(inscricaoId)}`,
-          { cache: "no-store" }
-        );
-        const dados = (await res.json()) as EstadoInscricao;
-        if (!ativo || !dados.ok) return;
-
-        if (dados.pagamento_estado === "confirmed") {
-          onConfirmado({ isBonus: dados.is_bonus === true });
-          return;
-        }
-        if (dados.pagamento_estado === "rejected") {
-          setMotivoRejeicao(dados.motivo_rejeicao ?? null);
-          setPasso("comprovativo");
-          return;
-        }
-        if (dados.pagamento_estado === "cancelled") {
-          return; // parar polling — a gestão cancelou o pagamento.
-        }
-      } catch {
-        // Silencioso — tenta de novo no próximo ciclo.
-      }
-    }
-
-    verificar();
-    const id = window.setInterval(verificar, ESTADO_POLL_MS);
-    return () => {
-      ativo = false;
-      window.clearInterval(id);
-    };
-  }, [passo, aberto, inscricaoId, onConfirmado]);
-
   function aoClicarFora(e: React.MouseEvent) {
     if (e.target === overlayRef.current) fechar();
   }
@@ -230,7 +251,7 @@ export default function PagamentoModal({
         return;
       }
 
-      setPasso(escolhido === "mbway" ? "mbway" : escolhido === "qr" ? "qr" : "transferencia");
+      setPasso(escolhido === "mbway" ? "mbway" : "transferencia");
     } catch {
       setErroMetodo("Sem ligação ao servidor. Tenta novamente.");
     } finally {
@@ -242,16 +263,30 @@ export default function PagamentoModal({
   function voltarAoMetodo() {
     if (metodo === "sumup") setPasso("sumup");
     else if (metodo === "mbway") setPasso("mbway");
-    else if (metodo === "qr") setPasso("qr");
     else if (metodo === "transferencia") setPasso("transferencia");
     else setPasso("metodos");
   }
 
-  /** Upload concluído → "Comprovativo recebido" (nunca "Pagamento confirmado"). */
+  /**
+   * "Já fiz o pagamento" (qualquer método): o PATCH /api/inscricao/metodo já
+   * respondeu OK antes de este botão ser clicável (metodo !== null ⟺ gravado).
+   * O email "recebemos a tua inscrição" NÃO dispara aqui — dispara no momento
+   * do PARABÉNS, depois de o upload do comprovativo responder OK (directiva §3).
+   */
+  function declararPagamento() {
+    setPasso("comprovativo");
+  }
+
+  /** Upload OK → o pai fecha esta modal e mostra o PARABÉNS (inscrição). */
   const aoUploadSucesso = useCallback(() => {
     setMotivoRejeicao(null);
-    setPasso("recebido");
-  }, []);
+    onComprovativoSucesso();
+  }, [onComprovativoSucesso]);
+
+  /** Upload falhou → o pai mostra o PARABÉNS com o fallback do WhatsApp. */
+  const aoUploadFalha = useCallback(() => {
+    onComprovativoFalha();
+  }, [onComprovativoFalha]);
 
   /* ── Ecrãs ────────────────────────────────────────────────── */
 
@@ -458,12 +493,6 @@ export default function PagamentoModal({
                         icone={<MbWayIcon className="h-6 w-6" />}
                       />
                       <CartaoMetodo
-                        metodo="qr"
-                        titulo="Código QR"
-                        descricao="Pagas por leitura do código QR no telemóvel."
-                        icone={<QrCode className="h-6 w-6" />}
-                      />
-                      <CartaoMetodo
                         metodo="transferencia"
                         titulo="Transferência bancária"
                         descricao="IBAN direto para a conta do evento."
@@ -537,7 +566,41 @@ export default function PagamentoModal({
 
                     <button
                       type="button"
-                      onClick={() => setPasso("comprovativo")}
+                      onClick={() => setMostrarQr((v) => !v)}
+                      aria-expanded={mostrarQr}
+                      aria-controls="qr-sumup-painel"
+                      className={`mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full border px-7 py-4 text-[0.9375rem] font-medium transition-colors duration-300 ${
+                        claro
+                          ? "border-vinho/25 text-vinho hover:border-vinho/45"
+                          : "border-creme/25 text-creme/80 hover:border-creme/50 hover:bg-creme/5"
+                      }`}
+                    >
+                      <QrCode className="h-4 w-4" aria-hidden />
+                      {mostrarQr ? "Ocultar código QR" : "Mostrar código QR"}
+                    </button>
+
+                    {mostrarQr && (
+                      <div
+                        id="qr-sumup-painel"
+                        className="mt-4 rounded-sm border border-vinho/15 bg-white p-4 sm:p-5"
+                      >
+                        <LocalImage
+                          src="/pagamento/qr-sumup-inscricao.svg"
+                          alt="QR Code para pagamento da inscrição no Além do Espelho 2026"
+                          width={370}
+                          height={370}
+                          className="mx-auto h-auto w-full min-w-[180px] max-w-[220px]"
+                        />
+                        <p className="mt-3 text-center text-[0.8125rem] leading-relaxed text-carvao/60">
+                          Aponta a câmara do telemóvel para pagares os {VALOR_INSCRICAO_TEXT} pelo
+                          mesmo checkout SumUp.
+                        </p>
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={declararPagamento}
                       className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full border px-7 py-4 text-[0.9375rem] font-medium transition-colors duration-300 ${
                         claro
                           ? "border-vinho/25 text-vinho hover:border-vinho/45"
@@ -585,8 +648,7 @@ export default function PagamentoModal({
                       </li>
                       <li className="flex gap-3">
                         <span className="font-medium text-blush">2.</span>
-                        Usa o número da inscrição:
-                        <span className="font-medium tabular-nums">{MBWAY_NUMERO}</span>
+                        Confere os dados abaixo e confirma o pagamento.
                       </li>
                       <li className="flex gap-3">
                         <span className="font-medium text-blush">3.</span>
@@ -594,16 +656,66 @@ export default function PagamentoModal({
                       </li>
                     </ol>
 
-                    <p
-                      className={`mt-4 rounded-sm border px-4 py-3 text-[0.8125rem] leading-relaxed ${
-                        claro
-                          ? "border-vinho/15 bg-creme-profundo/60 text-carvao/70"
-                          : "border-creme/20 bg-creme/5 text-creme/70"
-                      }`}
-                    >
-                      Este número está a ser confirmado com a Vitória. Se ainda não o tens certo,
-                      escreve-lhe no WhatsApp abaixo antes de pagar.
-                    </p>
+                    <dl className="mt-6 space-y-3">
+                      <div
+                        className={`rounded-sm border px-4 py-3 ${
+                          claro
+                            ? "border-vinho/15 bg-creme-profundo/60"
+                            : "border-creme/20 bg-creme/5"
+                        }`}
+                      >
+                        <dt className={`eyebrow ${claro ? "text-vinho/50" : "text-creme/45"}`}>
+                          Número
+                        </dt>
+                        <dd
+                          className={`mt-1 flex items-center justify-between gap-3 ${
+                            claro ? "text-carvao/85" : "text-creme/85"
+                          }`}
+                        >
+                          <span className="font-medium tabular-nums tracking-wide">
+                            {MBWAY_NUMERO}
+                          </span>
+                          <BotaoCopiar texto={MBWAY_NUMERO_COPIAR} claro={claro} />
+                        </dd>
+                      </div>
+                      <div
+                        className={`rounded-sm border px-4 py-3 ${
+                          claro
+                            ? "border-vinho/15 bg-creme-profundo/60"
+                            : "border-creme/20 bg-creme/5"
+                        }`}
+                      >
+                        <dt className={`eyebrow ${claro ? "text-vinho/50" : "text-creme/45"}`}>
+                          Valor
+                        </dt>
+                        <dd
+                          className={`mt-1 flex items-center justify-between gap-3 ${
+                            claro ? "text-carvao/85" : "text-creme/85"
+                          }`}
+                        >
+                          <span className="font-medium tabular-nums">{VALOR_INSCRICAO_TEXT}</span>
+                          <BotaoCopiar texto={String(VALOR_INSCRICAO)} claro={claro} />
+                        </dd>
+                      </div>
+                      <div
+                        className={`rounded-sm border px-4 py-3 ${
+                          claro
+                            ? "border-vinho/15 bg-creme-profundo/60"
+                            : "border-creme/20 bg-creme/5"
+                        }`}
+                      >
+                        <dt className={`eyebrow ${claro ? "text-vinho/50" : "text-creme/45"}`}>
+                          Titular
+                        </dt>
+                        <dd
+                          className={`mt-1 flex items-center justify-between gap-3 ${
+                            claro ? "text-carvao/85" : "text-creme/85"
+                          }`}
+                        >
+                          <span className="font-medium">{TRANSFERENCIA.beneficiario}</span>
+                        </dd>
+                      </div>
+                    </dl>
 
                     <a
                       href={linkWhatsAppPagamento("mbway")}
@@ -617,76 +729,7 @@ export default function PagamentoModal({
 
                     <button
                       type="button"
-                      onClick={() => setPasso("comprovativo")}
-                      className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full border px-7 py-4 text-[0.9375rem] font-medium transition-colors duration-300 ${
-                        claro
-                          ? "border-vinho/25 text-vinho hover:border-vinho/45"
-                          : "border-creme/25 text-creme/80 hover:border-creme/50 hover:bg-creme/5"
-                      }`}
-                    >
-                      Já fiz o pagamento
-                      <ChevronRight className="h-4 w-4" aria-hidden />
-                    </button>
-                  </div>
-                )}
-
-                {/* ── PASSO: Código QR ── */}
-                {passo === "qr" && (
-                  <div>
-                    <button
-                      type="button"
-                      onClick={() => setPasso("metodos")}
-                      className={`inline-flex min-h-11 items-center gap-2 text-[0.8125rem] ${
-                        claro ? "text-vinho/60 hover:text-vinho" : "text-creme/60 hover:text-creme"
-                      }`}
-                    >
-                      <ArrowLeft className="h-4 w-4" aria-hidden />
-                      Voltar aos métodos
-                    </button>
-
-                    <h2
-                      id={TITULO_MODAL}
-                      className={`display mt-5 flex items-center gap-3 text-[1.75rem] leading-[1.05] sm:text-[2.125rem] ${
-                        claro ? "text-vinho" : "text-creme"
-                      }`}
-                    >
-                      <QrCode className="h-7 w-7 text-blush" />
-                      Código QR
-                    </h2>
-
-                    <p
-                      className={`mt-6 text-[0.9375rem] leading-relaxed ${
-                        claro ? "text-carvao/75" : "text-creme/75"
-                      }`}
-                    >
-                      O código QR está a ser configurado para este evento. Brevemente poderás
-                      pagar por leitura direta no telemóvel.
-                    </p>
-
-                    <p
-                      className={`mt-4 rounded-sm border px-4 py-3 text-[0.8125rem] leading-relaxed ${
-                        claro
-                          ? "border-vinho/15 bg-creme-profundo/60 text-carvao/70"
-                          : "border-creme/20 bg-creme/5 text-creme/70"
-                      }`}
-                    >
-                      Método em configuração. Entretanto usa outro método ou fala connosco no
-                      WhatsApp para garantir o teu lugar.
-                    </p>
-
-                    <a
-                      href={linkWhatsAppPagamento("qr")}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-7 inline-flex w-full items-center justify-center gap-3 rounded-full bg-[#4fce5d] px-7 py-4 text-[0.9375rem] font-medium text-carvao transition-all duration-300 hover:brightness-105"
-                    >
-                      <WhatsAppIcon className="h-4.5 w-4.5" />
-                      Combinar confirmação por WhatsApp
-                    </a>
-
-                    <button
-                      type="button"
-                      onClick={() => setPasso("comprovativo")}
+                      onClick={declararPagamento}
                       className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full border px-7 py-4 text-[0.9375rem] font-medium transition-colors duration-300 ${
                         claro
                           ? "border-vinho/25 text-vinho hover:border-vinho/45"
@@ -731,19 +774,18 @@ export default function PagamentoModal({
                             : "border-creme/20 bg-creme/5"
                         }`}
                       >
-                        <dt
-                          className={`eyebrow ${
-                            claro ? "text-vinho/50" : "text-creme/45"
-                          }`}
-                        >
+                        <dt className={`eyebrow ${claro ? "text-vinho/50" : "text-creme/45"}`}>
                           IBAN
                         </dt>
                         <dd
-                          className={`mt-1 font-medium tabular-nums tracking-wide ${
+                          className={`mt-1 flex items-center justify-between gap-3 ${
                             claro ? "text-carvao/85" : "text-creme/85"
                           }`}
                         >
-                          {TRANSFERENCIA.iban}
+                          <span className="font-medium tabular-nums tracking-wide">
+                            {formatarIban(TRANSFERENCIA.iban)}
+                          </span>
+                          <BotaoCopiar texto={TRANSFERENCIA.iban} claro={claro} />
                         </dd>
                       </div>
                       <div
@@ -753,11 +795,7 @@ export default function PagamentoModal({
                             : "border-creme/20 bg-creme/5"
                         }`}
                       >
-                        <dt
-                          className={`eyebrow ${
-                            claro ? "text-vinho/50" : "text-creme/45"
-                          }`}
-                        >
+                        <dt className={`eyebrow ${claro ? "text-vinho/50" : "text-creme/45"}`}>
                           Beneficiário
                         </dt>
                         <dd
@@ -766,6 +804,61 @@ export default function PagamentoModal({
                           }`}
                         >
                           {TRANSFERENCIA.beneficiario}
+                        </dd>
+                      </div>
+                      <div
+                        className={`rounded-sm border px-4 py-3 ${
+                          claro
+                            ? "border-vinho/15 bg-creme-profundo/60"
+                            : "border-creme/20 bg-creme/5"
+                        }`}
+                      >
+                        <dt className={`eyebrow ${claro ? "text-vinho/50" : "text-creme/45"}`}>
+                          BIC / SWIFT
+                        </dt>
+                        <dd
+                          className={`mt-1 font-medium tabular-nums ${
+                            claro ? "text-carvao/85" : "text-creme/85"
+                          }`}
+                        >
+                          {TRANSFERENCIA.bic}
+                        </dd>
+                      </div>
+                      <div
+                        className={`rounded-sm border px-4 py-3 ${
+                          claro
+                            ? "border-vinho/15 bg-creme-profundo/60"
+                            : "border-creme/20 bg-creme/5"
+                        }`}
+                      >
+                        <dt className={`eyebrow ${claro ? "text-vinho/50" : "text-creme/45"}`}>
+                          Instituição
+                        </dt>
+                        <dd
+                          className={`mt-1 font-medium ${
+                            claro ? "text-carvao/85" : "text-creme/85"
+                          }`}
+                        >
+                          {TRANSFERENCIA.instituicao}
+                        </dd>
+                      </div>
+                      <div
+                        className={`rounded-sm border px-4 py-3 ${
+                          claro
+                            ? "border-vinho/15 bg-creme-profundo/60"
+                            : "border-creme/20 bg-creme/5"
+                        }`}
+                      >
+                        <dt className={`eyebrow ${claro ? "text-vinho/50" : "text-creme/45"}`}>
+                          Valor
+                        </dt>
+                        <dd
+                          className={`mt-1 flex items-center justify-between gap-3 ${
+                            claro ? "text-carvao/85" : "text-creme/85"
+                          }`}
+                        >
+                          <span className="font-medium tabular-nums">{VALOR_INSCRICAO_TEXT}</span>
+                          <BotaoCopiar texto={String(VALOR_INSCRICAO)} claro={claro} />
                         </dd>
                       </div>
                     </dl>
@@ -782,14 +875,12 @@ export default function PagamentoModal({
                     </p>
 
                     <p
-                      className={`mt-4 rounded-sm border px-4 py-3 text-[0.8125rem] leading-relaxed ${
-                        claro
-                          ? "border-vinho/15 bg-creme-profundo/60 text-carvao/70"
-                          : "border-creme/20 bg-creme/5 text-creme/70"
+                      className={`mt-3 text-[0.75rem] leading-relaxed ${
+                        claro ? "text-carvao/45" : "text-creme/45"
                       }`}
                     >
-                      Os dados bancários estão a ser confirmados com a Vitória. Se ainda não os
-                      tens certos, escreve-lhe no WhatsApp abaixo.
+                      IBAN irlandês (SumUp) — transferência SEPA, sem custos adicionais na maioria
+                      dos bancos portugueses.
                     </p>
 
                     <a
@@ -804,7 +895,7 @@ export default function PagamentoModal({
 
                     <button
                       type="button"
-                      onClick={() => setPasso("comprovativo")}
+                      onClick={declararPagamento}
                       className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full border px-7 py-4 text-[0.9375rem] font-medium transition-colors duration-300 ${
                         claro
                           ? "border-vinho/25 text-vinho hover:border-vinho/45"
@@ -867,6 +958,7 @@ export default function PagamentoModal({
                           inscricaoId={inscricaoId}
                           pagamentoId={pagamentoId}
                           onSucesso={aoUploadSucesso}
+                          onFalhaServidor={aoUploadFalha}
                         />
                       ) : (
                         <p
@@ -880,79 +972,20 @@ export default function PagamentoModal({
                         </p>
                       )}
                     </div>
-                  </div>
-                )}
 
-                {/* ── PASSO: recebido ── */}
-                {passo === "recebido" && (
-                  <div className="text-center">
-                    <div
-                      className={`mx-auto flex h-14 w-14 items-center justify-center rounded-full border ${
-                        claro
-                          ? "border-vinho/25 bg-vinho/10 text-vinho"
-                          : "border-blush/40 bg-blush/10 text-blush"
-                      }`}
-                    >
-                      <Check className="h-6 w-6" aria-hidden />
-                    </div>
-
-                    <h2
-                      id={TITULO_MODAL}
-                      className={`display mt-7 text-[1.75rem] leading-[1.05] sm:text-[2.125rem] ${
-                        claro ? "text-vinho" : "text-creme"
-                      }`}
-                    >
-                      Comprovativo recebido
-                    </h2>
-
-                    <p
-                      className={`mx-auto mt-4 max-w-sm text-[0.9375rem] leading-relaxed ${
-                        claro ? "text-carvao/75" : "text-creme/70"
-                      }`}
-                    >
-                      Estamos a validar o teu pagamento.
-                    </p>
-
-                    <p
-                      className={`mx-auto mt-3 max-w-sm text-[0.8125rem] leading-relaxed ${
-                        claro ? "text-carvao/55" : "text-creme/50"
-                      }`}
-                    >
-                      Assim que confirmarmos (normalmente em poucas horas), o teu lugar fica
-                      garantido e avisamos-te aqui — podes deixar esta janela aberta.
-                    </p>
-
-                    <p
-                      className={`mt-6 inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[0.8125rem] ${
-                        claro
-                          ? "border-vinho/15 text-vinho/60"
-                          : "border-creme/20 text-creme/60"
-                      }`}
-                    >
-                      <RefreshCw className="h-3.5 w-3.5 animate-spin" aria-hidden />
-                      A aguardar confirmação…
-                    </p>
-
-                    <a
-                      href={linkWhatsAppPagamento(metodo ?? "mbway")}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-8 inline-flex w-full items-center justify-center gap-3 rounded-full bg-[#4fce5d] px-7 py-4 text-[0.9375rem] font-medium text-carvao transition-all duration-300 hover:brightness-105"
-                    >
-                      <WhatsAppIcon className="h-4.5 w-4.5" />
-                      Falar connosco no WhatsApp
-                    </a>
-
+                    {/* Caminho de fuga SEMPRE disponível: se o upload for um
+                        obstáculo, a pagante vai pelo WhatsApp — nunca fica presa. */}
                     <button
                       type="button"
-                      onClick={fechar}
-                      className={`mt-3 inline-flex w-full items-center justify-center gap-2 rounded-full border px-7 py-4 text-[0.9375rem] font-medium transition-colors duration-300 ${
+                      onClick={onComprovativoFalha}
+                      className={`mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full border px-7 py-4 text-[0.9375rem] font-medium transition-colors duration-300 ${
                         claro
                           ? "border-vinho/25 text-vinho hover:border-vinho/45"
                           : "border-creme/25 text-creme/80 hover:border-creme/50 hover:bg-creme/5"
                       }`}
                     >
-                      Fechar
+                      <WhatsAppIcon className="h-4 w-4" aria-hidden />
+                      Prefiro enviar o comprovativo pelo WhatsApp
                     </button>
                   </div>
                 )}

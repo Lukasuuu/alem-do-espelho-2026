@@ -32,7 +32,7 @@ export const site = {
     ano: "2026",
   },
   listaEspera: {
-    // Fecho da lista = fim da campanha Ecobag Bónus (FIM_CAMPANHA_ISO),
+    // Fecho da lista de espera (FIM_CAMPANHA_ISO),
     // segunda-feira, 10 de agosto de 2026, 10:00 (Lisboa, WEST).
     // Desacoplado do corte histórico da rota (CORTE_ESPERA_ISO, 03/08).
     fecha: FIM_CAMPANHA_ISO,

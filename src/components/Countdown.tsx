@@ -31,7 +31,7 @@ type Props = {
 
   /* ── Modo externo (síncrono) ──
      Quando todos estes valores são fornecidos, o componente NÃO cria o seu
-     próprio timer: espelha o estado partilhado (ex.: useCampaignCountdown).
+     próprio timer: espelha o estado de contagem partilhado pelo consumidor.
      Dois visores, uma fonte de verdade. */
   dias?: number | null;
   horas?: number | null;

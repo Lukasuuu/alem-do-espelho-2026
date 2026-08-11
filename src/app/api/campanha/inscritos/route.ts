@@ -8,8 +8,9 @@ export const dynamic = "force-dynamic";
 type Resposta = { ok: true; inscritos: number } | { ok: false; mensagem: string };
 
 /**
- * GET /api/campanha/inscritos — counter público da campanha Ecobag.
- * Retorna o número de inscrições com is_bonus = true (máx. 50).
+ * GET /api/campanha/inscritos — counter histórico (dados §5, não se apagam).
+ * Devolve o número de inscrições com is_bonus = true (máx. 50). Sem consumidor
+ * de UI desde a remoção do bónus (10/08); mantido como registo.
  * Rate limit: 60 req/min por IP. Cache: 30s no CDN.
  */
 export async function GET(request: Request): Promise<NextResponse<Resposta>> {

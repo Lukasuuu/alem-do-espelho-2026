@@ -14,7 +14,7 @@ import { faseForcada } from "@/lib/fase";
  * · FIM_CAMPANHA_ISO (10/08, 10:00): fecho da LISTA GRATUITA e abertura da
  *     INSCRIÇÃO PAGA (40€).
  *     Antes  → api/waitlist aceita; api/inscricao recusa (410) — o fluxo
- *              ativo é a lista de espera gratuita (campanha Ecobag).
+ *              ativo é a lista de espera gratuita.
  *     Depois → api/waitlist recusa (410, lista fechada); api/inscricao abre.
  *              O fluxo de inscrição paga (Fase 3, PagamentoModal) liga-se
  *              a este marco, não ao corte de rota.

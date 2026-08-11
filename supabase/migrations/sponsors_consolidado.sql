@@ -147,6 +147,13 @@ begin
     raise exception 'invalid_nivel' using errcode = '22023';
   end if;
 
+  -- RGPD (Lucas, 11/08): o consentimento é obrigatório e tem de ser true.
+  -- Recusar em vez de gravar false — nunca persistir um não-consentimento.
+  -- É a defesa em profundidade: a rota já exige literal(true) no zod.
+  if p_consentimento is distinct from true then
+    raise exception 'consentimento_obrigatorio' using errcode = '22023';
+  end if;
+
   select * into v_existing from public.sponsors where email = p_email;
 
   if found then

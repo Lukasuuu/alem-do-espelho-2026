@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 import { getSupabase } from "@/lib/supabase";
 import { hashIp, obterIp, rateLimit } from "@/lib/rate-limit";
 import { MENSAGENS, sponsorSchema, validarTelefone, type TipoErro } from "@/lib/validation";
+import { SPONSOR_MOCK_ATIVO } from "@/lib/sponsor-mock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -97,6 +98,15 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
   }
 
   // 6. Persistência
+  if (SPONSOR_MOCK_ATIVO) {
+    // QA em localhost (ver lib/sponsor-mock.ts) — sem tocar na Supabase.
+    console.info("[sponsor] MOCK QA — registo de patrocínio simulado");
+    return NextResponse.json(
+      { ok: true, status: "sponsor", id: "00000000-0000-0000-0000-000000000001", nivel: null },
+      { status: 201 }
+    );
+  }
+
   try {
     const supabase = getSupabase();
 
@@ -107,12 +117,21 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
       // Nível escolhido só no passo B — aqui ainda null.
       p_nivel: dados.nivel ?? null,
       p_empresa: dados.empresa || null,
-      p_consentimento: true,
+      // RGPD (Lucas, 11/08): o valor REAL da checkbox — nunca hardcoded true.
+      // O zod já exige literal(true) na fronteira; a função na DB lança
+      // exceção se receber false. Nenhuma rota permite passar por cima.
+      p_consentimento: dados.consent === true,
       p_ip_hash: hashIp(ip),
     });
 
     if (error) {
       const codigo = error.message ?? "";
+      if (codigo.includes("consentimento_obrigatorio")) {
+        return NextResponse.json(
+          { ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao", campos: { consent: "Precisamos da tua autorização para tratar a tua proposta de patrocínio." } },
+          { status: 422 }
+        );
+      }
       if (codigo.includes("invalid_email")) {
         return NextResponse.json(
           { ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao", campos: { email: "Este email não parece válido." } },

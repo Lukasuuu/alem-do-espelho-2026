@@ -21,6 +21,12 @@ type Props = {
   pagamentoId: string;
   /** Chamado com o id do comprovativo registado (estado proof_uploaded). */
   onSucesso: (comprovativoId: string) => void;
+  /**
+   * Falha do LADO DO SERVIDOR (upload falhou / rate limit / sem ligação) →
+   * o pai fecha a modal e mostra o PARABÉNS com o fallback do WhatsApp. As
+   * falhas de validação (formato/tamanho) ficam no ecrã — não chamam isto.
+   */
+  onFalhaServidor?: () => void;
 };
 
 /**
@@ -32,7 +38,12 @@ type Props = {
  * O servidor revalida tudo (tamanho e magic bytes): aqui só pré-validamos
  * para dar erro imediato sem desperdiçar upload.
  */
-export default function PaymentProofUpload({ inscricaoId, pagamentoId, onSucesso }: Props) {
+export default function PaymentProofUpload({
+  inscricaoId,
+  pagamentoId,
+  onSucesso,
+  onFalhaServidor,
+}: Props) {
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [tipoPreview, setTipoPreview] = useState<"imagem" | "pdf" | null>(null);
@@ -140,6 +151,7 @@ export default function PaymentProofUpload({ inscricaoId, pagamentoId, onSucesso
       setFalhaServidor(true);
       setErro("Sem ligação ao servidor. Verifica a internet e tenta novamente.");
       regiaoErroRef.current?.focus();
+      onFalhaServidor?.(); // o pai mostra o PARABÉNS com fallback WhatsApp
     };
     xhr.send(form);
   }
@@ -159,9 +171,11 @@ export default function PaymentProofUpload({ inscricaoId, pagamentoId, onSucesso
     if (tipo === "servidor") {
       setFalhaServidor(true);
       setErro(mensagem ?? MENSAGENS_COMPROVATIVO.servidor);
+      onFalhaServidor?.(); // o pai mostra o PARABÉNS com fallback WhatsApp
     } else if (tipo === "rate") {
       setFalhaServidor(false);
       setErro(MENSAGENS.rateLimit);
+      onFalhaServidor?.(); // mesma regra: nunca deixar uma pagante presa
     } else {
       // validacao / bot: mensagem do servidor (campos assinalados no form)
       setFalhaServidor(false);

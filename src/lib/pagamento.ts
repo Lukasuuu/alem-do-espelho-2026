@@ -4,7 +4,8 @@ import type { MetodoPagamento } from "@/lib/validation";
 
 /** Valor da inscrição — fonte única, usado no copy da modal. */
 export const VALOR_INSCRICAO = 40;
-export const VALOR_INSCRICAO_TEXT = `${VALOR_INSCRICAO}€`;
+/** Valor mostrado nos passos de pagamento, formato PT (mostrar "40,00 €"; copiar "40"). */
+export const VALOR_INSCRICAO_TEXT = "40,00 €";
 
 /** Link do checkout SumUp da 2ª edição (link estático do B2C). */
 export const SUMUP_URL = "https://pay.sumup.com/b2c/QZW9NOCM";
@@ -12,24 +13,34 @@ export const SUMUP_URL = "https://pay.sumup.com/b2c/QZW9NOCM";
 /**
  * WhatsApp de confirmação de pagamento — número ÚNICO do projeto (o do salão,
  * 351 928 400 069). Fonte única em campanha.ts (SALON_WHATSAPP); todos os
- * fluxos (footer, patrocínio, pagamento, Ecobag) usam este mesmo número.
+ * fluxos (footer, patrocínio, pagamento) usam este mesmo número.
  */
 
 // ═══════════════════════════════════════════════════════════════
-// DADOS A CONFIRMAR COM A VITÓRIA — placeholders honestos.
-// Assim que chegarem os valores reais, substituir aqui (e só aqui).
+// DADOS FINANCEIROS REAIS — fonte única de verdade (directiva §2).
+// MB Way, beneficiário, IBAN/BIC/instituição e valor vivem AQUI (e só
+// aqui); os modais de inscrição e de patrocínio importam destas constantes.
 // ═══════════════════════════════════════════════════════════════
-export const MBWAY_NUMERO = "a confirmar";
+/** Número MB Way da Essence of Beauty (fornecido pelo Lucas, 11/08). */
+export const MBWAY_NUMERO = "+351 928 400 069";
+/** Mesmo número sem indicativo nem espaços — valor a colar na app MB Way. */
+export const MBWAY_NUMERO_COPIAR = "928400069";
 
 /**
- * IBAN da conta de recebimento da inscrição (SumUp, SEPA).
- * Validado por validarIban() abaixo — qualquer edição que o quebre
- * faz o módulo lançar erro em dev/SSR (tripwire), impedindo o deploy.
+ * Conta de recebimento da inscrição (SumUp, SEPA). O IBAN guarda-se SEM
+ * espaços (é o valor a copiar); a apresentação agrupada ("IE60 SUMU 9903
+ * 6513 0071 49") deriva de formatarIban(). Validado por validarIban()
+ * abaixo — qualquer edição que o quebre faz o módulo lançar erro em
+ * dev/SSR (tripwire), impedindo o deploy.
  */
 export const TRANSFERENCIA = {
   iban: "IE60SUMU99036513007149",
-  // Nome do titular da conta ainda não confirmado pela Vitória.
-  beneficiario: "A confirmar",
+  /** Titular da conta — fornecido pelo Lucas (Vitória Silva). */
+  beneficiario: "Vitória Silva",
+  /** BIC/SWIFT da conta (SEPA). */
+  bic: "SUMUIE22XXX",
+  /** Instituição titular da conta. */
+  instituicao: "SumUp Limited",
 } as const;
 
 // ═══════════════════════════════════════════════════════════════
@@ -59,6 +70,16 @@ export function validarIban(iban: string): boolean {
     resto = Number(resto + digitos.slice(i, i + 7)) % 97;
   }
   return resto === 1;
+}
+
+/**
+ * Formata um IBAN em grupos de 4 para leitura humana
+ * ("IE60 SUMU 9903 6513 0071 49") — só apresentação. O valor a copiar
+ * continua a ser TRANSFERENCIA.iban (sem espaços).
+ */
+export function formatarIban(iban: string): string {
+  const normalizado = iban.replace(/[\s -]/g, "").toUpperCase();
+  return normalizado.match(/.{1,4}/g)?.join(" ") ?? normalizado;
 }
 
 /**

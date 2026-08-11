@@ -6,8 +6,8 @@ import InscricaoForm from "./InscricaoForm";
 type Props = {
   aberto: boolean;
   fechar: () => void;
-  /** Chamado com id e nome da inscrição, para o pai abrir a modal de pagamento. */
-  onSucesso: (inscricaoId: string, nome: string) => void;
+  /** Chamado com id, nome e email da inscrição, para o pai abrir a modal de pagamento. */
+  onSucesso: (inscricaoId: string, nome: string, email: string) => void;
 };
 
 /**

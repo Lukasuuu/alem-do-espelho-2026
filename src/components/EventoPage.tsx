@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import Experience from "@/components/Experience";
@@ -8,23 +8,24 @@ import Anfitria from "@/components/Anfitria";
 import Gallery from "@/components/Gallery";
 import Realizacao from "@/components/Realizacao";
 import Footer from "@/components/Footer";
-import EcobagModal from "@/components/EcobagModal";
-import { contarModaisAbertos } from "@/lib/scroll-lock";
 import WaitlistModal from "@/components/WaitlistModal";
 import InscricaoModal from "@/components/InscricaoModal";
 import PagamentoModal from "@/components/PagamentoModal";
 import ParabensModal from "@/components/ParabensModal";
 import { definirAberturaModal } from "@/lib/modal";
 import { faseForcada } from "@/lib/fase";
-import { FIM_CAMPANHA_ISO, LIMITE_BONUS, CAMPAIGN_POLL_MS } from "@/lib/campanha";
+import { FIM_CAMPANHA_ISO, MENSAGEM_INSCRICAO, SALON_WHATSAPP } from "@/lib/campanha";
+import { VALOR_INSCRICAO_TEXT } from "@/lib/pagamento";
+import { linkWhatsApp } from "@/lib/site";
+import { enviarEmailNotificacao } from "@/lib/email";
 
 const fimCampanhaMs = new Date(FIM_CAMPANHA_ISO).getTime();
 
 /**
- * Versão do evento, a landing completa. Fluxo de pré-inscrição com gate de fase:
- *  - campanha "Ecobag Bónus" ativa → abre primeiro a modal informativa, depois
- *    a lista de espera (WaitlistModal);
- *  - após FIM_CAMPANHA_ISO (10/08, 10:00) → a inscrição paga (InscricaoModal)
+ * Versão do evento, a landing completa. Fluxo de inscrição com gate de fase:
+ *  - antes de FIM_CAMPANHA_ISO (10/08, 10:00) → a lista de espera
+ *    (WaitlistModal);
+ *  - a partir de FIM_CAMPANHA_ISO → a inscrição paga (InscricaoModal)
  *    e a modal de pagamento (PagamentoModal), o mesmo gate das APIs.
  * O override de teste NEXT_PUBLIC_FASE_OVERRIDE é respeitado no client
  * (faseForcada em lib/fase) para testar o fluxo pago antes de 10/08.
@@ -37,42 +38,23 @@ const fimCampanhaMs = new Date(FIM_CAMPANHA_ISO).getTime();
 type Props = { faseInscricaoAtiva: boolean };
 
 export default function EventoPage({ faseInscricaoAtiva }: Props) {
-  const [bonusAberto, setBonusAberto] = useState(false);
   const [waitlistAberto, setWaitlistAberto] = useState(false);
   const [inscricaoAberto, setInscricaoAberto] = useState(false);
   const [pagamentoAberto, setPagamentoAberto] = useState(false);
-  const [inscricaoDados, setInscricaoDados] = useState<{ id: string; nome: string } | null>(null);
-  const [parabensDados, setParabensDados] = useState<{ nome: string; isBonus: boolean } | null>(null);
-  const [inscritos, setInscritos] = useState<number | null>(null);
-  const [encerrado, setEncerrado] = useState(false);
+  const [inscricaoDados, setInscricaoDados] = useState<{
+    id: string;
+    nome: string;
+    email: string;
+  } | null>(null);
+  const [parabensDados, setParabensDados] = useState<{ comprovativoOk: boolean } | null>(null);
+  // Guard anti-duplicado: o email de confirmação envia-se UMA vez por inscrição,
+  // mesmo que o fluxo do comprovativo passe por aqui mais do que uma vez.
+  const emailConfirmacaoEnviadoRef = useRef<string | null>(null);
 
   // Override de teste (lista|inscricao) — constante por build, lido no client.
   const fase = faseForcada();
-  // Campanha ecobag ativa: bónus não esgotou E antes de FIM_CAMPANHA.
-  const campanhaEcobag = !encerrado && Date.now() < fimCampanhaMs;
-  // Lista gratuita aberta: qualquer momento antes de FIM_CAMPANHA (independente do bónus).
+  // Lista gratuita aberta: antes de FIM_CAMPANHA.
   const listaAberta = Date.now() < fimCampanhaMs;
-
-  // ── Polling do counter da campanha ecobag (bónus da lista de espera) ──
-  const buscarCount = useCallback(async () => {
-    try {
-      const res = await fetch("/api/campanha/inscritos", { cache: "no-store" });
-      const data = await res.json();
-      if (data.ok && typeof data.inscritos === "number") {
-        setInscritos(data.inscritos);
-        if (data.inscritos >= LIMITE_BONUS) setEncerrado(true);
-      }
-    } catch {
-      // Silencioso — tenta novamente no próximo ciclo
-    }
-    if (Date.now() >= fimCampanhaMs) setEncerrado(true);
-  }, []);
-
-  useEffect(() => {
-    buscarCount();
-    const id = setInterval(buscarCount, CAMPAIGN_POLL_MS);
-    return () => clearInterval(id);
-  }, [buscarCount]);
 
   // ── Fluxo de entrada, com consciência de fase (override de teste incluído). ──
   const abrirFluxo = useCallback(() => {
@@ -86,20 +68,15 @@ export default function EventoPage({ faseInscricaoAtiva }: Props) {
       setWaitlistAberto(true);
       return;
     }
-    if (campanhaEcobag) {
-      setBonusAberto(true);
-      return;
-    }
     if (listaAberta) {
-      // Campanha ecobag já esgotou mas a lista gratuita ainda está aberta.
+      // Lista gratuita ainda aberta (antes de FIM_CAMPANHA).
       setWaitlistAberto(true);
       return;
     }
     // ≥ FIM_CAMPANHA → a inscrição paga é o fluxo ativo.
     setInscricaoAberto(true);
-  }, [fase, campanhaEcobag, listaAberta]);
+  }, [fase, listaAberta]);
 
-  const fecharBonus = useCallback(() => setBonusAberto(false), []);
   const fecharWaitlist = useCallback(() => setWaitlistAberto(false), []);
   const fecharInscricao = useCallback(() => setInscricaoAberto(false), []);
   const fecharPagamento = useCallback(() => {
@@ -108,47 +85,48 @@ export default function EventoPage({ faseInscricaoAtiva }: Props) {
   }, []);
 
   // Inscrição submetida → fecha o formulário e abre o pagamento com os dados.
-  const aoInscricaoSucesso = useCallback((id: string, nome: string) => {
+  const aoInscricaoSucesso = useCallback((id: string, nome: string, email: string) => {
     setInscricaoAberto(false);
-    setInscricaoDados({ id, nome });
+    setInscricaoDados({ id, nome, email });
     setPagamentoAberto(true);
   }, []);
 
-  // Pagamento confirmado (estado_inscricao === "confirmed", via polling do
-  // PagamentoModal) → fecha o pagamento e abre os parabéns com o isBonus da DB.
-  const aoPagamentoConfirmado = useCallback(
-    (dados: { isBonus: boolean }) => {
-      if (!inscricaoDados) return;
-      setPagamentoAberto(false);
-      setInscricaoDados(null);
-      setParabensDados({ nome: inscricaoDados.nome, isBonus: dados.isBonus });
-    },
-    [inscricaoDados]
-  );
+  // Directiva §3: o email "recebemos a tua inscrição" dispara no momento em que
+  // o ecrã de PARABÉNS da inscrição é mostrado — DEPOIS de o upload do
+  // comprovativo responder OK (PagamentoModal → onComprovativoSucesso). O
+  // upload falhou → aoComprovativoFalha mostra o Parabéns SEM email (é o
+  // WhatsApp que resolve). Fire-and-forget — nunca bloqueia nem reverte a
+  // inscrição. Guard por id: UM email por inscrição.
+  const aoComprovativoSucesso = useCallback(() => {
+    if (!inscricaoDados) return;
+    const { id, nome, email } = inscricaoDados;
+    setPagamentoAberto(false);
+    setInscricaoDados(null);
+    setParabensDados({ comprovativoOk: true });
+
+    if (emailConfirmacaoEnviadoRef.current === id) return;
+    emailConfirmacaoEnviadoRef.current = id;
+    void enviarEmailNotificacao({
+      to_name: nome,
+      to_email: email,
+      amount: VALOR_INSCRICAO_TEXT,
+      order_id: id,
+      event_link: "https://essenceofbeautysalon.com/alem-do-espelho-2026",
+    });
+  }, [inscricaoDados]);
+
+  // Upload falhou (ou a pessoa prefere o WhatsApp): o Parabéns mostra-se na
+  // mesma, com a linha de fallback a pedir o comprovativo pelo WhatsApp. SEM
+  // email — o comprovativo não chegou; é o WhatsApp que o resolve. A pessoa
+  // já pagou: nunca fica sem confirmação por causa de um upload.
+  const aoComprovativoFalha = useCallback(() => {
+    if (!inscricaoDados) return;
+    setPagamentoAberto(false);
+    setInscricaoDados(null);
+    setParabensDados({ comprovativoOk: false });
+  }, [inscricaoDados]);
 
   const fecharParabens = useCallback(() => setParabensDados(null), []);
-
-  // "Quero fazer parte" na modal do bónus: fecha-a e abre a lista de espera.
-  const aoQueroFazerParte = useCallback(() => {
-    setBonusAberto(false);
-    setWaitlistAberto(true);
-  }, []);
-
-  const aoCampanhaEncerrar = useCallback(() => setEncerrado(true), []);
-
-  // ── Auto-abertura do EcobagModal ~3 s após carregar (só ecobag ativa;
-  //    o override pago nunca abre o bónus por cima do fluxo de inscrição). ──
-  // Se já houver outro modal aberto (ex. fluxo de patrocínio), não abrir o
-  // bónus por cima: o auto-foco roubaria o campo em uso e dispararia validação
-  // sem o utilizador tocar em nada (contador partilhado em lib/scroll-lock).
-  useEffect(() => {
-    if (fase === "inscricao" || !campanhaEcobag) return;
-    const t = window.setTimeout(() => {
-      if (contarModaisAbertos() > 0) return;
-      setBonusAberto(true);
-    }, 3000);
-    return () => window.clearTimeout(t);
-  }, [fase, campanhaEcobag]);
 
   // O skip-link "Saltar para a inscrição" (layout) abre o fluxo via registo global.
   useEffect(() => {
@@ -167,15 +145,6 @@ export default function EventoPage({ faseInscricaoAtiva }: Props) {
         <Realizacao faseInscricaoAtiva={faseInscricaoAtiva} />
       </main>
       <Footer abrirModal={abrirFluxo} />
-      <EcobagModal
-        aberto={bonusAberto}
-        fechar={fecharBonus}
-        inscritos={inscritos}
-        encerrado={encerrado}
-        onEncerrado={aoCampanhaEncerrar}
-        onQueroFazerParte={aoQueroFazerParte}
-        onPular={fecharBonus}
-      />
       <WaitlistModal aberto={waitlistAberto} fechar={fecharWaitlist} />
       <InscricaoModal
         aberto={inscricaoAberto}
@@ -188,14 +157,16 @@ export default function EventoPage({ faseInscricaoAtiva }: Props) {
           fechar={fecharPagamento}
           inscricaoId={inscricaoDados.id}
           nome={inscricaoDados.nome}
-          onConfirmado={aoPagamentoConfirmado}
+          onComprovativoSucesso={aoComprovativoSucesso}
+          onComprovativoFalha={aoComprovativoFalha}
         />
       )}
       <ParabensModal
         aberto={!!parabensDados}
         fechar={fecharParabens}
-        nome={parabensDados?.nome ?? ""}
-        isBonus={parabensDados?.isBonus ?? false}
+        contexto="inscricao"
+        comprovativoOk={parabensDados?.comprovativoOk ?? true}
+        ctaWhatsApp={linkWhatsApp(SALON_WHATSAPP, MENSAGEM_INSCRICAO)}
       />
     </>
   );

@@ -370,17 +370,6 @@ export default function PatrocinioPagamentoModal({
                       </li>
                     </ol>
 
-                    <p
-                      className={`mt-4 rounded-sm border px-4 py-3 text-[0.8125rem] leading-relaxed ${
-                        claro
-                          ? "border-vinho/15 bg-creme-profundo/60 text-carvao/70"
-                          : "border-creme/20 bg-creme/5 text-creme/70"
-                      }`}
-                    >
-                      Este número está a ser confirmado com a Vitória. Se ainda não o tens certo,
-                      escreve-lhe no WhatsApp abaixo antes de pagar.
-                    </p>
-
                     <a
                       href={linkWhatsAppPatrocinio("mbway", nivel)}
                       target="_blank"
@@ -486,17 +475,6 @@ export default function PatrocinioPagamentoModal({
                       <span className="font-medium">
                         {primeiroNome} · Patrocínio Além do Espelho 2026
                       </span>
-                    </p>
-
-                    <p
-                      className={`mt-4 rounded-sm border px-4 py-3 text-[0.8125rem] leading-relaxed ${
-                        claro
-                          ? "border-vinho/15 bg-creme-profundo/60 text-carvao/70"
-                          : "border-creme/20 bg-creme/5 text-creme/70"
-                      }`}
-                    >
-                      Os dados bancários estão a ser confirmados com a Vitória. Se ainda não os
-                      tens certos, escreve-lhe no WhatsApp abaixo.
                     </p>
 
                     <a
