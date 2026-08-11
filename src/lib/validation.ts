@@ -61,9 +61,9 @@ export const waitlistSchema = z.object({
 export type WaitlistInput = z.input<typeof waitlistSchema>;
 
 /**
- * Inscrição paga (FASE3): mesma disciplina do waitlist, sem o consentimento —
- * ao pagar, a pessoa consente o contacto. O telemóvel valida-se depois com
- * libphonenumber (E.164) na rota, igual ao fluxo da lista de espera.
+ * Inscrição paga: mesma disciplina do waitlist, com consentimento explícito
+ * e separado (RGPD, 11/08). O telemóvel valida-se depois com libphonenumber
+ * (E.164) na rota, igual ao fluxo da lista de espera.
  */
 export const inscricaoSchema = z.object({
   nome: z
@@ -97,6 +97,14 @@ export const inscricaoSchema = z.object({
     .string()
     .min(5, "Indica o teu telemóvel.")
     .max(24, "Número demasiado longo."),
+
+  // RGPD (Lucas, 11/08): consentimento explícito e separado, obrigatório true.
+  // O servidor recusa se não vier marcado — e a função na DB lança exceção se
+  // receber false, como defesa em profundidade. A coluna consentimento_em
+  // guarda o WHEN, não só o IF.
+  consent: z.literal(true, {
+    errorMap: () => ({ message: "Precisamos da tua autorização para tratar da tua inscrição." }),
+  }),
 
   // Anti-bot: igual ao waitlist — o campo invisível e o tempo mínimo.
   website: z.string().max(200).optional().default(""),

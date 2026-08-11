@@ -3,37 +3,67 @@
 import Modal from "./Modal";
 import { site } from "@/lib/site";
 
+/**
+ * Contexto em que a política é aberta — a modal é o documento legal que
+ * sustenta o consentimento dado em cada formulário, por isso a finalidade e
+ * os dados recolhidos têm de bater certo com o formulário que a abriu
+ * (Lucas, 11/08): a lista de espera, a inscrição e o patrocínio recolhem
+ * coisas diferentes.
+ */
+export type ContextoPrivacidade = "geral" | "lista" | "inscricao" | "patrocinio";
+
 type Props = {
   aberto: boolean;
   fechar: () => void;
+  /** Ajusta a finalidade e os dados recolhidos ao formulário que abriu a modal. */
+  contexto?: ContextoPrivacidade;
 };
 
-const itens = [
-  {
-    rotulo: "Dados recolhidos",
-    texto: "Nome, email, telemóvel e metadados técnicos mínimos (idioma, origem do acesso).",
+const porContexto: Record<ContextoPrivacidade, { dados: string; finalidade: string }> = {
+  // Footer / visitante sem formulário: visão geral.
+  geral: {
+    dados: "Os dados que forneceres num formulário (nome, email e telemóvel) e metadados técnicos mínimos (idioma, origem do acesso).",
+    finalidade:
+      "Gerir a tua participação no Além do Espelho2026 — inscrição, patrocínio ou lista de espera — e comunicar contigo sobre o evento. Nada além disso.",
   },
-  {
-    rotulo: "Finalidade",
-    texto: "Comunicação sobre a lista de espera e o evento. Nada além disso.",
+  lista: {
+    dados: "Nome, email e telemóvel, e metadados técnicos mínimos (idioma, origem do acesso).",
+    finalidade: "Comunicação sobre a lista de espera e o evento. Nada além disso.",
   },
-  {
-    rotulo: "Base legal",
-    texto: "O teu consentimento, dado ao marcar a caixa no formulário.",
+  inscricao: {
+    dados: "Nome, email e telemóvel, e metadados técnicos mínimos (idioma, origem do acesso).",
+    finalidade:
+      "Gerir a tua inscrição no Além do Espelho2026 (lugar garantido após a confirmação do pagamento) e comunicar contigo sobre o evento. Nada além disso.",
   },
-  {
-    rotulo: "Retenção",
-    texto: "Os dados são conservados apenas enquanto forem necessários e eliminados mediante pedido.",
+  patrocinio: {
+    dados: "Nome, email, telemóvel e, se indicares, o nome da tua empresa ou marca. Metadados técnicos mínimos (idioma, origem do acesso).",
+    finalidade:
+      "Gerir a tua proposta de patrocínio do Além do Espelho2026 e comunicar contigo sobre a parceria. Nada além disso.",
   },
-  {
-    rotulo: "Os teus direitos",
-    texto:
-      "Podes pedir acesso, correção ou eliminação dos teus dados a qualquer momento através dos contactos abaixo.",
-  },
-];
+};
+
+const RETENCAO =
+  "Os dados são eliminados até 6 meses após o evento — ou mais cedo se pedires a eliminação.";
 
 /** Modal "Política de Privacidade", curto e alinhado ao RGPD. */
-export default function PrivacidadeModal({ aberto, fechar }: Props) {
+export default function PrivacidadeModal({ aberto, fechar, contexto = "geral" }: Props) {
+  const { dados, finalidade } = porContexto[contexto];
+
+  const itens = [
+    { rotulo: "Dados recolhidos", texto: dados },
+    { rotulo: "Finalidade", texto: finalidade },
+    {
+      rotulo: "Base legal",
+      texto: "O teu consentimento, dado ao marcar a caixa no formulário.",
+    },
+    { rotulo: "Retenção", texto: RETENCAO },
+    {
+      rotulo: "Os teus direitos",
+      texto:
+        "Podes pedir acesso, correção ou eliminação dos teus dados a qualquer momento através dos contactos abaixo.",
+    },
+  ];
+
   return (
     <Modal
       aberto={aberto}

@@ -101,11 +101,21 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
       p_nome: dados.nome,
       p_email: dados.email,
       p_telefone: telefone.e164,
+      // RGPD (Lucas, 11/08): passa o consentimento real (a 5-arg — sobrecarga
+      // nova). A de 4 args continua a existir até ser verificado por grep que
+      // nada mais a chama e só então é descartada.
+      p_consentimento: dados.consent === true,
       p_ip_hash: hashIp(ip),
     });
 
     if (error) {
       const codigo = error.message ?? "";
+      if (codigo.includes("consentimento_obrigatorio")) {
+        return NextResponse.json(
+          { ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao", campos: { consent: "Precisamos da tua autorização para tratar da tua inscrição." } },
+          { status: 422 }
+        );
+      }
       if (codigo.includes("invalid_email")) {
         return NextResponse.json(
           { ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao", campos: { email: "Este email não parece válido." } },

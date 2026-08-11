@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { linkWhatsApp, paises, site } from "@/lib/site";
-import { FIM_CAMPANHA_ISO, MENSAGEM_ECOBAG, SALON_WHATSAPP } from "@/lib/campanha";
+import { FIM_CAMPANHA_ISO, MENSAGEM_LISTA, SALON_WHATSAPP } from "@/lib/campanha";
 import { MENSAGENS, normalizarNome, validarTelefone } from "@/lib/validation";
 import { WhatsAppIcon } from "./icons";
+import PrivacidadeModal from "./PrivacidadeModal";
 
 type Estado = "inativo" | "a-enviar" | "sucesso" | "erro";
 type Erros = Partial<Record<"fullName" | "email" | "phone" | "consent" | "form", string>>;
@@ -48,7 +49,14 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
         // Passo A → B: depois de guardar os dados a pessoa continua para a
         // escolha do nível. "Quero Patrocinar" já está no botão da página.
         botao: "Continuar",
-        consentimento: `Autorizo o ${anfitria} a contactar-me por email e telemóvel sobre oportunidades de patrocínio do ${site.nome}. Podes remover os teus dados quando quiseres.`,
+        // RGPD (Lucas, 11/08): mesmo formato do texto da inscrição —
+        // responsável, finalidade exclusiva, não partilhado com terceiros,
+        // prazo de conservação e direito de eliminação. Número derivado de
+        // SALON_WHATSAPP para nunca voltar a divergir.
+        consentimento: `Autorizo a ${anfitria} a usar o meu nome, email e telemóvel exclusivamente para gerir a minha proposta de patrocínio do ${site.nome}. Os dados não são partilhados com terceiros e são eliminados até 6 meses após o evento. Posso pedir a eliminação a qualquer momento pelo WhatsApp ${SALON_WHATSAPP.replace(
+          /^351/,
+          ""
+        )}.`,
         listaFechada: "O registo de patrocínio está temporariamente indisponível.",
       }
     : {
@@ -65,6 +73,7 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
   const [consent, setConsent] = useState(false);
   const [empresa, setEmpresa] = useState(""); // só no patrocínio (opcional)
   const [website, setWebsite] = useState(""); // honeypot
+  const [privacidadeAberta, setPrivacidadeAberta] = useState(false);
 
   const [estado, setEstado] = useState<Estado>("inativo");
   const [erros, setErros] = useState<Erros>({});
@@ -149,7 +158,9 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
           email: email.trim().toLowerCase(),
           phone,
           phoneCountry,
-          consent: true,
+          // RGPD: valor real da caixa — o servidor exige literal(true) e a DB
+          // lança exceção se receber false. Nenhuma rota aceita passar por cima.
+          consent: consent,
           website,
           elapsedMs: Date.now() - montadoEm.current,
           locale: typeof navigator !== "undefined" ? navigator.language : undefined,
@@ -257,8 +268,8 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
 
         <p className="mx-auto mt-4 max-w-sm text-[0.9375rem] leading-relaxed text-creme/70">
           {jaInscrita
-            ? "Já fazias parte da lista. Fala connosco no WhatsApp para saberes tudo sobre a tua Ecobag."
-            : "A tua inscrição foi registada com sucesso. Fala connosco no WhatsApp para saberes tudo sobre a tua Ecobag."}
+            ? "Já fazias parte da lista. Fala connosco no WhatsApp para saberes tudo sobre a tua inscrição."
+            : "A tua inscrição foi registada com sucesso. Fala connosco no WhatsApp para saberes tudo sobre a tua inscrição."}
         </p>
 
         {posicao !== null && (
@@ -271,14 +282,14 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
         )}
 
         <a
-          href={linkWhatsApp(SALON_WHATSAPP, MENSAGEM_ECOBAG)}
+          href={linkWhatsApp(SALON_WHATSAPP, MENSAGEM_LISTA)}
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Abrir conversa no WhatsApp da Essence of Beauty"
           className="mt-9 inline-flex items-center gap-3 rounded-full bg-rosa px-8 py-4 text-[0.9375rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro hover:shadow-[0_12px_40px_-12px_rgba(196,126,138,0.7)]"
         >
           <WhatsAppIcon className="h-5 w-5" />
-          Falar sobre a minha Ecobag
+          Falar sobre a minha inscrição
         </a>
       </motion.div>
     );
@@ -505,12 +516,20 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
           {campoInvalido("consent") && (
             <p className="mt-2 text-[0.8125rem] text-[#f3c0c0]">{erros.consent}</p>
           )}
+          <button
+            type="button"
+            onClick={() => setPrivacidadeAberta(true)}
+            disabled={listaFechada}
+            className="mt-2 rounded-sm text-[0.8125rem] font-medium text-creme/60 underline decoration-rosa/40 underline-offset-2 transition-colors hover:text-creme/85 hover:decoration-rosa focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rosa/50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Política de Privacidade
+          </button>
         </div>
       </div>
 
       <button
         type="submit"
-        disabled={estado === "a-enviar" || listaFechada}
+        disabled={estado === "a-enviar" || listaFechada || !consent}
         className="group mt-8 flex w-full items-center justify-center gap-3 rounded-full bg-rosa px-8 py-4 text-[0.9375rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro hover:shadow-[0_12px_40px_-12px_rgba(186,121,132,0.7)] active:scale-[0.985] motion-reduce:active:scale-100 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {estado === "a-enviar" ? (
@@ -536,6 +555,15 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
         )}
       </button>
 
+      {/* Modal usa createPortal ao <body>: aqui dentro do form no JSX é
+          seguro — no DOM real o painel sai do form e o "Fechar" nunca submete.
+          RGPD (Lucas, 11/08): o contexto ajusta a finalidade ao formulário
+          que abriu — o patrocínio recolhe a empresa, a lista não. */}
+      <PrivacidadeModal
+        aberto={privacidadeAberta}
+        fechar={() => setPrivacidadeAberta(false)}
+        contexto={ehSponsor ? "patrocinio" : "lista"}
+      />
     </form>
   );
 }

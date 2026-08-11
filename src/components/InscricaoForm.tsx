@@ -2,17 +2,34 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { linkWhatsApp, paises } from "@/lib/site";
+import { linkWhatsApp, paises, site } from "@/lib/site";
 import { SALON_WHATSAPP } from "@/lib/campanha";
 import { MENSAGENS, normalizarNome, validarTelefone } from "@/lib/validation";
 import { WhatsAppIcon } from "./icons";
+import PrivacidadeModal from "./PrivacidadeModal";
 
 type Estado = "inativo" | "a-enviar" | "erro";
-type Erros = Partial<Record<"nome" | "email" | "phone" | "form", string>>;
+type Erros = Partial<Record<"nome" | "email" | "phone" | "consent" | "form", string>>;
+
+/**
+ * Consentimento RGPD (Lucas, 11/08): checkbox nunca pré-marcada, obrigatória.
+ * O texto identifica o responsável, a finalidade, o prazo de conservação e o
+ * direito de eliminação — derivado do site config para o número de WhatsApp
+ * nunca voltar a divergir. A caixa é separada de qualquer outra aceitação.
+ */
+const TEXTO_CONSENTIMENTO = `Autorizo a ${site.anfitria.empresa.replace(
+  "CEO e fundadora do ",
+  ""
+)} a usar o meu nome, email e telemóvel exclusivamente para gerir a minha inscrição no ${
+  site.nome
+}. Os dados não são partilhados com terceiros e são eliminados até 6 meses após o evento. Posso pedir a eliminação a qualquer momento pelo WhatsApp ${SALON_WHATSAPP.replace(
+  /^351/,
+  ""
+)}.`;
 
 type Props = {
-  /** Chamado com o id e o nome da inscrição registada, para abrir a modal de pagamento. */
-  onSucesso: (inscricaoId: string, nome: string) => void;
+  /** Chamado com id, nome e email da inscrição registada, para abrir a modal de pagamento. */
+  onSucesso: (inscricaoId: string, nome: string, email: string) => void;
 };
 
 const NOME_COMPLETO = /^\p{L}[\p{L}'’.-]{1,}(?:\s+\p{L}[\p{L}'’.-]{1,})+$/u;
@@ -29,6 +46,9 @@ export default function InscricaoForm({ onSucesso }: Props) {
   const [phone, setPhone] = useState("");
   const [phoneCountry, setPhoneCountry] = useState<string>("PT");
   const [website, setWebsite] = useState(""); // honeypot
+  /** RGPD: nunca pré-marcada (defaultChecked seria inválido). */
+  const [consent, setConsent] = useState(false);
+  const [privacidadeAberta, setPrivacidadeAberta] = useState(false);
 
   const [estado, setEstado] = useState<Estado>("inativo");
   const [erros, setErros] = useState<Erros>({});
@@ -65,6 +85,8 @@ export default function InscricaoForm({ onSucesso }: Props) {
       if (!resultado.ok) novos.phone = resultado.erro;
     }
 
+    if (!consent) novos.consent = "Precisamos da tua autorização para tratar da tua inscrição.";
+
     return novos;
   }
 
@@ -78,7 +100,7 @@ export default function InscricaoForm({ onSucesso }: Props) {
 
     const novos = validar();
     setErros(novos);
-    setTocados({ nome: true, email: true, phone: true });
+    setTocados({ nome: true, email: true, phone: true, consent: true });
 
     if (Object.keys(novos).length > 0) {
       const primeiro = document.querySelector<HTMLElement>('[aria-invalid="true"]');
@@ -97,6 +119,9 @@ export default function InscricaoForm({ onSucesso }: Props) {
           email: email.trim().toLowerCase(),
           phone,
           phoneCountry,
+          // RGPD: o valor real da caixa (true quando marcada). O servidor
+          // exige literal(true) e a DB lança exceção se receber false.
+          consent: consent,
           website,
           elapsedMs: Date.now() - montadoEm.current,
           locale: typeof navigator !== "undefined" ? navigator.language : undefined,
@@ -151,7 +176,7 @@ export default function InscricaoForm({ onSucesso }: Props) {
       }
 
       setEstado("inativo");
-      onSucesso(dados.id as string, normalizarNome(nome));
+      onSucesso(dados.id as string, normalizarNome(nome), email.trim().toLowerCase());
     } catch {
       setEstado("erro");
       setFalhaServidor(true);
@@ -321,11 +346,44 @@ export default function InscricaoForm({ onSucesso }: Props) {
             onChange={(e) => setWebsite(e.target.value)}
           />
         </div>
+
+        {/* Consentimento RGPD: caixa própria, nunca pré-marcada, obrigatória.
+            O botão de submissão fica desativado enquanto não estiver marcada. */}
+        <div className="pt-1">
+          <label htmlFor="consent" className="flex cursor-pointer items-start gap-3">
+            <input
+              id="consent"
+              name="consent"
+              type="checkbox"
+              checked={consent}
+              onChange={(e) => {
+                setConsent(e.target.checked);
+                if (tocados.consent) setErros(validar());
+              }}
+              onBlur={() => aoSair("consent")}
+              aria-invalid={campoInvalido("consent")}
+              className="mt-0.5 h-[18px] w-[18px] shrink-0 cursor-pointer accent-rosa"
+            />
+            <span className="text-[0.8125rem] leading-relaxed text-creme/60">
+              {TEXTO_CONSENTIMENTO}
+            </span>
+          </label>
+          {campoInvalido("consent") && (
+            <p className="mt-2 text-[0.8125rem] text-[#f3c0c0]">{erros.consent}</p>
+          )}
+          <button
+            type="button"
+            onClick={() => setPrivacidadeAberta(true)}
+            className="mt-2 rounded-sm text-[0.8125rem] font-medium text-creme/60 underline decoration-rosa/40 underline-offset-2 transition-colors hover:text-creme/85 hover:decoration-rosa focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rosa/50"
+          >
+            Política de Privacidade
+          </button>
+        </div>
       </div>
 
       <button
         type="submit"
-        disabled={estado === "a-enviar"}
+        disabled={estado === "a-enviar" || !consent}
         className="group mt-8 flex w-full items-center justify-center gap-3 rounded-full bg-rosa px-8 py-4 text-[0.9375rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro hover:shadow-[0_12px_40px_-12px_rgba(186,121,132,0.7)] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {estado === "a-enviar" ? (
@@ -354,6 +412,18 @@ export default function InscricaoForm({ onSucesso }: Props) {
       <p className="mt-4 text-center text-[0.8125rem] leading-relaxed text-creme/45">
         Ao reservares, ficas com o lugar garantido assim que o pagamento for confirmado.
       </p>
+
+      {/* O Modal usa createPortal ao <body>: renderizar aqui dentro do <form>
+          no JSX é seguro — no DOM real o painel fica fora do form e os botões
+          "Fechar" nunca disparam submissão. */}
+      {/* RGPD (Lucas, 11/08): a modal é o documento legal do consentimento —
+          contexto "inscricao" para a finalidade e os dados baterem certo com
+          o formulário que a abriu. */}
+      <PrivacidadeModal
+        aberto={privacidadeAberta}
+        fechar={() => setPrivacidadeAberta(false)}
+        contexto="inscricao"
+      />
     </form>
   );
 }
