@@ -15,7 +15,6 @@ import {
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const preferredRegion = ["cdg1"];
 
 type Resposta =
   | { ok: true; comprovativoId: string; pagamentoId: string; pagamentoEstado: string }

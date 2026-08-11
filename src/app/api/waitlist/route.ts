@@ -7,8 +7,8 @@ import { listaAtiva } from "@/lib/cutover";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-// Dados pessoais tratados na UE: função junto da base de dados (Supabase em Paris).
-export const preferredRegion = ["cdg1"];
+// Dados pessoais tratados na UE — a região das funções está fixada em cdg1 (Paris)
+// no vercel.json, junto da base de dados (Supabase em eu-west-3).
 
 type Resposta =
   | { ok: true; status: "created" | "already_registered"; posicao: number }

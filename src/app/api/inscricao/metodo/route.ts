@@ -6,7 +6,6 @@ import { MENSAGENS, metodoInscricaoSchema, type MetodoPagamento, type TipoErro }
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const preferredRegion = ["cdg1"];
 
 type Resposta =
   | {

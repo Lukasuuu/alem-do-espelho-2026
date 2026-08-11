@@ -6,7 +6,6 @@ import { MENSAGENS, type TipoErro } from "@/lib/validation";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const preferredRegion = ["cdg1"];
 
 type Resposta =
   | {

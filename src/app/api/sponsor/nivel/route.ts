@@ -12,7 +12,6 @@ import { SPONSOR_MOCK_ATIVO } from "@/lib/sponsor-mock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const preferredRegion = ["cdg1"];
 
 type Resposta =
   | { ok: true; sponsorId: string; nivel: NivelParceria }
