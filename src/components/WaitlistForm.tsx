@@ -342,7 +342,7 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
         </AnimatePresence>
       </div>
 
-      <div className="space-y-5">
+      <div className="space-y-5 max-w-[26rem]">
         {/* Nome */}
         <div>
           <label htmlFor="fullName" className="eyebrow mb-2.5 block text-creme/55">
@@ -370,13 +370,13 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
           )}
         </div>
 
-        {/* Telemóvel */}
+        {/* Telemóvel — indicativo + telefone na mesma linha (não quebrar) */}
         <div>
           <label htmlFor="phone" className="eyebrow mb-2.5 block text-creme/55">
             Telemóvel
           </label>
-          <div className="flex gap-2.5">
-            <div className="relative shrink-0">
+          <div className="flex gap-2.5 items-end">
+            <div className="relative shrink-0 w-[8rem] min-w-[8rem]">
               <select
                 aria-label="Indicativo do país"
                 className="campo cursor-pointer appearance-none pr-9 disabled:cursor-not-allowed disabled:opacity-50 [&>option]:bg-carvao [&>option]:text-creme"
@@ -408,7 +408,7 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
               inputMode="tel"
               autoComplete="tel-national"
               enterKeyHint="done"
-              className="campo disabled:cursor-not-allowed disabled:opacity-50"
+              className="campo disabled:cursor-not-allowed disabled:opacity-50 flex-1 min-w-0"
               placeholder={paisSelecionado.code === "PT" ? "912 345 678" : "Número"}
               disabled={listaFechada}
               value={phone}
@@ -492,8 +492,8 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
           />
         </div>
 
-        {/* Consentimento */}
-        <div className="pt-1">
+        {/* Consentimento — ≤4 linhas à largura do formulário (max-w-[26rem]) */}
+        <div className="pt-1 max-w-[26rem]">
           <label htmlFor="consent" className="flex cursor-pointer items-start gap-3">
             <input
               id="consent"
@@ -520,7 +520,7 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
             type="button"
             onClick={() => setPrivacidadeAberta(true)}
             disabled={listaFechada}
-            className="mt-2 rounded-sm text-[0.8125rem] font-medium text-creme/60 underline decoration-rosa/40 underline-offset-2 transition-colors hover:text-creme/85 hover:decoration-rosa focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rosa/50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-2 inline-flex h-[44px] min-w-[44px] items-center justify-center rounded-sm text-[0.8125rem] font-medium text-creme/60 underline decoration-rosa/40 underline-offset-2 transition-colors hover:text-creme/85 hover:decoration-rosa focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rosa/50 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Política de Privacidade
           </button>
@@ -530,12 +530,34 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
       <button
         type="submit"
         disabled={estado === "a-enviar" || listaFechada || !consent}
-        className="group mt-8 flex w-full items-center justify-center gap-3 rounded-full bg-rosa px-8 py-4 text-[0.9375rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro hover:shadow-[0_12px_40px_-12px_rgba(186,121,132,0.7)] active:scale-[0.985] motion-reduce:active:scale-100 disabled:cursor-not-allowed disabled:opacity-60"
+        className="group relative overflow-hidden mt-8 flex w-full items-center justify-center gap-3 rounded-full bg-rosa px-8 py-4 text-[0.9375rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro hover:shadow-[0_12px_40px_-12px_rgba(186,121,132,0.7)] active:scale-[0.985] motion-reduce:active:scale-100 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:shadow-none"
       >
+        {/* Shimmer diagonal — ativo quando NÃO disabled e NÃO reduced-motion */}
+        {estado !== "a-enviar" && !listaFechada && consent && (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 -translate-x-full animate-shimmer-diagonal"
+            style={{ animationDuration: "4s" }}
+          >
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-full w-full">
+              <defs>
+                <linearGradient id="shimmerGrad" x1="0" y1="1" x2="1" y2="0">
+                  <stop offset="0%" stopColor="currentColor" stopOpacity="0" />
+                  <stop offset="40%" stopColor="currentColor" stopOpacity="0.08" />
+                  <stop offset="50%" stopColor="currentColor" stopOpacity="0.12" />
+                  <stop offset="60%" stopColor="currentColor" stopOpacity="0.08" />
+                  <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              <rect x="0" y="0" width="100" height="100" fill="url(#shimmerGrad)" />
+            </svg>
+          </span>
+        )}
+
         {estado === "a-enviar" ? (
           <>
             <svg
-              className="h-4 w-4 animate-spin"
+              className="h-4 w-4 animate-spin relative z-10"
               viewBox="0 0 24 24"
               fill="none"
               aria-hidden
@@ -547,8 +569,8 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
           </>
         ) : (
           <>
-            {config.botao}
-            <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">
+            <span className="relative z-10">{config.botao}</span>
+            <span aria-hidden className="relative z-10 transition-transform duration-300 group-hover:translate-x-1">
               →
             </span>
           </>

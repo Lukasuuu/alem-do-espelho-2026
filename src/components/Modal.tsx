@@ -179,6 +179,7 @@ export default function Modal({
                 )}
                 <h2
                   id={tituloId}
+                  tabIndex={-1}
                   className={`display pr-10 text-[1.75rem] leading-[1.05] sm:text-[2rem] ${
                     claro ? "text-vinho" : "text-creme"
                   }`}

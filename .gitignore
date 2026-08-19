@@ -26,3 +26,33 @@ investigation-*.png
 
 # Originais e material de referência movidos de public/ (fora do bundle de produção)
 docs/assets-fonte/
+
+# Probes e artefactos de diagnóstico das fases (não vão para o repo)
+probe-*.mjs
+probe-*.cjs
+probe-*.js
+*.patch
+# Screenshots e scripts de diagnóstico na raiz do projecto
+d1d2-*.png
+shot-*.png
+shot-*.mjs
+v2-*.png
+fase*-shot-*.png
+fase*-marcador-*.png
+fase*.jsonl
+screenshot-*.png
+mede-*.mjs
+mede-*.json
+medir-*.mjs
+val-*.mjs
+diag-*.mjs
+# Pastas temporárias de screenshots/diagnóstico por fase
+css-check-tmp/
+fase*-tmp/
+# Originais .jpg/.png brutos dos patrocinadores — só os .webp vão para o repo
+public/patrocinadores/*.jpg
+public/patrocinadores/*.png
+# Re-download duplicado (sufixo " (1)" do browser) — o correto é daniella-galiani-4x5.webp
+public/patrocinadores/daniella-galiani-4x5 (1).webp
+# Asset órfão: não referenciado em src/ (a Lígia usa logo-ligia-santos.webp). Entra no commit que o usar.
+public/patrocinadores/logo-ligia-mark.webp

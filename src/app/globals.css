@@ -471,6 +471,24 @@ body {
   max-height: calc(100dvh - var(--topo-modal) - 1rem);
   overflow-y: auto;
   border-radius: 0.125rem;
+  /* Scrollbar fina estilizada (rosa-velho #BA7984) — substitui a variante que
+     escondia a barra nativa. Firefox (scrollbar-width/color) + Chromium/Safari
+     (::-webkit-scrollbar). O pause em hover/focus do carrossel já satisfaz
+     WCAG 2.2.2, pelo que a barra visível é apenas auxílio de navegação. */
+  scrollbar-width: thin;
+  scrollbar-color: #BA7984 transparent;
+}
+
+/* Scrollbar fina (Chromium/Safari legacy). */
+.modal-content::-webkit-scrollbar {
+  width: 0.5rem;
+}
+.modal-content::-webkit-scrollbar-thumb {
+  background: #BA7984;
+  border-radius: 9999px;
+}
+.modal-content::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -489,4 +507,47 @@ body {
      corre em TODAS as máquinas por decisão de produto (pausa por hover/focus/
      fora-de-ecrã satisfaz WCAG 2.2.2). O resto da página mantém reduced-motion
      (Reveal, modal, botões). */
+}
+
+/* ───────────────────────────────────────────────
+   SHIMMER DIAGONAL — Botão "Continuar" do patrocínio
+   ≤12% opacidade, ~4s ciclo, desliga em reduced-motion
+   ─────────────────────────────────────────────── */
+@keyframes shimmer-diagonal {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(200%);
+  }
+}
+
+.animate-shimmer-diagonal {
+  animation: shimmer-diagonal 4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-shimmer-diagonal {
+    animation: none;
+    display: none;
+  }
+}
+
+/* ───────────────────────────────────────────────
+   CARTÃO DA LÍGIA — Logo responsivo (grau 1, 5,41:1)
+   ≥xl (1280): logo 64px de altura × 346px de largura, nome ao lado
+   <xl:        logo 56px de altura × 303px de largura, nome por baixo
+   O JSX põe data-grau-1 na <span data-caixa-logo> + a classe
+   .caixa-logo-grau-1 na row do logo+nome. A wrapper usa Tailwind
+   flex flex-col xl:flex-row xl:items-center (ver CartaoPatrocinadora.tsx).
+   ──────────────────────────────────────────── */
+.caixa-logo-grau-1 {
+  height: 56px;
+  width: 303px;
+}
+@media (min-width: 1280px) {
+  .caixa-logo-grau-1 {
+    height: 64px;
+    width: 346px;
+  }
 }

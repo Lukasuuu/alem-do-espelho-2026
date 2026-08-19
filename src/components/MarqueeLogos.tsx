@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import AzulejoLogo from "./AzulejoLogo";
-import { patrocinadores } from "@/lib/patrocinadores";
+import { patrocinadoresVisiveis } from "@/lib/patrocinadores";
 
 /**
  * Faixa de logos em marquee — movimento infinito SUAVIZADO.
@@ -86,7 +86,7 @@ export default function MarqueeLogos() {
     const container = containerRef.current;
     if (!container) return;
 
-    const blocoBase = patrocinadores.length * (BOX_W + GAP);
+    const blocoBase = patrocinadoresVisiveis().length * (BOX_W + GAP);
     if (blocoBase <= 0) return;
     const calcular = () => {
       const n = Math.max(MIN_REPETICOES, Math.ceil(container.clientWidth / blocoBase));
@@ -310,7 +310,7 @@ export default function MarqueeLogos() {
         data-marquee-estado="pre-hidratacao"
         className="flex flex-wrap items-center justify-center gap-6"
       >
-        {patrocinadores.map((p) => (
+        {patrocinadoresVisiveis().map((p) => (
           <AzulejoLogo key={p.id} logo={p.logo} flexivel />
         ))}
       </div>
@@ -336,7 +336,7 @@ export default function MarqueeLogos() {
             style={{ gap: GAP, marginRight: GAP }}
             aria-hidden={bloco !== 0 || undefined}
           >
-            {patrocinadores.map((p) => (
+            {patrocinadoresVisiveis().map((p) => (
               <AzulejoLogo
                 key={p.id}
                 logo={p.logo}
