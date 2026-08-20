@@ -173,11 +173,12 @@ export const patrocinadores: Patrocinador[] = [
     },
     logo: {
       src: "/patrocinadores/logo-andreia-ferreira.webp",
-      alt: "Logótipo de Andreia Ferreira",
-      width: 250,
+      alt: "Logótipo de Andreia Ferreira, consultora imobiliária zZome Real Estate",
+      width: 190,
       height: 200,
-      // Fundo baked-in do logo (preto, amostrado do asset)
-      fundoHex: "#000000",
+      // Fundo baked-in do logo (azul-marinho, amostrado do asset — atualizado
+      // 20/08/2026 para a nova versão do logo, com selo zZome Real Estate)
+      fundoHex: "#052539",
     },
     // AGUARDA APROVAÇÃO — não publicar sem confirmação escrita da Andreia.
     historia: "",
