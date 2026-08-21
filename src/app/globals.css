@@ -551,3 +551,52 @@ body {
     width: 346px;
   }
 }
+
+/* ───────────────────────────────────────────────
+   CARTÃO PRATA — Logo a metade da largura RENDERIZADA do ouro (grau 2)
+   ≥xl (1280): 64px de altura, max-width 173px (metade de 346px)
+   <xl:        56px de altura, max-width 152px (metade de 303px)
+
+   Largura PROPORCIONAL, não absoluta: width: 50% acompanha o ouro quando a
+   coluna de conteúdo encolhe (o ouro rende min(303px, coluna) porque tem
+   width fixa + maxWidth: 100% inline); o max-width trava nos 152/173px quando
+   a coluna é larga. Sem isto, numa coluna estreita (~131px aos 768) o prata
+   ficava com largura fixa 152px e ultrapassava o ouro (capado a ~131px),
+   invertendo a hierarquia. Ver tabela de regimes no commit/PR.
+
+   NB: o componente NÃO pode definir maxWidth inline neste grau — estilo inline
+   sobrepõe-se a este max-width da stylesheet. O grau 2 deixa a largura inteira
+   ao CSS; só o grau 1 mantém maxWidth: 100% inline (efeito min(303, coluna)).
+   ──────────────────────────────────────────── */
+.caixa-logo-grau-2 {
+  height: 56px;
+  width: 50%;
+  max-width: 152px;
+}
+@media (min-width: 1280px) {
+  .caixa-logo-grau-2 {
+    height: 64px;
+    max-width: 173px;
+  }
+}
+
+/* ───────────────────────────────────────────────
+   CARTÃO BRONZE — Caixa normalizada pela do Leandro (grau 3)
+   40px de altura, max-width 121px (logo do Leandro, 603×200 a 40px de altura).
+   width: 35% acompanha a coluna quando ela encolhe (mesma razão do grau 2);
+   o max-width trava nos 121px quando a coluna é larga. Antes a largura vinha
+   da proporção natural de cada asset a 40px, o que dava resultados muito
+   irregulares (40–140px); agora todos os bronze partilham a mesma caixa e o
+   object-contain gera letterbox lateral invisível (o fundoHex bate com o fundo
+   baked-in do logo — mesmo princípio do AzulejoLogo do marquee).
+
+   NB: como no grau 2, o componente NÃO define maxWidth inline neste grau —
+   estilo inline sobrepõe-se a este max-width da stylesheet e perde-se o
+   travão de 121px (em colunas largas o bronze ficaria com 35% da coluna,
+   ~192px, ultrapassando o prata e invertendo a hierarquia).
+   ──────────────────────────────────────────── */
+.caixa-logo-grau-3 {
+  height: 40px;
+  width: 35%;
+  max-width: 121px;
+}
