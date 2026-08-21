@@ -37,18 +37,18 @@ export const FIO_TOKENS = {
     glow: "0 0 8px 2px rgba(201, 162, 39, 0.35)",
   },
   "fio-2": {
-    // prata frio
-    gradiente: "linear-gradient(135deg, #A8AAAD 0%, #D4D6D9 100%)",
-    espessura: 1.5,
-    opacidade: 0.85,
-    glow: "0 0 6px 1px rgba(168, 170, 173, 0.25)",
+    // prata frio — realce especular a 45% dá o brilho metálico
+    gradiente: "linear-gradient(135deg, #8E9194 0%, #E8EAEC 45%, #B9BCBF 100%)",
+    espessura: 2,
+    opacidade: 1,
+    glow: "0 0 10px 2px rgba(212, 214, 217, 0.45)",
   },
   "fio-3": {
-    // bronze acobreado
-    gradiente: "linear-gradient(135deg, #9C6B4A 0%, #C08A63 100%)",
-    espessura: 1,
-    opacidade: 0.7,
-    glow: "none",
+    // bronze acobreado — mesmo princípio, um tom abaixo do prata
+    gradiente: "linear-gradient(135deg, #8A5A3B 0%, #D9A277 45%, #A06D4B 100%)",
+    espessura: 1.5,
+    opacidade: 0.9,
+    glow: "0 0 8px 1px rgba(192, 138, 99, 0.30)",
   },
 } as const;
 
@@ -140,25 +140,51 @@ export const patrocinadores: Patrocinador[] = [
   {
     id: "tereza-moura",
     nome: "Tereza Moura",
-    titulo: "Título por confirmar",
-    descricao: "",
+    titulo: "Especialista em Realização Pessoal Feminina",
+    descricao: "Ajudando mulheres a olhar para si e a construir a vida que desejam viver. Experiência voltada pra si.",
     foto: {
       src: "/patrocinadores/tereza-moura-4x5.webp",
-      alt: "Retrato de Tereza Moura",
+      alt: "Retrato de Tereza Moura, especialista em realização pessoal feminina",
       width: 800,
       height: 1000,
     },
     logo: {
       src: "/patrocinadores/logo-tereza-moura.webp",
       alt: "Logótipo de Tereza Moura",
-      width: 300,
+      width: 584,
       height: 200,
-      fundoHex: "#EDE6D8",
+      fundoHex: "#000000",
     },
+    // AGUARDA APROVAÇÃO — descricao aprovada pelo Lucas; falta aprovar história/citação.
     historia: "",
     citacao: "",
     destaque: 2,
-    visivel: false, // OCULTO até chegarem foto, logo e título confirmados. Ver CLAUDE.md.
+    visivel: true,
+  },
+  {
+    id: "vanessa-rosa",
+    nome: "Vanessa Rosa",
+    titulo: "Vanessa Rosa Sabores",
+    descricao: "Delicadeza em forma de sabor. Arte comestível para momentos especiais. Mais que bolo, experiências doces.",
+    foto: {
+      src: "/patrocinadores/vanessa-rosa-4x5.webp",
+      alt: "Retrato de Vanessa Rosa, Vanessa Rosa Sabores",
+      width: 800,
+      height: 1000,
+    },
+    logo: {
+      src: "/patrocinadores/logo-vanessa-rosa.webp",
+      alt: "Logótipo Vanessa Rosa Sabores",
+      width: 307,
+      height: 200,
+      // Fundo baked-in do logo (rosa claro, amostrado do asset)
+      fundoHex: "#E6CFDD",
+    },
+    // AGUARDA APROVAÇÃO — descricao aprovada pelo Lucas; falta aprovar história/citação.
+    historia: "",
+    citacao: "",
+    destaque: 2,
+    visivel: true,
   },
   {
     id: "andreia-ferreira",
@@ -189,48 +215,50 @@ export const patrocinadores: Patrocinador[] = [
   {
     id: "kel-barbearia",
     nome: "Kel Barbearia",
-    titulo: "Título por confirmar",
-    descricao: "",
+    titulo: "Barbearia desde 2008",
+    descricao: "Barbeiro profissional com experiência desde 2008, um verdadeiro conceito em estilos de cabelo para os seus clientes.",
     foto: {
       src: "/patrocinadores/kel-barbearia-4x5.webp",
-      alt: "Retrato de Kel Barbearia",
+      alt: "Retrato do barbeiro da Kel Barbearia",
       width: 800,
       height: 1000,
     },
     logo: {
       src: "/patrocinadores/logo-kel-barbearia.webp",
-      alt: "Logótipo de Kel Barbearia",
-      width: 300,
+      alt: "Logótipo Kel Barbearia",
+      width: 275,
       height: 200,
-      fundoHex: "#EDE6D8",
+      fundoHex: "#FEFEFE",
     },
+    // AGUARDA APROVAÇÃO — descricao aprovada pelo Lucas; falta aprovar história/citação.
     historia: "",
     citacao: "",
     destaque: 3,
-    visivel: false, // OCULTO até chegarem foto, logo e título confirmados. Ver CLAUDE.md.
+    visivel: true,
   },
   {
     id: "yeshua",
     nome: "Yeshua",
-    titulo: "Título por confirmar",
-    descricao: "",
+    titulo: "Centro de Cuidado Integrado",
+    descricao: "Estética natural com produtos 100% naturais, do início ao fim. Uma referência em estética natural em Portugal.",
     foto: {
       src: "/patrocinadores/yeshua-4x5.webp",
-      alt: "Retrato de Yeshua",
+      alt: "Retrato da representante do Yeshua, Centro de Cuidado Integrado",
       width: 800,
       height: 1000,
     },
     logo: {
       src: "/patrocinadores/logo-yeshua.webp",
-      alt: "Logótipo de Yeshua",
-      width: 300,
+      alt: "Logótipo Yeshua, Centro de Cuidado Integrado",
+      width: 702,
       height: 200,
-      fundoHex: "#EDE6D8",
+      fundoHex: "#000000",
     },
+    // AGUARDA APROVAÇÃO — descricao aprovada pelo Lucas; falta aprovar história/citação.
     historia: "",
     citacao: "",
     destaque: 3,
-    visivel: false, // OCULTO até chegarem foto, logo e título confirmados. Ver CLAUDE.md.
+    visivel: true,
   },
   {
     id: "renata-parreira",
@@ -259,26 +287,31 @@ export const patrocinadores: Patrocinador[] = [
   },
   {
     id: "leandrinho",
-    nome: "Leandrinho",
-    titulo: "Designer",
-    descricao: "",
+    // id mantido (não há motivo para arriscar renomear); nome alinhado com a
+    // marca do logo. Texto do site usa "leandro design" (um "n"); o FICHEIRO do
+    // logótipo (logo-leandro-design.webp) ainda mostra "leanndro" (dois "n") —
+    // só o Leandro o pode refazer. Não editar a imagem.
+    nome: "Leandro",
+    titulo: "leandro design",
+    descricao: "A identidade por trás da música, dos eventos e marcas. +100 Milhões de visualizações em projetos assinados.",
     foto: {
-      src: "/patrocinadores/leandrinho-4x5.webp",
-      alt: "Retrato de Leandrinho",
+      src: "/patrocinadores/leandro-design-4x5.webp",
+      alt: "Retrato de Leandro, leandro design",
       width: 800,
       height: 1000,
     },
     logo: {
-      src: "/patrocinadores/logo-leandrinho.webp",
-      alt: "Logótipo de Leandrinho",
-      width: 300,
+      src: "/patrocinadores/logo-leandro-design.webp",
+      alt: "Logótipo leandro design",
+      width: 603,
       height: 200,
-      fundoHex: "#EDE6D8",
+      fundoHex: "#000000",
     },
+    // AGUARDA APROVAÇÃO — descricao aprovada pelo Lucas; falta aprovar história/citação.
     historia: "",
     citacao: "",
     destaque: 3,
-    visivel: false, // OCULTO até chegarem foto, logo e título confirmados. Ver CLAUDE.md.
+    visivel: true,
   },
   {
     id: "daniella-galiani",

@@ -8,9 +8,6 @@ import { type Patrocinador, FIO_TOKENS, type FioTokenKey } from "@/lib/patrocina
  *  por grau (variável antiga fotoWidthRem) — não toca no comportamento actual. */
 const LARGURA_FAIXA_PX = 130;
 
-/** Altura da faixa do logo (px) por grau: fio 1=64, fio 2=52, fio 3=40 */
-const ALTURA_LOGO_POR_GRAU = { 1: 64, 2: 52, 3: 40 } as const;
-
 /** Largura base da foto (fio 3) em rem. Fio 2 = 1.25x, Fio 1 = 1.5x.
  *  Mantida APENAS para o cálculo em mobile (<md). */
 const FOTO_BASE_REM = 7.5; // 120px a 16px base
@@ -96,25 +93,29 @@ export default function CartaoPatrocinadora({
   const fioKey = `fio-${destaque}` as FioTokenKey;
   const fio = FIO_TOKENS[fioKey];
 
+  // Grau de destaque — declarado cedo porque entra em vários cálculos abaixo.
+  const isGrau1 = destaque === 1;
+
   // Largura da foto: base * multiplicador por destaque (D1 — mobile only).
-  // Em desktop (≥md) a wrapper passa a LARGURA_FAIXA_PX (130px) e a foto interior
-  // fica centrada com FOTO_INNER_POR_GRAU[destaque] (110/96/84px).
+  // Em desktop (≥md) a wrapper tem largura por grau: grau 1 mantém a faixa
+  // uniforme de 130px com a foto INTERIOR centrada (a "moldura" creme à volta
+  // marca o topo da hierarquia); graus 2 e 3 encolhem a faixa para o tamanho
+  // da própria foto (96/84px) e a foto ocupa-a por inteiro — só o fio metálico
+  // fica visível à volta.
   const multiplicadorFoto = destaque === 1 ? 1.5 : destaque === 2 ? 1.25 : 1;
   const fotoWidthRemMobile = FOTO_BASE_REM * multiplicadorFoto;
   const fotoInnerPx = FOTO_INNER_POR_GRAU[destaque];
   const fotoInnerHeightPx = fotoInnerPx * 1.25; // ratio 4:5
   // Variável legada preservada para o ramo mobile (style condicional abaixo).
   const fotoWidthRem = fotoWidthRemMobile;
+  // Dimensões da faixa da foto em desktop (px). Grau 1 → faixa 130px (foto
+  // interior 110px centrada); graus 2/3 → faixa = tamanho da foto (96/84px).
+  const faixaLarguraDesktop = isGrau1 ? LARGURA_FAIXA_PX : fotoInnerPx;
+  const faixaAlturaDesktop = faixaLarguraDesktop * 1.25; // ratio 4:5
 
   // Tamanho do nome: base * multiplicador por destaque
   const multiplicadorNome = destaque === 1 ? (1.5 / 1.125) : destaque === 2 ? (1.25 / 1.125) : 1;
   const nomeSizeRem = NOME_BASE_REM * multiplicadorNome;
-
-  // Altura da faixa do logo por grau.
-  // Grau 1 (Lígia) é responsiva — ver globals.css `.caixa-logo-grau-1`.
-  // Outros graus são fixos na tabela (ALTURA_LOGO_POR_GRAU).
-  const isGrau1 = destaque === 1;
-  const alturaLogo = ALTURA_LOGO_POR_GRAU[destaque];
 
   // Layout do row do logo+nome: grau 1 muda de linha abaixo do xl porque o
   // logo é demasiado largo (5,41:1) para a coluna <1280.
@@ -122,17 +123,30 @@ export default function CartaoPatrocinadora({
     ? "flex flex-col gap-2 xl:flex-row xl:items-center xl:gap-3 min-w-0"
     : "flex items-center gap-3 min-w-0";
 
-  // Caixas: grau 1 recebe width/height via CSS com media query (343/56 → 346/64);
-  // outros graus calculam pela proporção natural do asset × altura.
+  // Caixas: os TRÊS graus recebem width/height via classe CSS (media query
+  // por breakpoint em globals.css: .caixa-logo-grau-1/2/3).
+  //  - Grau 1 (ouro): width fixa 303/346 + maxWidth: 100% inline → rende
+  //    min(303, coluna). É o efeito pretendido (caba-se à coluna).
+  //  - Graus 2 e 3 (prata/bronze): width proporcional (50%/35%) + max-width
+  //    (152/173 e 121) via CSS. NÃO definir maxWidth inline nestes graus —
+  //    estilo inline sobrepõe-se ao max-width da stylesheet e perde-se o
+  //    travão, invertendo a hierarquia em colunas largas (ver globals.css).
   const estiloCaixaLogo = isGrau1
     ? { backgroundColor: logo.fundoHex, maxWidth: "100%" }
-    : {
-        backgroundColor: logo.fundoHex,
-        width: `${(logo.width / logo.height) * alturaLogo}px`,
-        maxWidth: "100%",
-        height: alturaLogo,
-      };
-  const classeCaixaLogo = isGrau1 ? "caixa-logo-grau-1" : "";
+    : { backgroundColor: logo.fundoHex };
+  const classeCaixaLogo = `caixa-logo-grau-${destaque}`;
+
+  // Imagem do logo: graus 2 e 3 usam object-contain com maxWidth/maxHeight
+  // 100% (caixa fixa por CSS) — logos quase quadrados deixam letterbox
+  // lateral, invisível porque o fundoHex bate com o fundo baked-in do logo
+  // (mesmo princípio do AzulejoLogo). Grau 1 mantém height: 100% / width:
+  // auto (proporção natural) — o cartão da Lígia fica byte a byte igual.
+  const estiloImgLogo = isGrau1
+    ? { width: "auto", height: "100%" }
+    : { maxWidth: "100%", maxHeight: "100%" };
+  const classeImgLogo = isGrau1
+    ? "h-full w-auto object-contain"
+    : "w-auto object-contain";
 
   const estiloFio = {
     borderWidth: fio.espessura,
@@ -143,13 +157,13 @@ export default function CartaoPatrocinadora({
     transition: "opacity 280ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 280ms cubic-bezier(0.22, 1, 0.36, 1)",
   } as React.CSSProperties;
 
-  // Estilo hover/destaque do fio — +15% luminosidade (opacity)
+  // Estilo hover/destaque do fio — +15% luminosidade (opacity) e do glow.
+  // O replace procura o 1º rgba() e amplia o canal alpha +15%; se o glow não
+  // tiver rgba (ex. "none"), o replace é no-op e devolve a string intacta.
   const estiloFioHover = estaEmDestaque
     ? {
         opacity: Math.min(1, fio.opacidade * 1.15),
-        boxShadow: fio.glow !== "none"
-          ? fio.glow.replace(/rgba?\([^)]+\)/, (m) => m.replace(/[\d.]+\)$/, (n) => `${Math.min(1, parseFloat(n) * 1.15)})`))
-          : "none",
+        boxShadow: fio.glow.replace(/rgba?\([^)]+\)/, (m) => m.replace(/[\d.]+\)$/, (n) => `${Math.min(1, parseFloat(n) * 1.15)})`)),
       }
     : {};
 
@@ -175,47 +189,67 @@ export default function CartaoPatrocinadora({
       }`}
     >
       <div className="flex flex-col md:flex-row md:gap-6 min-w-0">
-        {/* ── Foto (D1): em desktop ≥md, a wrapper passa a faixa uniforme de
-              130px (LARGURA_FAIXA_PX) e a foto interior fica CENTRADA com
-              tamanho por grau (110/96/84px). Em mobile (<md) mantém o cálculo
-              antigo por grau + aspect-ratio 4:5 (empilhado). ── */}
+        {/* ── Foto (D1 + hierarquia): em desktop ≥md a wrapper tem largura por
+              grau — grau 1 mantém a faixa de 130px com a foto INTERIOR centrada
+              (a "moldura" creme à volta marca o topo da hierarquia); graus 2 e 3
+              encolhem a faixa para o tamanho da própria foto (96/84px) e a foto
+              ocupa-a por inteiro, ficando só o fio metálico visível. Em mobile
+              (<md) mantém o cálculo antigo por grau + aspect-ratio 4:5 (empilhado)
+              — mas prata e bronze também sem moldura, foto a 100%. ── */}
         <div
           ref={fotoRef}
           aria-hidden="true"
-          className="grupo-foto relative mx-auto w-full shrink-0 overflow-hidden rounded-sm bg-creme-profundo md:mx-0 md:max-w-none"
+          className={`grupo-foto relative mx-auto w-full shrink-0 overflow-hidden rounded-sm md:mx-0 md:max-w-none ${
+            isGrau1 ? "bg-creme-profundo" : ""
+          }`}
           style={{
             aspectRatio: isDesktop ? "auto" : "4 / 5",
-            width: isDesktop ? `${LARGURA_FAIXA_PX}px` : `${fotoWidthRem}rem`,
-            maxWidth: isDesktop ? `${LARGURA_FAIXA_PX}px` : `${fotoWidthRem}rem`,
-            height: isDesktop ? `${LARGURA_FAIXA_PX * 1.25}px` : "auto", // ratio 4:5 da faixa
+            width: isDesktop ? `${faixaLarguraDesktop}px` : `${fotoWidthRem}rem`,
+            maxWidth: isDesktop ? `${faixaLarguraDesktop}px` : `${fotoWidthRem}rem`,
+            height: isDesktop ? `${faixaAlturaDesktop}px` : "auto", // ratio 4:5 da faixa
             ...estiloFio,
             ...estiloFioHover,
           }}
           onMouseEnter={(e) => { setHoverFoto(true); onMouseEnter?.(); }}
           onMouseLeave={(e) => { setHoverFoto(false); onMouseLeave?.(); }}
         >
-          <div
-            className="absolute inset-0 flex items-center justify-center pointer-events-none"
-          >
-            <div
-              style={{
-                width: `${fotoInnerPx}px`,
-                height: `${fotoInnerHeightPx}px`,
-                position: "relative",
-              }}
-            >
-              <LocalImage
-                src={foto.src}
-                alt={foto.alt}
-                width={foto.width}
-                height={foto.height}
-                className={`foto-patrocinador absolute inset-0 h-full w-full object-cover object-top ${
-                  claro ? "" : "opacity-90"
-                }`}
-                style={fotoStyle}
-              />
+          {isGrau1 ? (
+            // Grau 1 (ouro): foto interior centrada, deixa a "moldura" creme
+            // visível à volta (faixa 130px, foto 110×137,5px).
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div
+                style={{
+                  width: `${fotoInnerPx}px`,
+                  height: `${fotoInnerHeightPx}px`,
+                  position: "relative",
+                }}
+              >
+                <LocalImage
+                  src={foto.src}
+                  alt={foto.alt}
+                  width={foto.width}
+                  height={foto.height}
+                  className={`foto-patrocinador absolute inset-0 h-full w-full object-cover object-top ${
+                    claro ? "" : "opacity-90"
+                  }`}
+                  style={fotoStyle}
+                />
+              </div>
             </div>
-          </div>
+          ) : (
+            // Graus 2 e 3 (prata/bronze): sem moldura — a foto preenche 100%
+            // da faixa (que encolheu para o seu tamanho), só o fio visível.
+            <LocalImage
+              src={foto.src}
+              alt={foto.alt}
+              width={foto.width}
+              height={foto.height}
+              className={`foto-patrocinador absolute inset-0 h-full w-full object-cover object-top ${
+                claro ? "" : "opacity-90"
+              }`}
+              style={fotoStyle}
+            />
+          )}
         </div>
 
         {/* ── Coluna de conteúdo ── */}
@@ -239,8 +273,8 @@ export default function CartaoPatrocinadora({
                 alt={logo.alt}
                 width={logo.width}
                 height={logo.height}
-                className="h-full w-auto object-contain"
-                style={{ width: "auto", height: "100%" }}
+                className={classeImgLogo}
+                style={estiloImgLogo}
               />
             </span>
             {/* 2. Nome, ao lado do logo (tamanho por destaque).
