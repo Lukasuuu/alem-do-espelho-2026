@@ -151,9 +151,14 @@ export const patrocinadores: Patrocinador[] = [
     logo: {
       src: "/patrocinadores/logo-tereza-moura.webp",
       alt: "Logótipo de Tereza Moura",
-      width: 584,
-      height: 200,
-      fundoHex: "#000000",
+      // Versão clara do logótipo (pedido da Tereza, 21/08/2026), exportada a 2× a
+      // resolução dos restantes logótipos para maior nitidez — daí 400px de altura
+      // em vez dos 200px habituais. Só metadados: a caixa .caixa-logo-grau-2 é que
+      // define o tamanho renderizado.
+      width: 1395,
+      height: 400,
+      // Fundo baked-in do logo (creme, amostrado do asset)
+      fundoHex: "#F3EEE8",
     },
     // AGUARDA APROVAÇÃO — descricao aprovada pelo Lucas; falta aprovar história/citação.
     historia: "",
