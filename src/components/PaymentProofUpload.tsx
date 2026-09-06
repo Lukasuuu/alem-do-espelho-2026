@@ -19,6 +19,8 @@ import { WhatsAppIcon } from "./icons";
 type Props = {
   inscricaoId: string;
   pagamentoId: string;
+  /** Token de posse da inscrição (B1/0009) — vai no form-data das RPCs. */
+  posseToken: string;
   /** Chamado com o id do comprovativo registado (estado proof_uploaded). */
   onSucesso: (comprovativoId: string) => void;
   /**
@@ -41,12 +43,13 @@ type Props = {
 export default function PaymentProofUpload({
   inscricaoId,
   pagamentoId,
+  posseToken,
   onSucesso,
   onFalhaServidor,
 }: Props) {
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [tipoPreview, setTipoPreview] = useState<"imagem" | "pdf" | null>(null);
+  const [tipoPreview, setTipoPreview] = useState<"imagem" | "pdf" | "heic" | null>(null);
   const [arrastar, setArrastar] = useState(false);
   const [estado, setEstado] = useState<"inativo" | "a-enviar">("inativo");
   const [progresso, setProgresso] = useState(0);
@@ -98,12 +101,14 @@ export default function PaymentProofUpload({
 
     if (preview) URL.revokeObjectURL(preview);
     setArquivo(ficheiro);
-    if (tipo.mime.startsWith("image/")) {
+    // HEIC/HEIF têm MIME image/* mas os browsers não os renderizam — o preview
+    // vai ao placeholder (não a um <img> partido), como o PDF.
+    if (tipo.mime.startsWith("image/") && tipo.ext !== "heic" && tipo.ext !== "heif") {
       setPreview(URL.createObjectURL(ficheiro));
       setTipoPreview("imagem");
     } else {
       setPreview(null);
-      setTipoPreview("pdf");
+      setTipoPreview(tipo.ext === "pdf" ? "pdf" : "heic");
     }
   }
 
@@ -125,6 +130,7 @@ export default function PaymentProofUpload({
     const form = new FormData();
     form.append("inscricaoId", inscricaoId);
     form.append("pagamentoId", pagamentoId);
+    form.append("posseToken", posseToken);
     form.append("ficheiro", arquivo);
 
     // XHR (e não fetch) por causa do progresso de upload.
@@ -248,14 +254,14 @@ export default function PaymentProofUpload({
           <span className="text-[0.8125rem] text-creme/55">
             ou <span className="text-blush underline decoration-dotted underline-offset-4">escolhe um ficheiro</span>
             <br />
-            PNG · JPG · WEBP · PDF · máx. 8 MB
+            PNG · JPG · WEBP · HEIC · PDF · máx. 8 MB
           </span>
           <input
             ref={inputRef}
             id="comprovativo"
             name="comprovativo"
             type="file"
-            accept=".png,.jpg,.jpeg,.webp,.pdf,image/png,image/jpeg,image/webp,application/pdf"
+            accept=".png,.jpg,.jpeg,.webp,.heic,.heif,.pdf,image/png,image/jpeg,image/webp,image/heic,image/heif,application/pdf"
             className="sr-only"
             aria-label="Escolher ficheiro do comprovativo"
             onChange={(e) => void aoEscolher(e.target.files?.[0])}
@@ -274,7 +280,7 @@ export default function PaymentProofUpload({
               <div className="flex h-20 w-20 shrink-0 flex-col items-center justify-center gap-1 rounded-sm border border-creme/15 bg-carvao">
                 <FileText className="h-7 w-7 text-blush" aria-hidden />
                 <span className="text-[0.625rem] font-medium uppercase tracking-wider text-creme/55">
-                  PDF
+                  {tipoPreview === "heic" ? "HEIC" : "PDF"}
                 </span>
               </div>
             )}

@@ -116,6 +116,16 @@ export const inscricaoSchema = z.object({
 
 export type InscricaoInput = z.input<typeof inscricaoSchema>;
 
+/**
+ * B1 — token de posse (capability): 32 bytes hex (64 chars), gerado na RPC
+ * registar_inscricao e devolvido UMA vez no POST. Quem o sabe é dono da
+ * inscrição — substitui o ip_hash como verificação nas RPCs de escrita.
+ * Vive só em memória no cliente (nunca em storage, URL, logs nem SumUp).
+ */
+export const posseTokenSchema = z
+  .string()
+  .regex(/^[0-9a-f]{64}$/, "Sessão de inscrição inválida. Volta a submeter o formulário.");
+
 /** Métodos de pagamento da modal — são também os valores da coluna da base. */
 export const METODOS_PAGAMENTO = ["sumup", "mbway", "qr", "transferencia"] as const;
 export type MetodoPagamento = (typeof METODOS_PAGAMENTO)[number];
@@ -126,9 +136,28 @@ export const metodoInscricaoSchema = z.object({
   metodo: z.enum(METODOS_PAGAMENTO, {
     errorMap: () => ({ message: "Método de pagamento inválido." }),
   }),
+  posseToken: posseTokenSchema,
 });
 
 export type MetodoInscricaoInput = z.input<typeof metodoInscricaoSchema>;
+
+/**
+ * POST /api/inscricao/email-registo — regista o resultado de um envio de
+ * email (Bloco E). O envio em si é client-side (EmailJS); a rota grava o
+ * resultado nas colunas email_*_em/email_*_ok via RPC registar_envio_email
+ * (0010), para auditoria e idempotência futura. destino: 'cliente' =
+ * confirmação à inscrito; 'org' = notificação operacional mínima.
+ */
+export const emailRegistoSchema = z.object({
+  inscricaoId: z.string().uuid("Inscrição inválida."),
+  posseToken: posseTokenSchema,
+  destino: z.enum(["cliente", "org"], {
+    errorMap: () => ({ message: "Destino inválido." }),
+  }),
+  ok: z.boolean(),
+});
+
+export type EmailRegistoInput = z.input<typeof emailRegistoSchema>;
 
 /** Níveis de parceria do patrocínio — fechados a 75 / 150 / 200€ (FASE5). */
 export const NIVEIS_PARCERIA = [75, 150, 200] as const;
@@ -231,4 +260,7 @@ export const MENSAGENS = {
   invalido: "Confere os dados assinalados e tenta novamente.",
   servidor: "Não conseguimos guardar a tua inscrição agora. Tenta daqui a pouco.",
   bot: "Não conseguimos validar esta submissão.",
+  /** Rota /api/inscricao/metodo: quem falhou foi o registo da escolha/pagamento,
+      não a inscrição — a mensagem genérica "guardar a tua inscrição" enganava. */
+  metodoServidor: "Não conseguimos registar a escolha de pagamento. Tenta novamente.",
 } as const;

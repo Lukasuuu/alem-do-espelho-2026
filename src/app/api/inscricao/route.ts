@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 // no vercel.json, junto da base de dados (Supabase em eu-west-3).
 
 type Resposta =
-  | { ok: true; status: "criada" | "ja_inscrita"; id: string }
+  | { ok: true; status: "criada" | "ja_inscrita"; id: string; posseToken: string }
   | { ok: false; mensagem: string; tipo: TipoErro; campos?: Record<string, string> };
 
 /** Tempo mínimo plausível entre carregar o formulário e submeter. */
@@ -105,6 +105,8 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
       // nova). A de 4 args continua a existir até ser verificado por grep que
       // nada mais a chama e só então é descartada.
       p_consentimento: dados.consent === true,
+      // B1: o ip_hash deixa de ser posse (passa a sinal de abuso apenas);
+      // a posse real é o posse_token que a RPC gera e devolve abaixo.
       p_ip_hash: hashIp(ip),
     });
 
@@ -134,15 +136,48 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
           { status: 422 }
         );
       }
+      if (codigo.includes("inscricao_confirmada")) {
+        // Guard da 0008 (Lucas, 05/09): inscrição paga não volta ao
+        // formulário — fecha o takeover por email conhecido. Tipo
+        // "validacao" para o formulário mostrar a mensagem verbatim.
+        return NextResponse.json(
+          { ok: false, mensagem: "Esta inscrição já está paga e confirmada. Fala connosco no WhatsApp se precisares de algo.", tipo: "validacao" },
+          { status: 409 }
+        );
+      }
 
       console.error("[inscricao] erro do supabase:", error.message);
       return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 502 });
     }
 
-    const resultado = data as { status: "criada" | "ja_inscrita"; id: string };
+    // B1 (0009): a RPC devolve posse_token em AMBOS os ramos (INSERT e
+    // UPDATE — re-submeter o formulário é a prova de posse e roda o token).
+    // Devolve-se UMA vez aqui; o cliente guarda-o só em memória.
+    const resultado = data as {
+      status: "criada" | "ja_inscrita" | "ja_confirmada";
+      id: string;
+      posse_token: string | null;
+    };
+
+    // Guard anti-takeover (0008b/0009, soft-return — a base NÃO faz raise):
+    // inscrição confirmada não toca na linha e não emite token. 409 ANTES do
+    // check de token — aqui o token falta à propósito; 502 seria enganador.
+    if (resultado.status === "ja_confirmada") {
+      return NextResponse.json(
+        { ok: false, mensagem: "Esta inscrição já está paga e confirmada. Fala connosco no WhatsApp se precisares de algo.", tipo: "validacao" },
+        { status: 409 }
+      );
+    }
+
+    if (!resultado.posse_token) {
+      // Base sem a 0009 aplicada (deploy vs. migration fora de sincronia).
+      // Nunca se imprime o valor — só a ausência.
+      console.error("[inscricao] posse_token ausente na resposta da RPC");
+      return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 502 });
+    }
 
     return NextResponse.json(
-      { ok: true, status: resultado.status, id: resultado.id },
+      { ok: true, status: resultado.status, id: resultado.id, posseToken: resultado.posse_token },
       { status: resultado.status === "criada" ? 201 : 200 }
     );
   } catch (erro) {

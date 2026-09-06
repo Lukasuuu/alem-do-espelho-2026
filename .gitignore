@@ -31,6 +31,8 @@ docs/assets-fonte/
 probe-*.mjs
 probe-*.cjs
 probe-*.js
+verify-*.mjs
+verify-shot-*.png
 *.patch
 # Screenshots e scripts de diagnóstico na raiz do projecto
 d1d2-*.png

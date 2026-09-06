@@ -1,7 +1,9 @@
 "use client";
 
-import { MessageCircle, PartyPopper } from "lucide-react";
+import { ExternalLink, MessageCircle, PartyPopper } from "lucide-react";
 import { SALON_WHATSAPP } from "@/lib/campanha";
+import { googleMapsUrl, pontosRecolha } from "@/lib/pontos-recolha";
+import { site } from "@/lib/site";
 import Modal from "./Modal";
 import { WhatsAppIcon } from "./icons";
 
@@ -66,6 +68,19 @@ export default function ParabensModal(props: Props) {
       <div className="mt-2 space-y-5">
         {props.contexto === "inscricao" ? (
           <>
+            {/* Aviso do email no topo (Bloco D): o EventoPage dispara o
+                EmailJS (fire-and-forget) exatamente neste momento — dize-lo
+                ANTES de qualquer instrução. */}
+            <div className="rounded-sm border border-dourado-claro/30 bg-dourado-claro/[0.07] p-4">
+              <p className="flex items-start gap-3 text-[0.875rem] leading-relaxed text-creme/85">
+                <MessageCircle className="mt-0.5 h-5 w-5 shrink-0 text-dourado-claro" aria-hidden />
+                <span>
+                  Vais receber um email com o comprovativo da tua inscrição. Se não aparecer em
+                  minutos, verifica o spam — e fala connosco pelo WhatsApp em baixo.
+                </span>
+              </p>
+            </div>
+
             <p className="text-[0.9375rem] leading-relaxed text-creme/75">
               Recebemos a tua inscrição e o teu comprovativo. A{" "}
               <strong className="font-medium text-creme">Essence of Beauty</strong> confirma o
@@ -95,6 +110,43 @@ export default function ParabensModal(props: Props) {
                 dentes e 1 absorvente. Segue para Angola.
               </p>
             </div>
+
+            {/* Data do evento + onde entregar o kit (Bloco D) — moradas em
+                texto legível (as de 6px da modal de pontos eram ilegíveis a
+                360px). Sem logos: numa modal escura, os webp claros ganham
+                halo; a morada com link Maps é o que aqui importa. Dados da
+                fonte única lib/pontos-recolha.ts — idênticos aos da modal. */}
+            <div>
+              <p className="text-[0.9375rem] font-medium text-creme">
+                {site.data.extenso} · {site.local.nome}, {site.local.cidade}
+              </p>
+              <p className="mt-1 text-[0.875rem] leading-relaxed text-creme/65">
+                Podes deixar o teu kit a partir de já num dos pontos de recolha:
+              </p>
+              <ul className="mt-3 divide-y divide-creme/10">
+                {pontosRecolha.map((ponto) => (
+                  <li key={ponto.nome} className="py-2.5 first:pt-0 last:pb-0">
+                    <a
+                      href={googleMapsUrl(ponto.morada)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group block rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-creme"
+                    >
+                      <span className="flex items-center gap-2 text-[0.875rem] font-medium text-creme/90 transition-colors group-hover:text-creme">
+                        {ponto.nome}
+                        <ExternalLink
+                          className="h-3.5 w-3.5 shrink-0 text-creme/40 transition-colors group-hover:text-creme/80"
+                          aria-hidden
+                        />
+                      </span>
+                      <span className="mt-0.5 block text-[0.8125rem] leading-snug text-creme/55">
+                        {ponto.morada}
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </>
         ) : (
           <p className="text-[0.9375rem] leading-relaxed text-creme/75">
@@ -110,7 +162,7 @@ export default function ParabensModal(props: Props) {
           href={ctaWhatsApp}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-[#4fce5d] px-7 py-4 text-[0.9375rem] font-medium text-carvao transition-all duration-300 hover:brightness-105"
+          className="inline-flex w-full items-center justify-center gap-3 rounded-full bg-whatsapp px-7 py-4 text-[0.9375rem] font-medium text-white transition-all duration-300 hover:brightness-105"
         >
           <WhatsAppIcon className="h-4.5 w-4.5" />
           WhatsApp {numeroVisivel}

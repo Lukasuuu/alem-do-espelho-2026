@@ -90,6 +90,13 @@ export const paises = [
 
 export type PaisCode = (typeof paises)[number]["code"];
 
+/**
+ * Email da organização (Bloco E) — destino da notificação operacional mínima
+ * de inscrição paga (enviarEmailOrganizacao). Fonte de verdade: contacto.email
+ * do objeto site; esta é a exportação nomeada usada pelo EventoPage.
+ */
+export const ORG_EMAIL = site.contacto.email;
+
 /** O que a participante vai viver, extraído do dossiê do projeto. */
 export const experiencia = [
   {

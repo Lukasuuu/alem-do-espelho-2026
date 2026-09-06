@@ -20,6 +20,13 @@ type Props = {
   eyebrow?: string;
   /** Seletor do primeiro elemento a focar ao abrir. Por omissão, o primeiro botão/link. */
   focoInicial?: string;
+  /**
+   * false = o clique fora não fecha (briefing 05/09: na modal de inscrição um
+   * fecho acidental descartaria um formulário a meio). ESC e o botão X
+   * mantêm-se. Por omissão true — preserva o comportamento das restantes
+   * modais (legais, patrocínio, parabéns).
+   */
+  fecharAoClicarFora?: boolean;
 };
 
 /** Elementos focáveis dentro do painel, para o foco circular (trap). */
@@ -45,6 +52,7 @@ export default function Modal({
   larguraMax = "40rem",
   eyebrow,
   focoInicial = "button:not([disabled]), a[href]",
+  fecharAoClicarFora = true,
 }: Props) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const painelRef = useRef<HTMLDivElement>(null);
@@ -112,6 +120,7 @@ export default function Modal({
   }, [aberto]);
 
   function aoClicarFora(e: React.MouseEvent) {
+    if (!fecharAoClicarFora) return;
     if (e.target === overlayRef.current) fechar();
   }
 

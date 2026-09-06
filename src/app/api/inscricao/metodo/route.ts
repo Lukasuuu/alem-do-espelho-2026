@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { getSupabase } from "@/lib/supabase";
-import { hashIp, obterIp, rateLimit } from "@/lib/rate-limit";
+import { obterIp, rateLimit } from "@/lib/rate-limit";
 import { MENSAGENS, metodoInscricaoSchema, type MetodoPagamento, type TipoErro } from "@/lib/validation";
 
 export const runtime = "nodejs";
@@ -47,7 +47,7 @@ export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
     return NextResponse.json({ ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao" }, { status: 400 });
   }
 
-  // 3. Validação do formato (uuid + método)
+  // 3. Validação do formato (uuid + método + token de posse)
   let dados;
   try {
     dados = metodoInscricaoSchema.parse(corpo);
@@ -63,16 +63,19 @@ export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
         { status: 422 }
       );
     }
-    return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 500 });
+    return NextResponse.json({ ok: false, mensagem: MENSAGENS.metodoServidor, tipo: "servidor" }, { status: 500 });
   }
 
   // 4. Persistência
   try {
     const supabase = getSupabase();
 
+    // B1 (0009): posse verificada pelo posse_token (capability), não por IP —
+    // qualquer pessoa com um UUID não altera mais o método de outra.
     const { data, error } = await supabase.rpc("definir_metodo_inscricao", {
       p_inscricao_id: dados.inscricaoId,
       p_metodo: dados.metodo,
+      p_posse_token: dados.posseToken,
     });
 
     if (error) {
@@ -91,17 +94,18 @@ export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
       }
 
       console.error("[inscricao-metodo] erro do supabase:", error.message);
-      return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 502 });
+      return NextResponse.json({ ok: false, mensagem: MENSAGENS.metodoServidor, tipo: "servidor" }, { status: 502 });
     }
 
     const resultado = data as { status: "ok"; id: string; metodo: MetodoPagamento };
 
     // FASE2: cria o pagamento (payment_started) e devolve o id para o fluxo
-    // de comprovativo. Ownership verificado por ip_hash (dono da inscrição).
+    // de comprovativo. B1 (0009): ownership pelo posse_token (a 0006 passava
+    // por ip_hash — invalido em mobile, onde o IP muda a meio do fluxo).
     const { data: pagamento, error: erroPagamento } = await supabase.rpc("criar_pagamento", {
       p_inscricao_id: resultado.id,
       p_metodo: resultado.metodo,
-      p_ip_hash: hashIp(ip),
+      p_posse_token: dados.posseToken,
     });
 
     if (erroPagamento) {
@@ -126,11 +130,11 @@ export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
       }
       if (codigo.includes("acesso_negado")) {
         console.error("[inscricao-metodo] acesso_negado ao criar pagamento");
-        return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 403 });
+        return NextResponse.json({ ok: false, mensagem: MENSAGENS.metodoServidor, tipo: "servidor" }, { status: 403 });
       }
 
       console.error("[inscricao-metodo] erro ao criar pagamento:", erroPagamento.message);
-      return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 502 });
+      return NextResponse.json({ ok: false, mensagem: MENSAGENS.metodoServidor, tipo: "servidor" }, { status: 502 });
     }
 
     const pagamentoData = pagamento as { status: string; pagamento_id: string; estado: string };
@@ -143,7 +147,7 @@ export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
     });
   } catch (erro) {
     console.error("[inscricao-metodo] falha inesperada:", erro);
-    return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 500 });
+    return NextResponse.json({ ok: false, mensagem: MENSAGENS.metodoServidor, tipo: "servidor" }, { status: 500 });
   }
 }
 

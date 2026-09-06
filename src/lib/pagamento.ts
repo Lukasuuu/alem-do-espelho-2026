@@ -116,3 +116,16 @@ export function mensagemConfirmacaoPagamento(metodo: MetodoPagamento): string {
 export function linkWhatsAppPagamento(metodo: MetodoPagamento): string {
   return linkWhatsApp(SALON_WHATSAPP, mensagemConfirmacaoPagamento(metodo));
 }
+
+/**
+ * Mensagem de recuperação do pagamento por link (Bloco C): a pagante não
+ * conseguiu concluir o checkout SumUp. Leva o primeiro nome e a referência
+ * (8 primeiros caracteres do id da inscrição) para a organização localizar
+ * a row sem expor o id completo numa conversa de WhatsApp.
+ */
+export function mensagemRecuperacaoPagamento(
+  primeiroNome: string,
+  inscricaoId: string
+): string {
+  return `Olá! Sou ${primeiroNome || "participante"} e estou com dificuldade no pagamento por link da minha inscrição no Além do Espelho 2026 (ref. ${inscricaoId.slice(0, 8)}). Como posso resolver?`;
+}

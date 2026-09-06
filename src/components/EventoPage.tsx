@@ -16,10 +16,31 @@ import { definirAberturaModal } from "@/lib/modal";
 import { faseForcada } from "@/lib/fase";
 import { FIM_CAMPANHA_ISO, MENSAGEM_INSCRICAO, SALON_WHATSAPP } from "@/lib/campanha";
 import { VALOR_INSCRICAO_TEXT } from "@/lib/pagamento";
-import { linkWhatsApp } from "@/lib/site";
-import { enviarEmailNotificacao } from "@/lib/email";
+import { linkWhatsApp, ORG_EMAIL } from "@/lib/site";
+import { enviarEmailNotificacao, enviarEmailOrganizacao } from "@/lib/email";
 
 const fimCampanhaMs = new Date(FIM_CAMPANHA_ISO).getTime();
+
+/**
+ * Bloco E — regista o resultado de um envio de email via RPC registar_envio_email
+ * (0010), por POST a /api/inscricao/email-registo. Fire-and-forget: falhas desta
+ * chamada NUNCA chegam à pessoa — só ao console. A fonte de verdade de "quem
+ * pagou" é a base, nunca o inbox. B1: o dono valida-se pelo posse_token.
+ */
+function registarEnvioEmail(
+  inscricaoId: string,
+  posseToken: string,
+  destino: "cliente" | "org",
+  ok: boolean
+): void {
+  void fetch("/api/inscricao/email-registo", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ inscricaoId, posseToken, destino, ok }),
+  }).catch((erro) => {
+    console.error("[evento] falha ao registar envio de email:", erro);
+  });
+}
 
 /**
  * Versão do evento, a landing completa. Fluxo de inscrição com gate de fase:
@@ -41,15 +62,25 @@ export default function EventoPage({ faseInscricaoAtiva }: Props) {
   const [waitlistAberto, setWaitlistAberto] = useState(false);
   const [inscricaoAberto, setInscricaoAberto] = useState(false);
   const [pagamentoAberto, setPagamentoAberto] = useState(false);
+  // B1: o posseToken vive AQUI, só em memória (estado React) — nem
+  // sessionStorage/localStorage/cookie, nem logs, nem URL/SumUp. Fechou o
+  // browser, morreu com a tab: a reentrada é re-submeter o formulário
+  // (UPDATE → token NOVO no POST).
   const [inscricaoDados, setInscricaoDados] = useState<{
     id: string;
     nome: string;
     email: string;
+    posseToken: string;
   } | null>(null);
   const [parabensDados, setParabensDados] = useState<{ comprovativoOk: boolean } | null>(null);
   // Guard anti-duplicado: o email de confirmação envia-se UMA vez por inscrição,
   // mesmo que o fluxo do comprovativo passe por aqui mais do que uma vez.
   const emailConfirmacaoEnviadoRef = useRef<string | null>(null);
+  // Guard do email à ORGANIZAÇÃO (Bloco E): o mesmo por id — consulta de
+  // email_org_ok "antes" no que a app consegue fazer sem leitura à base
+  // (RLS anon bloqueia SELECT; duplicado cross-session exigiria re-submeter
+  // o formulário e voltar ao sucesso, coberto por estes guards na sessão).
+  const emailOrgEnviadoRef = useRef<string | null>(null);
 
   // Override de teste (lista|inscricao) — constante por build, lido no client.
   const fase = faseForcada();
@@ -84,35 +115,58 @@ export default function EventoPage({ faseInscricaoAtiva }: Props) {
     setInscricaoDados(null);
   }, []);
 
-  // Inscrição submetida → fecha o formulário e abre o pagamento com os dados.
-  const aoInscricaoSucesso = useCallback((id: string, nome: string, email: string) => {
+  // Inscrição submetida → fecha o formulário e abre o pagamento com os dados
+  // (id + posse_token — capability da inscrição, B1/0009).
+  const aoInscricaoSucesso = useCallback((id: string, nome: string, email: string, posseToken: string) => {
     setInscricaoAberto(false);
-    setInscricaoDados({ id, nome, email });
+    setInscricaoDados({ id, nome, email, posseToken });
     setPagamentoAberto(true);
   }, []);
 
   // Directiva §3: o email "recebemos a tua inscrição" dispara no momento em que
   // o ecrã de PARABÉNS da inscrição é mostrado — DEPOIS de o upload do
-  // comprovativo responder OK (PagamentoModal → onComprovativoSucesso). O
+  // comprovativo responder OK (PagamentoModal → onComprovativoSucesso) ou de a
+  // pessoa declarar o pagamento por link SumUp (decisão E: mesmo callback). O
   // upload falhou → aoComprovativoFalha mostra o Parabéns SEM email (é o
   // WhatsApp que resolve). Fire-and-forget — nunca bloqueia nem reverte a
   // inscrição. Guard por id: UM email por inscrição.
   const aoComprovativoSucesso = useCallback(() => {
     if (!inscricaoDados) return;
-    const { id, nome, email } = inscricaoDados;
+    const { id, nome, email, posseToken } = inscricaoDados;
     setPagamentoAberto(false);
     setInscricaoDados(null);
     setParabensDados({ comprovativoOk: true });
 
-    if (emailConfirmacaoEnviadoRef.current === id) return;
-    emailConfirmacaoEnviadoRef.current = id;
-    void enviarEmailNotificacao({
-      to_name: nome,
-      to_email: email,
-      amount: VALOR_INSCRICAO_TEXT,
-      order_id: id,
-      event_link: "https://essenceofbeautysalon.com/alem-do-espelho-2026",
-    });
+    // Data/hora da notificação à organização — Europe/Lisbon (Braga), pt-PT.
+    const dataHora = new Intl.DateTimeFormat("pt-PT", {
+      dateStyle: "short",
+      timeStyle: "short",
+      timeZone: "Europe/Lisbon",
+    }).format(new Date());
+
+    if (emailConfirmacaoEnviadoRef.current !== id) {
+      emailConfirmacaoEnviadoRef.current = id;
+      void enviarEmailNotificacao({
+        to_name: nome,
+        to_email: email,
+        amount: VALOR_INSCRICAO_TEXT,
+        order_id: id,
+        event_link: "https://essenceofbeautysalon.com/alem-do-espelho-2026",
+      }).then((okEnvio) => registarEnvioEmail(id, posseToken, "cliente", okEnvio));
+    }
+
+    // Notificação operacional mínima (decisão do Lucas, 06/09): a Vitória só
+    // quer saber que houve inscrição paga — data/hora + referência de 8 chars
+    // (o mesmo formato curto da mensagem de WhatsApp da recuperação). Sem
+    // nome, método, email, telemóvel nem comprovativo (decisão RGPD).
+    if (emailOrgEnviadoRef.current !== id) {
+      emailOrgEnviadoRef.current = id;
+      void enviarEmailOrganizacao({
+        to_email: ORG_EMAIL,
+        data_hora: dataHora,
+        referencia: id.slice(0, 8),
+      }).then((okEnvio) => registarEnvioEmail(id, posseToken, "org", okEnvio));
+    }
   }, [inscricaoDados]);
 
   // Upload falhou (ou a pessoa prefere o WhatsApp): o Parabéns mostra-se na
@@ -157,6 +211,7 @@ export default function EventoPage({ faseInscricaoAtiva }: Props) {
           fechar={fecharPagamento}
           inscricaoId={inscricaoDados.id}
           nome={inscricaoDados.nome}
+          posseToken={inscricaoDados.posseToken}
           onComprovativoSucesso={aoComprovativoSucesso}
           onComprovativoFalha={aoComprovativoFalha}
         />
