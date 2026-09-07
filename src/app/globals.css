@@ -365,19 +365,18 @@ body {
 /* ───────────────────────────────────────────────
    MARQUEE DE LOGOS — Isolamento de foco (REESCRITA 4)
    Estado padrão: logos meio-apagados (0.55 + desfoque subtil).
-   Hover do contentor: apaga os vizinhos (0.3 + desfoque forte) e isola
-   o logo sob o cursor. Hover direto: revela 100% das cores, sem desfoque,
-   com leve aproximação (1.06).
-   SEM grayscale em nenhum estado — os logos têm fundo baked-in e a
-   dessaturação mancharia os blocos; opacity + blur bastam para o foco.
+   Padrão: todos os tiles esbatidos por IGUAL (opacity 0.75, sem blur e SEM
+   grayscale — uniformidade total, cores de marca intactas em qualquer
+   estado). Hover do contentor: apaga os vizinhos (0.35). Hover direto (e
+   :active no toque): revela 100% das cores, leve aproximação (1.03) e
+   sombra suave — transform + drop-shadow apenas, nunca recolorir.
    A ORDEM das regras é o mecanismo: hover-direto vem por último e ganha
    sobre o hover do contentor (mesma especificidade, fonte posterior vence).
    O movimento em si é controlado por JS (Web Animations API) — ver
-   MarqueeLogos.tsx. Fora de .marquee-foco (fila estática, reduced-motion)
-   o azulejo fica neutro. */
+   MarqueeLogos.tsx. Fora de .marquee-foco (fila estática) o azulejo fica
+   neutro. */
 .marquee-foco .azulejo-logo {
-  opacity: 0.55;
-  filter: blur(1px);
+  opacity: 0.75;
   transition:
     opacity 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
     filter 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
@@ -385,14 +384,26 @@ body {
 }
 
 .marquee-foco:hover .azulejo-logo {
-  opacity: 0.3;
-  filter: blur(2px);
+  opacity: 0.35;
 }
 
-.marquee-foco .azulejo-logo:hover {
+.marquee-foco .azulejo-logo:hover,
+.marquee-foco .azulejo-logo:active {
   opacity: 1;
-  filter: blur(0px);
-  transform: scale(1.06);
+  transform: scale(1.03);
+  filter: drop-shadow(0 10px 24px rgb(46 58 51 / 0.28));
+}
+
+/* Toque: :hover é "sticky" após um tap em muitos browsers móveis (o tap
+   pausa o marquee por pointerenter e o estado de foco fica), mas o :active
+   acima garante a revelação enquanto o dedo está em cima — os dois caminhos
+   cobrem o equivalente de hover sem rato. */
+@media (hover: none) {
+  .marquee-foco .azulejo-logo:active {
+    opacity: 1;
+    transform: scale(1.03);
+    filter: drop-shadow(0 10px 24px rgb(46 58 51 / 0.28));
+  }
 }
 
 /* Grão sutil de papel */
@@ -717,5 +728,53 @@ body {
   .bolha-pulsar::before {
     animation: none;
     opacity: 0;
+  }
+}
+
+/* ── Bloco I-r2 (showcase patrocinadores) ────────────────────────────────── */
+
+/* Scroll dos OURO na Modal A: 3 cartões de cada vez. Scrollbar fina e
+   dourada (discreta sobre o vidro do modal); o snap vertical obrigatório
+   (snap-y/snap-mandatory + wrappers snap-start) vem por classes Tailwind. */
+.scroll-ouro {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(212 175 55 / 0.35) transparent;
+}
+.scroll-ouro::-webkit-scrollbar {
+  width: 4px;
+}
+.scroll-ouro::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-ouro::-webkit-scrollbar-thumb {
+  background: rgb(212 175 55 / 0.35);
+  border-radius: 9999px;
+}
+
+/* Acordeão da bio — grid-template-rows 0fr→1fr (anima sem tocar em
+   width/height). Estado por data-aberto (clique no gatilho circular dourado);
+   nos cartões prata/bronze o hover do CARTÃO INTEIRO também revela
+   (.cartao-bio-hover, só em dispositivos com hover — o tap passa pelo
+   clique do gatilho). */
+.acordao-bio {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.acordao-bio > div {
+  overflow: hidden;
+  min-height: 0;
+}
+.acordao-bio[data-aberto="true"] {
+  grid-template-rows: 1fr;
+}
+@media (hover: hover) {
+  .cartao-bio-hover:hover .acordao-bio {
+    grid-template-rows: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .acordao-bio {
+    transition: none;
   }
 }

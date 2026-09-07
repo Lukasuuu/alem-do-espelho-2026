@@ -16,8 +16,10 @@ import { patrocinadoresNaFaixa } from "@/lib/patrocinadores";
  * aproxima a playbackRate de 0 (travão de veludo ~400ms), usando
  * updatePlaybackRate() em vez de escrever playbackRate directamente.
  *
- * LOGOS NORMALIZADOS: cada marca é uma caixa FIXA (180×72, gap uniforme 56).
- * Largura uniforme ⇒ o período do ciclo é n×(caixa+gap) e o translateX(-50%)
+ * LOGOS NORMALIZADOS: cada marca é uma caixa FIXA QUADRADA (128×128, gap
+ * uniforme 40) — tile transparente com contain + padding uniforme, os cards
+ * 600×600 OURO mostram-se tal-e-qual (fundo/cantos/borda embutidos). Largura
+ * uniforme ⇒ o período do ciclo é n×(caixa+gap) e o translateX(-50%)
  * fecha a costura sem salto.
  *
  * REPETIÇÕES CALCULADAS: o nº de blocos por metade deriva da largura do
@@ -42,11 +44,11 @@ import { patrocinadoresNaFaixa } from "@/lib/patrocinadores";
  * React 19 dev monta duas vezes — o useEffect tem cleanup completo.
  */
 
-/** Caixa fixa de cada logo (px). */
-const BOX_W = 180;
-const BOX_H = 72;
+/** Caixa fixa de cada logo (px) — tile QUADRADO (Bloco I-r2). */
+const BOX_W = 128;
+const BOX_H = 128;
 /** Gap uniforme entre logos (px). */
-const GAP = 56;
+const GAP = 40;
 /** Velocidade constante do marquee (px/s) — medida no diagnóstico. */
 const VELOCIDADE_PX_S = 40;
 /** Constante de tempo do travão de veludo (ms) — 3×τ ≈ 99% ≈ 315ms, ~400ms até 2%. */
