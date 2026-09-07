@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
+import Cronograma from "@/components/Cronograma";
 import Experience from "@/components/Experience";
 import Anfitria from "@/components/Anfitria";
 import Gallery from "@/components/Gallery";
@@ -193,6 +194,7 @@ export default function EventoPage({ faseInscricaoAtiva }: Props) {
       <Header abrirModal={abrirFluxo} />
       <main>
         <Hero abrirModal={abrirFluxo} />
+        <Cronograma />
         <Experience />
         <Anfitria />
         <Gallery />

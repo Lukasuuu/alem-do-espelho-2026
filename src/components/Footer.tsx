@@ -1,27 +1,59 @@
 "use client";
 
 import Image from "next/image";
-import { ChevronRight } from "lucide-react";
+import { Calendar, ChevronRight, Clock, MapPin } from "lucide-react";
 import { useState } from "react";
 import { InstagramIcon, MailIcon, WhatsAppIcon } from "./icons";
 import TermosModal from "./TermosModal";
 import PrivacidadeModal from "./PrivacidadeModal";
-import { linkWhatsApp, site } from "@/lib/site";
+import { horarioEvento, linkWhatsApp, site } from "@/lib/site";
+
+/**
+ * Âncoras de navegação por omissão — as da página do EVENTO. As outras
+ * páginas (lista de espera, causa social) passam a sua lista pela prop
+ * `navegacao`: nem todas as âncoras existem em todas as páginas (#o-evento
+ * só existe aqui; #inscricao só na lista) e uma âncora morta é bug.
+ */
+const NAVEGACAO_EVENTO = [
+  { rotulo: "Início", href: "#topo" },
+  { rotulo: "O evento", href: "#o-evento" },
+  { rotulo: "Experiência", href: "#o-que-te-espera" },
+  { rotulo: "Causa social", href: "#alem-de-mim" },
+  { rotulo: "Contactos", href: "#contactos" },
+] as const;
+
+type ItemNavegacao = { rotulo: string; href: string };
 
 type Props = {
   abrirModal: () => void;
+  /** Âncoras da coluna Navegação — por omissão, as da página do evento. */
+  navegacao?: ReadonlyArray<ItemNavegacao>;
 };
 
-export default function Footer({ abrirModal }: Props) {
+/**
+ * G.2 — Footer adaptado ao padrão "Informações · Navegação · Redes · Legal"
+ * (Beauty Business Summit), inteiramente nos tokens do Além do Espelho —
+ * nenhuma cor importada. Coluna Contactos mantém os mesmos links de sempre
+ * (dados de produção: email, WhatsApp, Instagram) com os seus ícones, e
+ * recebe a Essence of Beauty como 4.ª rede. Os links legais passam para a
+ * barra final (mesmos modais TermosModal/PrivacidadeModal de sempre).
+ */
+export default function Footer({ abrirModal, navegacao = NAVEGACAO_EVENTO }: Props) {
   const [termosAberto, setTermosAberto] = useState(false);
   const [privacidadeAberto, setPrivacidadeAberto] = useState(false);
+
+  const infos = [
+    { icon: Calendar, texto: site.data.extenso },
+    { icon: Clock, texto: horarioEvento() },
+    { icon: MapPin, texto: site.local.completo },
+  ] as const;
 
   return (
     <footer className="bg-musgo pt-10 pb-5 sm:pt-12">
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        {/* Colunas: logo+desc | contactos | legal, empilham centradas em mobile */}
-        <div className="grid gap-8 md:grid-cols-[1.4fr_1fr_1fr]">
-          {/* Logo + descrição */}
+        {/* Colunas: logo+desc | informações | navegação | redes — 2×2 em tablet, empilham em mobile */}
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr]">
+          {/* Logo + descrição (como antes) */}
           <div className="flex flex-col items-center text-center md:items-start md:text-left">
             <Image
               src="/brand/logo-offwhite.webp"
@@ -42,10 +74,40 @@ export default function Footer({ abrirModal }: Props) {
             </button>
           </div>
 
-          {/* Contactos: email, WhatsApp e Instagram empilhados verticalmente */}
+          {/* Informações do evento — mesma fonte de verdade do Cronograma (lib/site) */}
+          <div className="flex flex-col items-center text-center md:items-start md:text-left">
+            <h3 className="eyebrow text-creme/35">O evento</h3>
+            <ul className="mt-3 space-y-2.5 text-[0.875rem] text-creme/60">
+              {infos.map((info) => (
+                <li key={info.texto} className="flex items-start justify-center gap-3 md:justify-start">
+                  <info.icon className="mt-0.5 h-[1.15rem] w-[1.15rem] shrink-0 text-dourado-claro/70" aria-hidden />
+                  <span className="text-creme/60">{info.texto}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Navegação — âncoras reais da página em que o footer renderiza */}
+          <nav aria-label="Navegação do rodapé" className="flex flex-col items-center text-center md:items-start md:text-left">
+            <h3 className="eyebrow text-creme/35">Navegação</h3>
+            <ul className="mt-1 space-y-0.5 text-[0.875rem]">
+              {navegacao.map((item) => (
+                <li key={item.href}>
+                  <a
+                    href={item.href}
+                    className="inline-flex min-h-11 items-center px-3 -mx-3 text-creme/70 transition-colors duration-300 hover:text-creme focus-visible:text-creme"
+                  >
+                    {item.rotulo}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          {/* Contactos + redes — os mesmos links de sempre (com ícones) + Essence */}
           <div id="contactos" className="flex scroll-mt-28 flex-col items-center text-center md:items-start md:text-left">
             <h3 className="eyebrow text-creme/35">Contactos</h3>
-            <ul className="mt-3 space-y-1 text-[0.875rem] text-creme/60">
+            <ul className="mt-1 space-y-0.5 text-[0.875rem] text-creme/60">
               <li>
                 <a
                   href={`mailto:${site.contacto.email}`}
@@ -83,30 +145,17 @@ export default function Footer({ abrirModal }: Props) {
                   Vitória Gomes
                 </a>
               </li>
-            </ul>
-          </div>
-
-          {/* Legal: modais em vez de texto estático */}
-          <div className="flex flex-col items-center text-center md:items-start md:text-left">
-            <h3 className="eyebrow text-creme/35">Legal</h3>
-            <ul className="mt-3 space-y-1 text-[0.8125rem]">
               <li>
-                <button
-                  type="button"
-                  onClick={() => setTermosAberto(true)}
-                  className="inline-flex min-h-11 items-center text-creme/70 transition-colors duration-300 hover:text-creme focus-visible:text-creme"
+                <a
+                  href="https://www.instagram.com/essenceofbeauty.salon/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Essence of Beauty no Instagram (abre em nova janela)"
+                  className="inline-flex min-h-11 items-center gap-3 text-creme/70 transition-colors duration-300 hover:text-creme focus-visible:text-creme"
                 >
-                  Termos de Serviço
-                </button>
-              </li>
-              <li>
-                <button
-                  type="button"
-                  onClick={() => setPrivacidadeAberto(true)}
-                  className="inline-flex min-h-11 items-center text-creme/70 transition-colors duration-300 hover:text-creme focus-visible:text-creme"
-                >
-                  Política de Privacidade
-                </button>
+                  <InstagramIcon className="h-[1.15rem] w-[1.15rem] shrink-0" />
+                  Essence of Beauty
+                </a>
               </li>
             </ul>
           </div>
@@ -132,7 +181,7 @@ export default function Footer({ abrirModal }: Props) {
           </a>
         </div>
 
-        {/* Barra única, centrada, com quebra de linha em ecrãs pequenos */}
+        {/* Barra única, centrada: © + linha legal (modais Termos/Privacidade) */}
         <div className="mt-4 border-t border-creme/10 pt-3">
           <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-[0.8125rem] text-creme/45">
             <span>© {new Date().getFullYear()} Além do Espelho</span>
@@ -140,6 +189,22 @@ export default function Footer({ abrirModal }: Props) {
             <span>Essence of Beauty</span>
             <span aria-hidden>·</span>
             <span>{site.subtitulo} · {site.edicao}</span>
+            <span aria-hidden>·</span>
+            <button
+              type="button"
+              onClick={() => setTermosAberto(true)}
+              className="inline-flex min-h-11 items-center px-1 text-creme/45 underline-offset-4 transition-colors duration-300 hover:text-creme hover:underline focus-visible:text-creme"
+            >
+              Termos de Serviço
+            </button>
+            <span aria-hidden>·</span>
+            <button
+              type="button"
+              onClick={() => setPrivacidadeAberto(true)}
+              className="inline-flex min-h-11 items-center px-1 text-creme/45 underline-offset-4 transition-colors duration-300 hover:text-creme hover:underline focus-visible:text-creme"
+            >
+              Política de Privacidade
+            </button>
           </p>
         </div>
       </div>
