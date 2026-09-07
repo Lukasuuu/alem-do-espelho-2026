@@ -12,11 +12,12 @@ import { NIVEIS_PARCERIA, type MetodoSponsor, type NivelParceria } from "@/lib/v
 import { patrocinadoresVisiveis, type Patrocinador } from "@/lib/patrocinadores";
 
 // ── D2 — refs partilhadas entre SponsorFlow e VerticalSponsorCarousel ─────
-// cartaoLigiaRef: aponta para o wrapper do cartão da Lígia (zona fixa).
+// cartaoFixoRef: aponta para o wrapper dos cartões OURO (zona fixa — Bloco I:
+// TODOS os ouro são fixos, a Lígia deixou de ser o único).
 // colunaFormularioRef: aponta para o div direito (formulário) — ResizeObserver.
-const cartaoLigiaRef = { current: null as HTMLDivElement | null };
+const cartaoFixoRef = { current: null as HTMLDivElement | null };
 const colunaFormularioRef = { current: null as HTMLDivElement | null };
-const GAP_CARTAO_LIGIA = 24;
+const GAP_CARTAO_FIXO = 24;
 
 const EASE_SUAVE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
@@ -59,13 +60,18 @@ function grau3DuasColunas() {
   return false;
 }
 
-/** Patrocinadores visíveis para a Modal A (5 itens) */
+/** Patrocinadores visíveis para a Modal A */
 const visiveis = patrocinadoresVisiveis();
 
-/** Lígia (grau 1) — fixa no topo, NÃO entra no carrossel */
-const ligia = visiveis.find((p) => p.destaque === 1);
+/**
+ * BLOCO I (decisão do Lucas, 03/09): TODOS os patrocinadores OURO (grau 1)
+ * ficam FIXOS no topo, pela ordem do array — Novex 1.º (logo+texto+selo, sem
+ * foto), depois Lígia, Luci, Renata, Naty, Gracy e Patrícia. NÃO entram no
+ * carrossel.
+ */
+const ouros = visiveis.filter((p) => p.destaque === 1);
 
-/** Carrossel vertical: graus 2 e 3 (Andreia, Renata, Daniella, Lucas) */
+/** Carrossel vertical: graus 2 e 3 (prata e bronze, como antes). */
 const carrossel = visiveis.filter((p) => p.destaque !== 1);
 
 /**
@@ -223,21 +229,20 @@ export default function SponsorFlow() {
               </p>
             </div>
 
-            {/* ── ZONA FIXA: Lígia Santos (grau 1) — NÃO entra no carrossel ── */}
-            {ligia && (
-              <div ref={cartaoLigiaRef}>
-                <CartaoPatrocinadora
-                  key={ligia.id}
-                  patrocinador={ligia}
-                  tom="escuro"
-                />
+            {/* ── ZONA FIXA: patrocinadores OURO (grau 1) — Bloco I: todos
+                  fixos e empilhados, Novex em 1.º. NÃO entram no carrossel. ── */}
+            {ouros.length > 0 && (
+              <div ref={cartaoFixoRef} className="flex flex-col gap-3">
+                {ouros.map((ouro) => (
+                  <CartaoPatrocinadora key={ouro.id} patrocinador={ouro} tom="escuro" />
+                ))}
               </div>
             )}
 
-            {/* ── CARROSSEL VERTICAL: graus 2 e 3 (Andreia, Renata, Daniella, Lucas) ── */}
+            {/* ── CARROSSEL VERTICAL: graus 2 e 3 (prata/bronze) ── */}
             <VerticalSponsorCarousel
               patrocinadores={carrossel}
-              cartaoLigiaRef={cartaoLigiaRef}
+              cartaoFixoRef={cartaoFixoRef}
               colunaFormularioRef={colunaFormularioRef}
             />
           </div>
@@ -392,11 +397,11 @@ export default function SponsorFlow() {
  */
 function VerticalSponsorCarousel({
   patrocinadores,
-  cartaoLigiaRef,
+  cartaoFixoRef,
   colunaFormularioRef,
 }: {
   patrocinadores: Patrocinador[];
-  cartaoLigiaRef: { current: HTMLDivElement | null };
+  cartaoFixoRef: { current: HTMLDivElement | null };
   colunaFormularioRef: { current: HTMLDivElement | null };
 }) {
   const [montado, setMontado] = useState(false);
@@ -447,25 +452,25 @@ function VerticalSponsorCarousel({
       )
     );
     const alturaFormulario = coluna.getBoundingClientRect().height;
-    const alturaLigia =
-      cartaoLigiaRef.current?.getBoundingClientRect().height ?? 0;
+    const alturaZonaFixa =
+      cartaoFixoRef.current?.getBoundingClientRect().height ?? 0;
     const vh = window.innerHeight;
-    // CASO 2: o teto desconta o TOPO REAL da janela (header sticky + cartão da
-    // Lígia acima do carrossel), não um fixo vh-192. Sem isto, em viewports
+    // CASO 2: o teto desconta o TOPO REAL da janela (header sticky + zona fixa
+    // OURO acima do carrossel), não um fixo vh-192. Sem isto, em viewports
     // <1200px de altura o fundo da janela ultrapassava o viewport
     // (bottomOk=false em 5/7 breakpoints). 24px de respiro inferior.
     const topoJanela = containerRef.current?.getBoundingClientRect().top ?? 0;
     const maxVh = vh - topoJanela - 24;
-    // tetoConteudo = alinhar com a coluna do formulário (espaço abaixo da
-    // Lígia e altura total da coluna). O min() com espacoPorColuna é redundante
-    // (espacoAbaixoLigia < espacoPorColuna sempre) mas mantém-se explícito.
-    const espacoAbaixoLigia = alturaFormulario - alturaLigia - GAP_CARTAO_LIGIA;
-    const tetoConteudo = Math.min(espacoAbaixoLigia, alturaFormulario);
+    // tetoConteudo = alinhar com a coluna do formulário (espaço abaixo da zona
+    // fixa OURO e altura total da coluna). O min() com espacoPorColuna é redundante
+    // (espacoAbaixoFixa < espacoPorColuna sempre) mas mantém-se explícito.
+    const espacoAbaixoFixa = alturaFormulario - alturaZonaFixa - GAP_CARTAO_FIXO;
+    const tetoConteudo = Math.min(espacoAbaixoFixa, alturaFormulario);
     // O piso só se aplica se houver altura para ele; caso contrário o maxVh
     // (viewport) vence — garante bottomOk sem sacrificar o piso no geral.
     const alvo = Math.min(maxVh, Math.max(ALTURA_MIN_JANELA, tetoConteudo));
     setJanelaAltura(alvo);
-  }, [cartaoLigiaRef, colunaFormularioRef, containerRef]);
+  }, [cartaoFixoRef, colunaFormularioRef, containerRef]);
 
   useEffect(() => {
     if (!montado) return;

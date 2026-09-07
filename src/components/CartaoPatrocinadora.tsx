@@ -58,7 +58,7 @@ export default function CartaoPatrocinadora({
   onMouseLeave,
 }: Props) {
   const claro = tom === "claro";
-  const { foto, logo, nome, titulo, descricao, historia, citacao, destaque, ocultarTitulo, ocultarNome } = patrocinador;
+  const { foto, logo, nome, titulo, descricao, historia, citacao, selo, destaque, ocultarTitulo, ocultarNome } = patrocinador;
 
   // Hover state para foto — will-change só durante interação
   const fotoRef = useRef<HTMLDivElement>(null);
@@ -123,6 +123,14 @@ export default function CartaoPatrocinadora({
     ? "flex flex-col gap-2 xl:flex-row xl:items-center xl:gap-3 min-w-0"
     : "flex items-center gap-3 min-w-0";
 
+  // Bloco I: logos OURO novos são quadrados/compactos (Florescer, Luci, Fluir,
+  // Novex 2,15:1). A caixa do grau 1 é width fixa 303/346 (desenhada para o
+  // wordmark 5,41:1 da Lígia, que fica byte a byte igual) — para logos menos
+  // largos, width auto inline deixa a caixa abraçar o logo em vez de pintar
+  // uma faixa de fundo vazia. O fundoHex continua a tornar o letterbox do
+  // object-contain invisível.
+  const logoLargo = logo ? logo.width / logo.height >= 3 : true;
+
   // Caixas: os TRÊS graus recebem width/height via classe CSS (media query
   // por breakpoint em globals.css: .caixa-logo-grau-1/2/3).
   //  - Grau 1 (ouro): width fixa 303/346 + maxWidth: 100% inline → rende
@@ -132,8 +140,12 @@ export default function CartaoPatrocinadora({
   //    estilo inline sobrepõe-se ao max-width da stylesheet e perde-se o
   //    travão, invertendo a hierarquia em colunas largas (ver globals.css).
   const estiloCaixaLogo = isGrau1
-    ? { backgroundColor: logo.fundoHex, maxWidth: "100%" }
-    : { backgroundColor: logo.fundoHex };
+    ? {
+        backgroundColor: logo?.fundoHex,
+        maxWidth: "100%",
+        ...(logoLargo ? {} : { width: "auto" }),
+      }
+    : { backgroundColor: logo?.fundoHex };
   const classeCaixaLogo = `caixa-logo-grau-${destaque}`;
 
   // Imagem do logo: graus 2 e 3 usam object-contain com maxWidth/maxHeight
@@ -195,7 +207,9 @@ export default function CartaoPatrocinadora({
               encolhem a faixa para o tamanho da própria foto (96/84px) e a foto
               ocupa-a por inteiro, ficando só o fio metálico visível. Em mobile
               (<md) mantém o cálculo antigo por grau + aspect-ratio 4:5 (empilhado)
-              — mas prata e bronze também sem moldura, foto a 100%. ── */}
+              — mas prata e bronze também sem moldura, foto a 100%.
+              BLOCO I: a coluna só renderiza quando há foto (a Novex entra sem). ── */}
+        {foto && (
         <div
           ref={fotoRef}
           aria-hidden="true"
@@ -251,50 +265,80 @@ export default function CartaoPatrocinadora({
             />
           )}
         </div>
+        )}
 
         {/* ── Coluna de conteúdo ── */}
         <div
-          className="mt-5 min-w-0 flex-1 md:mt-0"
+          className={`min-w-0 flex-1 ${foto ? "mt-5 md:mt-0" : ""}`}
         >
-          {/* 1. Faixa do logo (altura por grau, contain) ao lado do nome.
+          {/* 1. Faixa do logo (altura por grau, contain) ao lado do nome — só
+                quando há logo (Bloco I: a Gracy entra só com foto; nesse caso
+                o nome renderiza sozinho, na mesma escala por destaque).
                 Grau 1 (Lígia): row muda para coluna abaixo do xl porque o
                 logo 5,41:1 não cabe ao lado do nome em <1280. Ver
                 globals.css `.caixa-logo-grau-1` para width/height responsivos. */}
-          <div className={classeRowLogoNome}>
-            <span
-              aria-hidden
-              className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-md ring-1 ring-black/5 ${classeCaixaLogo}`}
-              style={estiloCaixaLogo}
-              data-caixa-logo
-              {...(isGrau1 ? { "data-grau-1": "true" } : {})}
-            >
-              <LocalImage
-                src={logo.src}
-                alt={logo.alt}
-                width={logo.width}
-                height={logo.height}
-                className={classeImgLogo}
-                style={estiloImgLogo}
-              />
-            </span>
-            {/* 2. Nome, ao lado do logo (tamanho por destaque).
-                basis-auto + flex-1 com max-w explícito previne o nome de
-                esticar até à largura da coluna. O limite cabe em ~3× o nome
-                do próprio texto sem cortar.
-                Se `ocultarNome`, o nome é só o `alt` do logo (acessível).
-                Decisão de duplicação visual: ver campo `ocultarNome` em
-                patrocinadores.ts. */}
-            {!ocultarNome && (
+          {logo ? (
+            <div className={classeRowLogoNome}>
               <span
-                className={`display block min-w-0 flex-1 leading-tight [text-wrap:balance] [overflow-wrap:normal] [hyphens:none] ${
+                aria-hidden
+                className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-md ring-1 ring-black/5 ${classeCaixaLogo}`}
+                style={estiloCaixaLogo}
+                data-caixa-logo
+                {...(isGrau1 ? { "data-grau-1": "true" } : {})}
+              >
+                <LocalImage
+                  src={logo.src}
+                  alt={logo.alt}
+                  width={logo.width}
+                  height={logo.height}
+                  className={classeImgLogo}
+                  style={estiloImgLogo}
+                />
+              </span>
+              {/* 2. Nome, ao lado do logo (tamanho por destaque).
+                  basis-auto + flex-1 com max-w explícito previne o nome de
+                  esticar até à largura da coluna. O limite cabe em ~3× o nome
+                  do próprio texto sem cortar.
+                  Se `ocultarNome`, o nome é só o `alt` do logo (acessível).
+                  Decisão de duplicação visual: ver campo `ocultarNome` em
+                  patrocinadores.ts. */}
+              {!ocultarNome && (
+                <span
+                  className={`display block min-w-0 flex-1 leading-tight [text-wrap:balance] [overflow-wrap:normal] [hyphens:none] ${
+                    claro ? "text-vinho" : "text-creme"
+                  }`}
+                  style={{ fontSize: `${nomeSizeRem}rem`, maxWidth: "30ch" }}
+                >
+                  {nome}
+                </span>
+              )}
+            </div>
+          ) : (
+            !ocultarNome && (
+              <span
+                className={`display block leading-tight [text-wrap:balance] [overflow-wrap:normal] [hyphens:none] ${
                   claro ? "text-vinho" : "text-creme"
                 }`}
                 style={{ fontSize: `${nomeSizeRem}rem`, maxWidth: "30ch" }}
               >
                 {nome}
               </span>
-            )}
-          </div>
+            )
+          )}
+
+          {/* 2b. Selo visível (Bloco I — campo `selo`, ex.: "Ouro"). Mesmo
+                padrão do badge "Mais procurado" do SponsorFlow. */}
+          {selo && (
+            <span
+              className={`mt-2 inline-flex items-center rounded-full border px-2 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wider ${
+                claro
+                  ? "border-dourado/60 bg-dourado/10 text-musgo"
+                  : "border-dourado/50 bg-dourado/10 text-dourado-claro"
+              }`}
+            >
+              {selo}
+            </span>
+          )}
 
           {/* 3. Título profissional (text-wrap: pretty, ≤2 linhas) — oculto se redundante com a descrição */}
           {!ocultarTitulo && (

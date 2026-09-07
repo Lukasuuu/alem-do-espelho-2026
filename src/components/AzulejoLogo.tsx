@@ -1,5 +1,5 @@
 import LocalImage from "./LocalImage";
-import type { Patrocinador } from "@/lib/patrocinadores";
+import type { PatrocinadorComLogo } from "@/lib/patrocinadores";
 
 /**
  * Azulejo de marca — logo com fundo próprio dentro de um contentor, cantos
@@ -21,7 +21,8 @@ import type { Patrocinador } from "@/lib/patrocinadores";
  * marquee o tile fica neutro.
  */
 type Props = {
-  logo: Patrocinador["logo"];
+  // Logo obrigatório — a faixa só renderiza quem tem logo (patrocinadoresNaFaixa).
+  logo: PatrocinadorComLogo["logo"];
   /**
    * Altura da caixa em px. Default 72 (desktop).
    */

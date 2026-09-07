@@ -61,8 +61,10 @@ export type Patrocinador = {
   titulo: string;
   /** Descrição curta (1-2 linhas) — só graus 1 e 2. Aguarda aprovação da Vitória. */
   descricao?: string;
-  foto: { src: string; alt: string; width: number; height: number };
-  logo: {
+  /** Foto 4:5 — OPCIONAL (Bloco I): a Novex entra sem foto (logo+texto+selo). */
+  foto?: { src: string; alt: string; width: number; height: number };
+  /** Logo — OPCIONAL (Bloco I): a Gracy entra só com foto (não entra na faixa). */
+  logo?: {
     src: string;
     alt: string;
     width: number;
@@ -70,10 +72,16 @@ export type Patrocinador = {
     /** Hex do fundo do tile — deve combinar com o background baked-in do logo. */
     fundoHex: string;
   };
-  /** História curta (2-3 linhas) — PLACEHOLDER, não publicar sem aprovação. */
+  /** História curta (2-3 linhas) — publicar só com aprovação escrita. */
   historia: string;
   /** Citação em destaque — PLACEHOLDER, não publicar sem aprovação. */
   citacao: string;
+  /**
+   * Selo visível no cartão (ex.: "Ouro" — Bloco I, aprovado pelo Lucas).
+   * ÚNICO campo de nível aprovado para exibição: o `destaque` continua
+   * sendo indicativo interno e NUNCA aparece em texto.
+   */
+  selo?: string;
   /** Se true, esconde o título profissional (útil quando a descrição o torna redundante). */
   ocultarTitulo?: boolean;
   /** Se true, esconde o nome em texto ao lado do logo. Usar quando o nome
@@ -103,7 +111,45 @@ export function patrocinadoresVisiveis(): Patrocinador[] {
   return patrocinadores.filter((p) => p.visivel);
 }
 
+/**
+ * Bloco I — subconjunto da faixa de logos (MarqueeLogos): só quem TEM logo.
+ * Mesma regra do "único ponto de filtro": a Gracy Azevedo (só foto) existe
+ * na modal de bio mas NÃO entra na faixa. A ordem do array (ouro primeiro)
+ * define a ordem de entrada da faixa — Novex em 1.º.
+ */
+export type PatrocinadorComLogo = Patrocinador & { logo: NonNullable<Patrocinador["logo"]> };
+
+export function patrocinadoresNaFaixa(): PatrocinadorComLogo[] {
+  return patrocinadoresVisiveis().filter((p): p is PatrocinadorComLogo => p.logo !== undefined);
+}
+
 export const patrocinadores: Patrocinador[] = [
+  {
+    // ── OURO (Bloco I, ordem confirmada pelo Lucas: Novex → Lígia → Luci →
+    // Renata → Naty → Gracy → Patrícia; depois prata/bronze como estavam) ──
+    id: "novex",
+    nome: "Novex",
+    titulo: "Cuidados capilares · Embelleze",
+    // Sem foto (decisão do Lucas: logo+texto+selo, sem coluna de foto).
+    logo: {
+      src: "/patrocinadores/novex-logo.webp",
+      alt: "Logótipo Novex",
+      width: 172,
+      height: 80,
+      // Fundo branco baked-in (amostrado do asset)
+      fundoHex: "#FFFFFF",
+    },
+    // Texto adaptado pelo Claude (Bloco I) do material enviado pelo Lucas —
+    // o original tinha citações truncadas de pesquisa ("[1, 2, 3…]").
+    historia:
+      "A Novex é a principal marca de cuidados capilares do grupo Embelleze, fundado em 1969 — célebre pelos cremes de tratamento profundo ultraconcentrados (os icónicos potes de 1 kg) e por fórmulas 100% veganas e cruelty-free. Focada na nutrição profunda e na reconstrução dos fios, é hoje uma das marcas brasileiras de cabelo mais conhecidas do mundo.",
+    citacao: "",
+    // O wordmark "novex" está desenhado no logo — nome duplicado seria redundante.
+    ocultarNome: true,
+    selo: "Ouro",
+    destaque: 1,
+    visivel: true,
+  },
   {
     id: "ligia-santos",
     nome: "Lígia Santos",
@@ -134,6 +180,139 @@ export const patrocinadores: Patrocinador[] = [
     // O título profissional mantém-se visível (não está no logo).
     ocultarTitulo: false,
     ocultarNome: true,
+    // OURO (Bloco I): selo igual aos restantes ouro — "cada patrocinador
+    // OURO com selo 'Ouro'" (pedido do Lucas).
+    selo: "Ouro",
+    destaque: 1,
+    visivel: true,
+  },
+  {
+    // OURO (Bloco I) — foto + logo com o nome desenhado (fundo azul em
+    // gradiente; fundoHex = tom médio das bordas amostradas, letterbox invisível).
+    id: "luci-maritan",
+    nome: "Luci Maritan",
+    titulo: "Mentora & Psicanalista",
+    foto: {
+      src: "/patrocinadores/luci-maritan-foto.webp",
+      alt: "Retrato de Luci Maritan, mentora e psicanalista",
+      width: 804,
+      height: 1200,
+    },
+    logo: {
+      src: "/patrocinadores/luci-maritan-logo.webp",
+      alt: "Logótipo Luci Maritan",
+      width: 800,
+      height: 800,
+      fundoHex: "#14345F",
+    },
+    // Texto verbatim aprovado pelo Lucas (Bloco I).
+    historia:
+      "Mentora, psicanalista e palestrante. Ajuda mulheres a resgatar a sua identidade e a transformar resultados, sem culpa e sem perder o que lhes é caro — porque a perceção que a mulher tem de si estabelece o teto da própria vida.",
+    citacao: "",
+    ocultarNome: true, // "LUCI MARITAN" está desenhado no logo
+    selo: "Ouro",
+    destaque: 1,
+    visivel: true,
+  },
+  {
+    // OURO (Bloco I) — promovida de bronze (destaque 3 → 1). Mesma foto e
+    // logo; texto verbatim aprovado pelo Lucas. A `descricao` antiga mantém-se.
+    id: "renata-parreira",
+    nome: "Renata Parreira",
+    titulo: "Reta Comunicação",
+    descricao: "Ajudando marcas a encontrar a própria voz, entre conteúdo, palco e formação.",
+    foto: {
+      src: "/patrocinadores/renata-parreira-4x5.webp",
+      alt: "Retrato de Renata Parreira, Reta Comunicação",
+      width: 800,
+      height: 1000,
+    },
+    logo: {
+      src: "/patrocinadores/logo-reta-comunicacao.webp",
+      alt: "Logótipo Reta Comunicação",
+      width: 372,
+      height: 200,
+      // Fundo baked-in do logo (branco, amostrado do asset)
+      fundoHex: "#FFFFFF",
+    },
+    // Texto verbatim aprovado pelo Lucas (Bloco I).
+    historia:
+      "Jornalista e mestre em Comunicação Social pela Universidade Católica Portuguesa, fundou há 10 anos a Reta Comunicação. Criadora do método Sua Voz, Sua Marca, ajuda pessoas e empresas a comunicar com clareza, conexão e confiança — porque “não basta ser visto, é preciso ser sentido”.",
+    citacao: "",
+    selo: "Ouro",
+    destaque: 1,
+    visivel: true,
+  },
+  {
+    // OURO (Bloco I) — Naty Ribeiro / Editora Florescer. Logo com fundo
+    // verde-oliva opaco (fundoHex amostrado do asset, letterbox invisível).
+    id: "editora-florescer",
+    nome: "Naty Ribeiro",
+    titulo: "Editora Florescer",
+    foto: {
+      src: "/patrocinadores/naty-ribeiro-foto.webp",
+      alt: "Retrato de Naty Ribeiro, Editora Florescer",
+      width: 799,
+      height: 1200,
+    },
+    logo: {
+      src: "/patrocinadores/florescer-logo.webp",
+      alt: "Logótipo Editora Florescer",
+      width: 798,
+      height: 800,
+      fundoHex: "#595844",
+    },
+    // Texto verbatim aprovado pelo Lucas (Bloco I).
+    historia:
+      "Mentora, terapeuta, escritora e palestrante. Aborda identidade, cura emocional, relacionamentos e propósito, a partir da restauração da identidade em Cristo. À frente da Editora Florescer, acompanha autores e transforma histórias em livros que alcançam vidas.",
+    citacao: "",
+    selo: "Ouro",
+    destaque: 1,
+    visivel: true,
+  },
+  {
+    // OURO (Bloco I) — SEM logo: não entra na faixa de logos (só na modal de
+    // bio), via patrocinadoresNaFaixa().
+    id: "gracy-azevedo",
+    nome: "Gracy Azevedo",
+    titulo: "Coach de CrossFit & Criadora de Conteúdo",
+    foto: {
+      src: "/patrocinadores/gracy-azevedo-foto.webp",
+      alt: "Retrato de Gracy Azevedo, coach de CrossFit",
+      width: 900,
+      height: 1200,
+    },
+    // Texto verbatim aprovado pelo Lucas (Bloco I).
+    historia:
+      "Coach de CrossFit, criadora de conteúdo e apaixonada por saúde, movimento e fé. Depois da sua própria transformação, inspira mulheres a cuidar do corpo com intenção e propósito — porque a verdadeira mudança começa de dentro para fora.",
+    citacao: "",
+    selo: "Ouro",
+    destaque: 1,
+    visivel: true,
+  },
+  {
+    // OURO (Bloco I) — Patrícia Ribeiro / Fluir. Logo com fundo claro opaco.
+    id: "patricia-ribeiro",
+    nome: "Patrícia Ribeiro",
+    titulo: "Fundadora do Fluir",
+    foto: {
+      src: "/patrocinadores/patricia-foto.webp",
+      alt: "Retrato de Patrícia Ribeiro, fundadora do Fluir",
+      width: 801,
+      height: 1200,
+    },
+    logo: {
+      src: "/patrocinadores/fluir-logo.webp",
+      alt: "Logótipo Fluir",
+      width: 500,
+      height: 500,
+      fundoHex: "#F7F7F7",
+    },
+    // Texto verbatim aprovado pelo Lucas (Bloco I).
+    historia:
+      "Fundadora do Fluir, um projeto dedicado às mulheres: workshops, partilhas e momentos únicos para saírem da rotina e se colocarem como prioridade. Porque às vezes basta uma tarde para deixar fluir.",
+    citacao: "",
+    selo: "Ouro",
     destaque: 1,
     visivel: true,
   },
@@ -260,31 +439,6 @@ export const patrocinadores: Patrocinador[] = [
       fundoHex: "#000000",
     },
     // AGUARDA APROVAÇÃO — descricao aprovada pelo Lucas; falta aprovar história/citação.
-    historia: "",
-    citacao: "",
-    destaque: 3,
-    visivel: true,
-  },
-  {
-    id: "renata-parreira",
-    nome: "Renata Parreira",
-    titulo: "Reta Comunicação",
-    descricao: "Ajudando marcas a encontrar a própria voz, entre conteúdo, palco e formação.",
-    foto: {
-      src: "/patrocinadores/renata-parreira-4x5.webp",
-      alt: "Retrato de Renata Parreira, Reta Comunicação",
-      width: 800,
-      height: 1000,
-    },
-    logo: {
-      src: "/patrocinadores/logo-reta-comunicacao.webp",
-      alt: "Logótipo Reta Comunicação",
-      width: 372,
-      height: 200,
-      // Fundo baked-in do logo (branco, amostrado do asset)
-      fundoHex: "#FFFFFF",
-    },
-    // AGUARDA APROVAÇÃO — não publicar sem confirmação escrita da Renata.
     historia: "",
     citacao: "",
     destaque: 3,
