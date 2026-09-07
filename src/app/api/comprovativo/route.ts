@@ -2,8 +2,8 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSupabase } from "@/lib/supabase";
-import { hashIp, obterIp, rateLimit } from "@/lib/rate-limit";
-import { MENSAGENS, type TipoErro } from "@/lib/validation";
+import { obterIp, rateLimit } from "@/lib/rate-limit";
+import { MENSAGENS, posseTokenSchema, type TipoErro } from "@/lib/validation";
 import {
   BUCKET_COMPROVATIVOS,
   FORMATOS_COMPROVATIVO,
@@ -23,6 +23,7 @@ type Resposta =
 const idsSchema = z.object({
   inscricaoId: z.string().uuid("Inscrição inválida."),
   pagamentoId: z.string().uuid("Pagamento inválido."),
+  posseToken: posseTokenSchema,
 });
 
 /**
@@ -66,6 +67,7 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
   const ids = idsSchema.safeParse({
     inscricaoId: form.get("inscricaoId"),
     pagamentoId: form.get("pagamentoId"),
+    posseToken: form.get("posseToken"),
   });
   if (!ids.success) {
     const campos: Record<string, string> = {};
@@ -128,13 +130,13 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
   }
 
   const supabase = getSupabase();
-  const ipHash = hashIp(ip);
 
-  // 4. Ownership + estado do pagamento; recebe o proof_token do servidor
+  // 4. Ownership + estado do pagamento; recebe o proof_token do servidor.
+  // B1 (0009): ownership pelo posse_token (capability), não por ip_hash.
   const { data: validacao, error: erroValidacao } = await supabase.rpc("validar_comprovativo_upload", {
     p_pagamento_id: ids.data.pagamentoId,
     p_inscricao_id: ids.data.inscricaoId,
-    p_ip_hash: ipHash,
+    p_posse_token: ids.data.posseToken,
   });
 
   if (erroValidacao) {
@@ -169,14 +171,14 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
     return NextResponse.json({ ok: false, mensagem: MENSAGENS_COMPROVATIVO.servidor, tipo: "servidor" }, { status: 502 });
   }
 
-  // 6. Metadados + transição proof_uploaded
+  // 6. Metadados + transição proof_uploaded (6.º arg = posse_token, B1/0009)
   const { data: registo, error: erroRegisto } = await supabase.rpc("registar_comprovativo", {
     p_pagamento_id: ids.data.pagamentoId,
     p_storage_path: storagePath,
     p_original_filename: arquivo.name,
     p_mime_type: tipo.mime,
     p_file_size: arquivo.size,
-    p_ip_hash: ipHash,
+    p_posse_token: ids.data.posseToken,
   });
 
   if (erroRegisto) {

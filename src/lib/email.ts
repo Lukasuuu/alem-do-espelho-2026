@@ -17,6 +17,7 @@
 
 const SERVICE_ID = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID ?? "";
 const TEMPLATE_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID ?? "";
+const TEMPLATE_ORG_ID = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ORG_ID ?? "";
 const PUBLIC_KEY = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY ?? "";
 
 /** true apenas quando as três credenciais EmailJS existem (vazias → desligado). */
@@ -62,6 +63,52 @@ export async function enviarEmailNotificacao(
   } catch (err) {
     // Directiva: email nunca bloqueia a confirmação de pagamento já processada.
     console.error("[email] Falha ao enviar email de confirmação:", err);
+    return false;
+  }
+}
+
+/**
+ * Notificação de inscrição para a ORGANIZAÇÃO (Bloco E) — template
+ * "Notificação de Inscrição — Organização" (env NEXT_PUBLIC_EMAILJS_TEMPLATE_ORG_ID;
+ * SERVICE_ID/PUBLIC_KEY reutilizados do email do cliente).
+ *
+ * Payload MÍNIMO (decisão do Lucas, 06/09 — substitui o E.1 de nome/método/path):
+ * a Vitória só quer saber que houve uma nova inscrição paga. Uma linha com
+ * data/hora (Europe/Lisbon) e a referência da inscrição (8 primeiros
+ * caracteres do id — o mesmo formato curto da mensagem de WhatsApp da
+ * recuperação). Nada de nome, método, email, telemóvel nem comprovativo —
+ * quem precise de mais pesquisa na base pela referência.
+ *
+ * ENV-GATED como o resto do módulo: sem o template configurado é no-op
+ * seguro (false, silencioso) — o email do cliente NÃO é afetado.
+ */
+export type ParametrosEmailOrg = {
+  to_email: string; // constante de site.ts (contacto.email)
+  data_hora: string; // "dd/MM/yy às HH:mm", Europe/Lisbon
+  referencia: string; // inscricaoId.slice(0, 8)
+};
+
+export async function enviarEmailOrganizacao(
+  parametros: ParametrosEmailOrg
+): Promise<boolean> {
+  if (!SERVICE_ID || !TEMPLATE_ORG_ID || !PUBLIC_KEY) {
+    if (process.env.NODE_ENV !== "production") {
+      console.info(
+        "[email] EmailJS da organização não configurado — envio ignorado. Define NEXT_PUBLIC_EMAILJS_TEMPLATE_ORG_ID para ativar."
+      );
+    }
+    return false;
+  }
+
+  try {
+    const { default: emailjs } = await import("@emailjs/browser");
+    await emailjs.send(SERVICE_ID, TEMPLATE_ORG_ID, parametros, {
+      publicKey: PUBLIC_KEY,
+    });
+    return true;
+  } catch (err) {
+    // Directiva: a notificação interna nunca bloqueia o fluxo já concluído.
+    console.error("[email] Falha ao enviar notificação à organização:", err);
     return false;
   }
 }

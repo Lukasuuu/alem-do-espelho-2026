@@ -19,6 +19,8 @@ export const FORMATOS_COMPROVATIVO = {
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
   webp: "image/webp",
+  heic: "image/heic",
+  heif: "image/heif",
   pdf: "application/pdf",
 } as const;
 
@@ -69,6 +71,27 @@ export function detetarTipo(bytes: Uint8Array): { ext: ExtensaoComprovativo; mim
     return { ext: "pdf", mime: FORMATOS_COMPROVATIVO.pdf };
   }
 
+  // HEIC/HEIF: contentor ISOBMFF — "ftyp" nos bytes 4–7 e a marca (brand) nos
+  // 8–11. heic/heix/hevc/hevx são HEIC; mif1/msf1 e as variantes heim/heis/
+  // hevm/hevs são HEIF (imagens matriciais de iPhone; HEVC-coded ou não).
+  // Os browsers não renderizam HEIC nativamente, por isso o preview usa o
+  // placeholder (ver PaymentProofUpload) — a policy de storage e a RPC
+  // registar_comprovativo já aceitam ambos os MIME.
+  if (bytes.length >= 12) {
+    const ftyp = String.fromCharCode(bytes[4], bytes[5], bytes[6], bytes[7]);
+    if (ftyp === "ftyp") {
+      const marca = String.fromCharCode(bytes[8], bytes[9], bytes[10], bytes[11]);
+      const marcasHeic = ["heic", "heix", "hevc", "hevx"];
+      const marcasHeif = ["mif1", "msf1", "heim", "heis", "hevm", "hevs"];
+      if (marcasHeic.includes(marca)) {
+        return { ext: "heic", mime: FORMATOS_COMPROVATIVO.heic };
+      }
+      if (marcasHeif.includes(marca)) {
+        return { ext: "heif", mime: FORMATOS_COMPROVATIVO.heif };
+      }
+    }
+  }
+
   return null;
 }
 
@@ -81,7 +104,7 @@ export function tamanhoLegivel(bytes: number): string {
 
 /** Mensagens de erro de upload — fonte única para componente e rota. */
 export const MENSAGENS_COMPROVATIVO = {
-  formato: "Só aceitamos comprovativos em PNG, JPG, WEBP ou PDF.",
+  formato: "Só aceitamos comprovativos em PNG, JPG, WEBP, HEIC ou PDF.",
   grande: "O ficheiro tem mais de 8 MB. Escolhe um mais leve.",
   vazio: "O ficheiro está vazio. Escolhe um comprovativo válido.",
   incompativel: "O conteúdo do ficheiro não corresponde à extensão do nome.",

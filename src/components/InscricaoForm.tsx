@@ -28,8 +28,18 @@ const TEXTO_CONSENTIMENTO = `Autorizo a ${site.anfitria.empresa.replace(
 )}.`;
 
 type Props = {
-  /** Chamado com id, nome e email da inscrição registada, para abrir a modal de pagamento. */
-  onSucesso: (inscricaoId: string, nome: string, email: string) => void;
+  /**
+   * Chamado com id, nome, email e token de posse da inscrição registada, para
+   * abrir a modal de pagamento. O posseToken (B1/0009) vem do POST UMA vez —
+   * vive só em memória no pai (nunca em storage nem logs).
+   */
+  onSucesso: (inscricaoId: string, nome: string, email: string, posseToken: string) => void;
+  /**
+   * Avisa o pai se o formulário já tem dados que se perderiam num fecho
+   * acidental (briefing 05/09, Bloco A). Opcional — quem não passa fica com o
+   * comportamento atual.
+   */
+  onSujoChange?: (sujo: boolean) => void;
 };
 
 const NOME_COMPLETO = /^\p{L}[\p{L}'’.-]{1,}(?:\s+\p{L}[\p{L}'’.-]{1,})+$/u;
@@ -40,7 +50,7 @@ const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/;
  * validado em E.164) + honeypot. Ao submeter grava a inscrição (status
  * 'pendente') e o pai abre a modal de pagamento.
  */
-export default function InscricaoForm({ onSucesso }: Props) {
+export default function InscricaoForm({ onSucesso, onSujoChange }: Props) {
   const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -62,6 +72,18 @@ export default function InscricaoForm({ onSucesso }: Props) {
   useEffect(() => {
     montadoEm.current = Date.now();
   }, []);
+
+  // "Sujo" = já há dados na inscrição que um fecho acidental descartaria.
+  // Reportado ao pai para a confirmação de saída (briefing 05/09, Bloco A).
+  useEffect(() => {
+    onSujoChange?.(
+      nome.trim() !== "" ||
+        email.trim() !== "" ||
+        phone.trim() !== "" ||
+        consent ||
+        estado === "a-enviar"
+    );
+  }, [nome, email, phone, consent, estado, onSujoChange]);
 
   const paisSelecionado = useMemo(
     () => paises.find((p) => p.code === phoneCountry) ?? paises[0],
@@ -176,7 +198,15 @@ export default function InscricaoForm({ onSucesso }: Props) {
       }
 
       setEstado("inativo");
-      onSucesso(dados.id as string, normalizarNome(nome), email.trim().toLowerCase());
+      // B1: o POST devolve o posse_token UMA vez (hex de 64) — guarda-se só em
+      // memória no pai e vive enquanto a tab viver. Re-submeter o formulário
+      // roda o token (o caminho de reentrada quando a tab fechou).
+      onSucesso(
+        dados.id as string,
+        normalizarNome(nome),
+        email.trim().toLowerCase(),
+        (dados as { posseToken?: string }).posseToken ?? ""
+      );
     } catch {
       setEstado("erro");
       setFalhaServidor(true);
