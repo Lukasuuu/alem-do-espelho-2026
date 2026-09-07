@@ -69,8 +69,16 @@ export type Patrocinador = {
     alt: string;
     width: number;
     height: number;
-    /** Hex do fundo do tile — deve combinar com o background baked-in do logo. */
+    /** Hex do fundo do tile — deve combinar com o background baked-in do logo.
+     *  Ignorado quando estilo === "card" (ver abaixo). */
     fundoHex: string;
+    /**
+     * "card" (Bloco I-r2): o asset é um card pré-renderizado 600×600 com fundo
+     * de marca, cantos (~11%) e borda JÁ EMBUTIDOS — renderizar tal-e-qual
+     * (object-fit contain, SEM background/borda/radius CSS). Ausente = logo
+     * legado: manter o tratamento actual (.caixa-logo-grau-* com fundoHex).
+     */
+    estilo?: "card";
   };
   /** História curta (2-3 linhas) — publicar só com aprovação escrita. */
   historia: string;
@@ -132,12 +140,13 @@ export const patrocinadores: Patrocinador[] = [
     titulo: "Cuidados capilares · Embelleze",
     // Sem foto (decisão do Lucas: logo+texto+selo, sem coluna de foto).
     logo: {
-      src: "/patrocinadores/novex-logo.webp",
+      src: "/patrocinadores/logo-novex.webp",
       alt: "Logótipo Novex",
-      width: 172,
-      height: 80,
-      // Fundo branco baked-in (amostrado do asset)
+      // Card pré-renderizado 600×600 (fundo de marca + borda embutidos)
+      width: 600,
+      height: 600,
       fundoHex: "#FFFFFF",
+      estilo: "card",
     },
     // Texto adaptado pelo Claude (Bloco I) do material enviado pelo Lucas —
     // o original tinha citações truncadas de pesquisa ("[1, 2, 3…]").
@@ -199,11 +208,13 @@ export const patrocinadores: Patrocinador[] = [
       height: 1200,
     },
     logo: {
-      src: "/patrocinadores/luci-maritan-logo.webp",
+      src: "/patrocinadores/logo-luci-maritan.webp",
       alt: "Logótipo Luci Maritan",
-      width: 800,
-      height: 800,
+      // Card pré-renderizado 600×600 (fundo azul + borda embutidos)
+      width: 600,
+      height: 600,
       fundoHex: "#14345F",
+      estilo: "card",
     },
     // Texto verbatim aprovado pelo Lucas (Bloco I).
     historia:
@@ -256,11 +267,13 @@ export const patrocinadores: Patrocinador[] = [
       height: 1200,
     },
     logo: {
-      src: "/patrocinadores/florescer-logo.webp",
+      src: "/patrocinadores/logo-florescer.webp",
       alt: "Logótipo Editora Florescer",
-      width: 798,
-      height: 800,
+      // Card pré-renderizado 600×600 (fundo verde-oliva + borda embutidos)
+      width: 600,
+      height: 600,
       fundoHex: "#595844",
+      estilo: "card",
     },
     // Texto verbatim aprovado pelo Lucas (Bloco I).
     historia:
@@ -302,11 +315,13 @@ export const patrocinadores: Patrocinador[] = [
       height: 1200,
     },
     logo: {
-      src: "/patrocinadores/fluir-logo.webp",
+      src: "/patrocinadores/logo-fluir.webp",
       alt: "Logótipo Fluir",
-      width: 500,
-      height: 500,
+      // Card pré-renderizado 600×600 (fundo claro + borda embutidos)
+      width: 600,
+      height: 600,
       fundoHex: "#F7F7F7",
+      estilo: "card",
     },
     // Texto verbatim aprovado pelo Lucas (Bloco I).
     historia:
@@ -511,13 +526,13 @@ export const patrocinadores: Patrocinador[] = [
       height: 1000,
     },
     logo: {
-      src: "/patrocinadores/logo-chama-mark.webp",
-      alt: "Logótipo Chama",
-      // Quadrado — 74x74 a 72px de altura, fica ao lado do nome sem ocupar a coluna.
-      width: 360,
-      height: 360,
-      // Fundo baked-in do logo (navy escuro, amostrado do asset)
+      src: "/patrocinadores/chama-creative-logo.webp",
+      alt: "Logótipo Chama Creative Studio",
+      // Card pré-renderizado 600×600 (fundo navy + borda embutidos)
+      width: 600,
+      height: 600,
       fundoHex: "#010C1B",
+      estilo: "card",
     },
     historia: "",
     citacao: "",
