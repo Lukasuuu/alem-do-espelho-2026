@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import Cronograma from "@/components/Cronograma";
+import BotaoWhatsApp from "@/components/BotaoWhatsApp";
 import Experience from "@/components/Experience";
 import Anfitria from "@/components/Anfitria";
 import Gallery from "@/components/Gallery";
@@ -201,6 +202,8 @@ export default function EventoPage({ faseInscricaoAtiva }: Props) {
         <Realizacao faseInscricaoAtiva={faseInscricaoAtiva} />
       </main>
       <Footer abrirModal={abrirFluxo} />
+      {/* H — bolha flutuante só nesta página (decisão do Lucas, 03/09). */}
+      <BotaoWhatsApp />
       <WaitlistModal aberto={waitlistAberto} fechar={fecharWaitlist} />
       <InscricaoModal
         aberto={inscricaoAberto}

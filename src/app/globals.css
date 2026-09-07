@@ -679,3 +679,43 @@ body {
   width: 35%;
   max-width: 121px;
 }
+
+/* ───────────────────────────────────────────────
+   BLOCO H — Bolha WhatsApp flutuante (só página do evento)
+   Pulsar leve: anel ::before que cresce (scale) e desvanece (opacity) —
+   apenas transform+opacity (compositável, sem reflow). O anel fica por
+   baixo do conteúdo (z-index -1) e herda o raio da bolha.
+   reduced-motion: regra explícita + regra global (animation-duration .01ms)
+   deixam a bolha estática — o anel desaparece, o botão continua visível.
+   ─────────────────────────────────────────────── */
+.bolha-pulsar {
+  position: fixed;
+  isolation: isolate; /* o ::before com z-index:-1 fica dentro da bolha */
+}
+.bolha-pulsar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--color-whatsapp);
+  z-index: -1;
+  animation: bolha-pulsar 2.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  pointer-events: none;
+}
+@keyframes bolha-pulsar {
+  0% {
+    transform: scale(1);
+    opacity: 0.45;
+  }
+  70%,
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bolha-pulsar::before {
+    animation: none;
+    opacity: 0;
+  }
+}
