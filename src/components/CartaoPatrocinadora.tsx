@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import LocalImage from "./LocalImage";
 import { type Patrocinador, FIO_TOKENS, type FioTokenKey } from "@/lib/patrocinadores";
 
@@ -58,7 +59,8 @@ export default function CartaoPatrocinadora({
   onMouseLeave,
 }: Props) {
   const claro = tom === "claro";
-  const { foto, logo, nome, titulo, descricao, historia, citacao, selo, destaque, ocultarTitulo, ocultarNome } = patrocinador;
+  const escuro = tom === "escuro";
+  const { foto, logo, nome, titulo, descricao, historia, citacao, destaque, ocultarTitulo, ocultarNome } = patrocinador;
 
   // Hover state para foto — will-change só durante interação
   const fotoRef = useRef<HTMLDivElement>(null);
@@ -131,6 +133,22 @@ export default function CartaoPatrocinadora({
   // object-contain invisível.
   const logoLargo = logo ? logo.width / logo.height >= 3 : true;
 
+  // Ronda showcase (Bloco I-r2): logos com `estilo: "card"` são cards
+  // pré-renderizados 600×600 (fundo, cantos ~11% e borda JÁ embutidos no
+  // .webp) → caixa QUADRADA neutra com object-fit: contain, SEM background,
+  // borda, raio nem ring CSS — renderiza-se tal-e-qual. Logos legados
+  // (.caixa-logo-grau-*) mantêm-se byte a byte.
+  const logoCard = logo?.estilo === "card";
+
+  // Bio em acordeão (escuro): `historia` oculta por defeito, revelada pelo
+  // gatilho circular dourado (clique/tap). Nos prata/bronze o HOVER do cartão
+  // inteiro também revela (CSS .cartao-bio-hover em globals.css) e o clique
+  // "fixa" aberto. História vazia → nada renderiza (nada para revelar).
+  const temHistoria = historia.trim().length > 0;
+  const podeRevelarBio = escuro && temHistoria && !isGrau1;
+  const [bioAberta, setBioAberta] = useState(false);
+  const alternarBio = () => setBioAberta((v) => !v);
+
   // Caixas: os TRÊS graus recebem width/height via classe CSS (media query
   // por breakpoint em globals.css: .caixa-logo-grau-1/2/3).
   //  - Grau 1 (ouro): width fixa 303/346 + maxWidth: 100% inline → rende
@@ -194,11 +212,12 @@ export default function CartaoPatrocinadora({
   return (
     <article
       data-cartao-patrocinador
+      {...(podeRevelarBio ? { onClick: alternarBio } : {})}
       className={`w-full min-w-0 p-6 text-left sm:p-7 ${
         claro
           ? "vidro-cartao rounded-2xl"
           : "rounded-2xl border border-creme/20 bg-creme/5 backdrop-blur-sm"
-      }`}
+      } ${podeRevelarBio ? "cartao-bio-hover cursor-pointer" : ""}`}
     >
       <div className="flex flex-col md:flex-row md:gap-6 min-w-0">
         {/* ── Foto (D1 + hierarquia): em desktop ≥md a wrapper tem largura por
@@ -278,35 +297,64 @@ export default function CartaoPatrocinadora({
                 logo 5,41:1 não cabe ao lado do nome em <1280. Ver
                 globals.css `.caixa-logo-grau-1` para width/height responsivos. */}
           {logo ? (
-            <div className={classeRowLogoNome}>
-              <span
-                aria-hidden
-                className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-md ring-1 ring-black/5 ${classeCaixaLogo}`}
-                style={estiloCaixaLogo}
-                data-caixa-logo
-                {...(isGrau1 ? { "data-grau-1": "true" } : {})}
-              >
-                <LocalImage
-                  src={logo.src}
-                  alt={logo.alt}
-                  width={logo.width}
-                  height={logo.height}
-                  className={classeImgLogo}
-                  style={estiloImgLogo}
-                />
-              </span>
+            <div
+              className={`${classeRowLogoNome} ${
+                escuro ? "items-center justify-center xl:justify-center" : ""
+              }`}
+            >
+              {logoCard ? (
+                /* Card pré-renderizado 600×600: caixa quadrada NEUTRA — sem
+                   fundo/borda/raio/ring; o asset traz tudo embutido. */
+                <span
+                  aria-hidden
+                  data-caixa-logo
+                  data-logo-card="true"
+                  className="inline-flex shrink-0 items-center justify-center"
+                  style={{
+                    width: "clamp(96px, 12vw, 160px)",
+                    height: "clamp(96px, 12vw, 160px)",
+                  }}
+                >
+                  <LocalImage
+                    src={logo.src}
+                    alt={logo.alt}
+                    width={logo.width}
+                    height={logo.height}
+                    className="object-contain"
+                    style={{ width: "100%", height: "100%" }}
+                  />
+                </span>
+              ) : (
+                <span
+                  aria-hidden
+                  className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-md ring-1 ring-black/5 ${classeCaixaLogo}`}
+                  style={estiloCaixaLogo}
+                  data-caixa-logo
+                  {...(isGrau1 ? { "data-grau-1": "true" } : {})}
+                >
+                  <LocalImage
+                    src={logo.src}
+                    alt={logo.alt}
+                    width={logo.width}
+                    height={logo.height}
+                    className={classeImgLogo}
+                    style={estiloImgLogo}
+                  />
+                </span>
+              )}
               {/* 2. Nome, ao lado do logo (tamanho por destaque).
                   basis-auto + flex-1 com max-w explícito previne o nome de
                   esticar até à largura da coluna. O limite cabe em ~3× o nome
                   do próprio texto sem cortar.
                   Se `ocultarNome`, o nome é só o `alt` do logo (acessível).
                   Decisão de duplicação visual: ver campo `ocultarNome` em
-                  patrocinadores.ts. */}
+                  patrocinadores.ts. Ronda showcase: no modal (escuro) os
+                  textos centram-se. */}
               {!ocultarNome && (
                 <span
                   className={`display block min-w-0 flex-1 leading-tight [text-wrap:balance] [overflow-wrap:normal] [hyphens:none] ${
                     claro ? "text-vinho" : "text-creme"
-                  }`}
+                  } ${escuro ? "text-center" : ""}`}
                   style={{ fontSize: `${nomeSizeRem}rem`, maxWidth: "30ch" }}
                 >
                   {nome}
@@ -326,26 +374,16 @@ export default function CartaoPatrocinadora({
             )
           )}
 
-          {/* 2b. Selo visível (Bloco I — campo `selo`, ex.: "Ouro"). Mesmo
-                padrão do badge "Mais procurado" do SponsorFlow. */}
-          {selo && (
-            <span
-              className={`mt-2 inline-flex items-center rounded-full border px-2 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wider ${
-                claro
-                  ? "border-dourado/60 bg-dourado/10 text-musgo"
-                  : "border-dourado/50 bg-dourado/10 text-dourado-claro"
-              }`}
-            >
-              {selo}
-            </span>
-          )}
+          {/* 2b. Selo "OURO" — REMOVIDO do render na ronda showcase (decisão
+                do Lucas). O campo `selo` permanece nos dados (nunca se apagam
+                campos); apenas deixa de se mostrar aqui. */}
 
           {/* 3. Título profissional (text-wrap: pretty, ≤2 linhas) — oculto se redundante com a descrição */}
           {!ocultarTitulo && (
             <p
               className={`mt-1.5 text-[0.8125rem] leading-snug [text-wrap:pretty] [overflow-wrap:normal] [hyphens:none] ${
                 claro ? "text-carvao/60" : "text-creme/60"
-              }`}
+              } ${escuro ? "text-center" : ""}`}
             >
               {titulo}
             </p>
@@ -362,8 +400,14 @@ export default function CartaoPatrocinadora({
             </p>
           )}
 
-          {/* 5. História curta — só quando aprovada (placeholder vazio não renderiza) */}
-          {historia && (
+          {/* 5. História curta — só quando aprovada (placeholder vazio não
+                renderiza). Ronda showcase: no modal (escuro) fica OCULTA por
+                defeito num acordeão (grid-template-rows 0fr→1fr), revelada
+                pelo gatilho circular dourado — nos prata/bronze o hover do
+                cartão inteiro também revela e o clique fixa aberto (CSS
+                .acordao-bio/.cartao-bio-hover). Na página clara mantém o
+                parágrafo de sempre. */}
+          {historia && !escuro && (
             <p
               className={`mt-3 text-[0.9375rem] leading-relaxed ${
                 claro ? "text-carvao/75" : "text-creme/75"
@@ -371,6 +415,42 @@ export default function CartaoPatrocinadora({
             >
               {historia}
             </p>
+          )}
+          {escuro && temHistoria && (
+            <>
+              <div className={`mt-3 flex ${isGrau1 ? "justify-center" : ""}`}>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    // O artigo inteiro também alterna (prata/bronze) — sem o
+                    // stopPropagation o clique no gatilho alternava duas vezes.
+                    e.stopPropagation();
+                    alternarBio();
+                  }}
+                  aria-expanded={bioAberta}
+                  aria-label={bioAberta ? "Ocultar texto da patrocinadora" : "Mostrar texto da patrocinadora"}
+                  className={`inline-flex h-11 w-11 items-center justify-center rounded-full border border-dourado/50 bg-dourado/10 text-dourado-claro transition-colors duration-300 hover:bg-dourado/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-dourado/60`}
+                >
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform duration-300 ${
+                      bioAberta ? "rotate-180" : ""
+                    }`}
+                    aria-hidden
+                  />
+                </button>
+              </div>
+              <div className="acordao-bio" data-aberto={bioAberta || undefined}>
+                <div className="min-h-0 overflow-hidden">
+                  <p
+                    className={`text-[0.9375rem] leading-relaxed text-creme/75 ${
+                      isGrau1 ? "text-center" : ""
+                    }`}
+                  >
+                    {historia}
+                  </p>
+                </div>
+              </div>
+            </>
           )}
 
           {/* 6. Frase em destaque — só quando aprovada */}

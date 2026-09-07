@@ -1,6 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import { Check, ChevronRight } from "lucide-react";
 import Modal from "./Modal";
 import WaitlistForm from "./WaitlistForm";
@@ -12,10 +19,11 @@ import { NIVEIS_PARCERIA, type MetodoSponsor, type NivelParceria } from "@/lib/v
 import { patrocinadoresVisiveis, type Patrocinador } from "@/lib/patrocinadores";
 
 // ── D2 — refs partilhadas entre SponsorFlow e VerticalSponsorCarousel ─────
-// cartaoFixoRef: aponta para o wrapper dos cartões OURO (zona fixa — Bloco I:
-// TODOS os ouro são fixos, a Lígia deixou de ser o único).
+// ouroScrollRef: aponta para o contentor de SCROLL dos OURO (ronda showcase:
+// os 7 ouro passam de zona fixa a scroll vertical de 3 em 3 com snap — o
+// mecanismo D2 mantém-se: a altura da zona entra no cálculo da janela).
 // colunaFormularioRef: aponta para o div direito (formulário) — ResizeObserver.
-const cartaoFixoRef = { current: null as HTMLDivElement | null };
+const ouroScrollRef = { current: null as HTMLDivElement | null };
 const colunaFormularioRef = { current: null as HTMLDivElement | null };
 const GAP_CARTAO_FIXO = 24;
 
@@ -64,10 +72,10 @@ function grau3DuasColunas() {
 const visiveis = patrocinadoresVisiveis();
 
 /**
- * BLOCO I (decisão do Lucas, 03/09): TODOS os patrocinadores OURO (grau 1)
- * ficam FIXOS no topo, pela ordem do array — Novex 1.º (logo+texto+selo, sem
- * foto), depois Lígia, Luci, Renata, Naty, Gracy e Patrícia. NÃO entram no
- * carrossel.
+ * BLOCO I (decisão do Lucas, 03/09) + ronda showcase: TODOS os patrocinadores
+ * OURO (grau 1) ficam na coluna esquerda, pela ordem do array — Novex 1.º
+ * (logo+texto, sem foto), depois Lígia, Luci, Renata, Naty, Gracy e Patrícia —
+ * agora em scroll vertical de 3 em 3 (ScrollOuro). NÃO entram no carrossel.
  */
 const ouros = visiveis.filter((p) => p.destaque === 1);
 
@@ -229,20 +237,16 @@ export default function SponsorFlow() {
               </p>
             </div>
 
-            {/* ── ZONA FIXA: patrocinadores OURO (grau 1) — Bloco I: todos
-                  fixos e empilhados, Novex em 1.º. NÃO entram no carrossel. ── */}
-            {ouros.length > 0 && (
-              <div ref={cartaoFixoRef} className="flex flex-col gap-3">
-                {ouros.map((ouro) => (
-                  <CartaoPatrocinadora key={ouro.id} patrocinador={ouro} tom="escuro" />
-                ))}
-              </div>
-            )}
+            {/* ── OURO em SCROLL 3-em-3 (ronda showcase): substitui a zona fixa
+                  do Bloco I. Novex em 1.º (ordem do array), snap vertical,
+                  janela = 3 cartões + gaps. NÃO entram no carrossel. ── */}
+            {ouros.length > 0 && <ScrollOuro ouros={ouros} ouroScrollRef={ouroScrollRef} />}
 
-            {/* ── CARROSSEL VERTICAL: graus 2 e 3 (prata/bronze) ── */}
+            {/* ── CARROSSEL VERTICAL: graus 2 e 3 (prata/bronze), bloco
+                  independente por baixo do OURO ── */}
             <VerticalSponsorCarousel
               patrocinadores={carrossel}
-              cartaoFixoRef={cartaoFixoRef}
+              ouroScrollRef={ouroScrollRef}
               colunaFormularioRef={colunaFormularioRef}
             />
           </div>
@@ -383,6 +387,70 @@ export default function SponsorFlow() {
 }
 
 /**
+ * Scroll vertical dos patrocinadores OURO — 3 cartões de cada vez (ronda
+ * showcase). Substitui a zona fixa do Bloco I.
+ *
+ * MECANISMO: overflow-y auto com scroll-snap obrigatório (classes Tailwind
+ * snap-y/snap-mandatory + wrappers snap-start) e maxHeight = altura do 1.º
+ * cartão × 3 + 2 gaps, medida com useLayoutEffect (antes do 1.º paint — sem
+ * flash de lista aberta) e mantida por ResizeObserver (imagens a decodificar,
+ * quebras de texto por largura). A scrollbar é fina/dourada (.scroll-ouro em
+ * globals.css). O D2 continua a ler a altura da zona por ouroScrollRef — o
+ * cálculo da janela do carrossel não muda.
+ */
+const OURO_SLOTS = 3;
+const GAP_OURO = 12;
+
+function ScrollOuro({
+  ouros,
+  ouroScrollRef,
+}: {
+  ouros: Patrocinador[];
+  ouroScrollRef: { current: HTMLDivElement | null };
+}) {
+  const primeiroRef = useRef<HTMLDivElement>(null);
+  const [alturaSlot, setAlturaSlot] = useState(0);
+
+  useEffect(() => {
+    const primeiro = primeiroRef.current;
+    if (!primeiro) return;
+    const medir = () => {
+      const h = primeiro.offsetHeight;
+      if (h > 0) setAlturaSlot((anterior) => (Math.abs(anterior - h) > 1 ? h : anterior));
+    };
+    // useLayoutEffect abaixo garante a medida ANTES do 1.º paint; aqui a RO
+    // mantém a janela certa quando imagens decodificam ou o texto reflui.
+    const ro = new ResizeObserver(medir);
+    ro.observe(primeiro);
+    return () => ro.disconnect();
+  }, []);
+
+  useLayoutEffect(() => {
+    const primeiro = primeiroRef.current;
+    if (!primeiro) return;
+    const h = primeiro.offsetHeight;
+    if (h > 0) setAlturaSlot(h);
+  }, []);
+
+  const alturaJanela = alturaSlot > 0 ? alturaSlot * OURO_SLOTS + GAP_OURO * (OURO_SLOTS - 1) : undefined;
+
+  return (
+    <div
+      ref={ouroScrollRef}
+      data-ouro-scroll
+      className="scroll-ouro flex snap-y snap-mandatory flex-col overflow-y-auto overscroll-contain"
+      style={{ gap: GAP_OURO, ...(alturaJanela ? { maxHeight: alturaJanela } : {}) }}
+    >
+      {ouros.map((ouro, i) => (
+        <div key={ouro.id} ref={i === 0 ? primeiroRef : undefined} className="snap-start shrink-0">
+          <CartaoPatrocinadora patrocinador={ouro} tom="escuro" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/**
  * Carrossel Vertical Infinito de Patrocinadores (Modal A)
  *
  * Adaptado do padrão validado em MarqueeLogos.tsx:
@@ -397,11 +465,11 @@ export default function SponsorFlow() {
  */
 function VerticalSponsorCarousel({
   patrocinadores,
-  cartaoFixoRef,
+  ouroScrollRef,
   colunaFormularioRef,
 }: {
   patrocinadores: Patrocinador[];
-  cartaoFixoRef: { current: HTMLDivElement | null };
+  ouroScrollRef: { current: HTMLDivElement | null };
   colunaFormularioRef: { current: HTMLDivElement | null };
 }) {
   const [montado, setMontado] = useState(false);
@@ -453,7 +521,7 @@ function VerticalSponsorCarousel({
     );
     const alturaFormulario = coluna.getBoundingClientRect().height;
     const alturaZonaFixa =
-      cartaoFixoRef.current?.getBoundingClientRect().height ?? 0;
+      ouroScrollRef.current?.getBoundingClientRect().height ?? 0;
     const vh = window.innerHeight;
     // CASO 2: o teto desconta o TOPO REAL da janela (header sticky + zona fixa
     // OURO acima do carrossel), não um fixo vh-192. Sem isto, em viewports
@@ -470,7 +538,7 @@ function VerticalSponsorCarousel({
     // (viewport) vence — garante bottomOk sem sacrificar o piso no geral.
     const alvo = Math.min(maxVh, Math.max(ALTURA_MIN_JANELA, tetoConteudo));
     setJanelaAltura(alvo);
-  }, [cartaoFixoRef, colunaFormularioRef, containerRef]);
+  }, [ouroScrollRef, colunaFormularioRef, containerRef]);
 
   useEffect(() => {
     if (!montado) return;
