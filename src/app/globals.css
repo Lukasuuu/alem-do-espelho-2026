@@ -395,6 +395,31 @@ body {
   transform: scale(1.06);
 }
 
+/* Touch (hover:none ou pointer:coarse): não há hover fiável para revelar —
+   logos a opacidade cheia e sem blur. Tem de vir DEPOIS das regras acima
+   (mesma especificidade, última ganha). */
+@media (hover: none), (pointer: coarse) {
+  .marquee-foco .azulejo-logo {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
+
+/* Caixa 16:9 do carrossel da home (logos cards 1600×900). Mobile-first:
+   em ecrã estreito o logo continua grande e legível (62vw); ≥640px volta
+   ao desktop. A largura uniforme entre itens mantém a costura do marquee
+   em -50% (o período é n×(caixa+gap) a qualquer viewport). */
+.caixa-logo-marquee {
+  aspect-ratio: 16 / 9;
+  width: clamp(200px, 62vw, 260px);
+}
+@media (min-width: 640px) {
+  .caixa-logo-marquee {
+    width: clamp(200px, 30vw, 340px);
+  }
+}
+
 /* Grão sutil de papel */
 .grao::before {
   content: "";
@@ -613,69 +638,128 @@ body {
 }
 
 /* ───────────────────────────────────────────────
-   CARTÃO DA LÍGIA — Logo responsivo (grau 1, 5,41:1)
-   ≥xl (1280): logo 64px de altura × 346px de largura, nome ao lado
-   <xl:        logo 56px de altura × 303px de largura, nome por baixo
-   O JSX põe data-grau-1 na <span data-caixa-logo> + a classe
-   .caixa-logo-grau-1 na row do logo+nome. A wrapper usa Tailwind
-   flex flex-col xl:flex-row xl:items-center (ver CartaoPatrocinadora.tsx).
-   ──────────────────────────────────────────── */
-.caixa-logo-grau-1 {
-  height: 56px;
-  width: 303px;
+   BLOCO H — Bolha WhatsApp flutuante (só página do evento)
+   Pulsar leve: anel ::before que cresce (scale) e desvanece (opacity) —
+   apenas transform+opacity (compositável, sem reflow). O anel fica por
+   baixo do conteúdo (z-index -1) e herda o raio da bolha.
+   reduced-motion: regra explícita + regra global (animation-duration .01ms)
+   deixam a bolha estática — o anel desaparece, o botão continua visível.
+   ─────────────────────────────────────────────── */
+.bolha-pulsar {
+  position: fixed;
+  isolation: isolate; /* o ::before com z-index:-1 fica dentro da bolha */
 }
-@media (min-width: 1280px) {
-  .caixa-logo-grau-1 {
-    height: 64px;
-    width: 346px;
+.bolha-pulsar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--color-whatsapp);
+  z-index: -1;
+  animation: bolha-pulsar 2.6s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  pointer-events: none;
+}
+@keyframes bolha-pulsar {
+  0% {
+    transform: scale(1);
+    opacity: 0.45;
+  }
+  70%,
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bolha-pulsar::before {
+    animation: none;
+    opacity: 0;
   }
 }
 
-/* ───────────────────────────────────────────────
-   CARTÃO PRATA — Logo a metade da largura RENDERIZADA do ouro (grau 2)
-   ≥xl (1280): 64px de altura, max-width 173px (metade de 346px)
-   <xl:        56px de altura, max-width 152px (metade de 303px)
+/* ── Bloco I-r2 (showcase patrocinadores) ────────────────────────────────── */
 
-   Largura PROPORCIONAL, não absoluta: width: 50% acompanha o ouro quando a
-   coluna de conteúdo encolhe (o ouro rende min(303px, coluna) porque tem
-   width fixa + maxWidth: 100% inline); o max-width trava nos 152/173px quando
-   a coluna é larga. Sem isto, numa coluna estreita (~131px aos 768) o prata
-   ficava com largura fixa 152px e ultrapassava o ouro (capado a ~131px),
-   invertendo a hierarquia. Ver tabela de regimes no commit/PR.
-
-   NB: o componente NÃO pode definir maxWidth inline neste grau — estilo inline
-   sobrepõe-se a este max-width da stylesheet. O grau 2 deixa a largura inteira
-   ao CSS; só o grau 1 mantém maxWidth: 100% inline (efeito min(303, coluna)).
-   ──────────────────────────────────────────── */
-.caixa-logo-grau-2 {
-  height: 56px;
-  width: 50%;
-  max-width: 152px;
+/* Scroll dos OURO na Modal A: 3 cartões de cada vez. Scrollbar fina e
+   dourada (discreta sobre o vidro do modal); o snap vertical obrigatório
+   (snap-y/snap-mandatory + wrappers snap-start) vem por classes Tailwind. */
+.scroll-ouro {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(212 175 55 / 0.35) transparent;
 }
-@media (min-width: 1280px) {
-  .caixa-logo-grau-2 {
-    height: 64px;
-    max-width: 173px;
+.scroll-ouro::-webkit-scrollbar {
+  width: 4px;
+}
+.scroll-ouro::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-ouro::-webkit-scrollbar-thumb {
+  background: rgb(212 175 55 / 0.35);
+  border-radius: 9999px;
+}
+
+/* ───────────────────────────────────────────────
+   CAIXAS DO LOGO NO CARTÃO (Delta 2 da correção) — quadradas.
+   Os assets são cards pré-renderizados 1024×1024 com fundo, cantos (~11%)
+   e borda JÁ EMBUTIDOS — o contentor é só uma caixa de encaixe quadrada com
+   object-contain, SEM background/padding/radius/borda por cima do asset.
+   Tamanhos = produção (56/64px ouro-prata, 40px bronze) com a redução
+   Delta 2 de ≈10–15% aplicada: 50/56 e 35.
+   ─────────────────────────────────────────────── */
+/* Caixa 16:9 do logo junto ao nome (modal, logos cards 1600×900) — contain,
+   SEM background/padding/radius/borda por cima do asset. Uma só regra para
+   todos os tiers; o nome continua ao lado (flex row no cartão). */
+.caixa-logo-16x9 {
+  aspect-ratio: 16 / 9;
+  width: clamp(150px, 34%, 240px);
+}
+
+/* Acordeão da missão (r3, "modelo Paulo Faustino") — grid-template-rows
+   0fr→1fr (anima sem tocar em width/height). Estado por data-aberto,
+   alternado pelo gatilho circular (.gatilho-missao) — toggle completo ao
+   clique, sem reveal por hover. */
+.acordao-bio {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.acordao-bio > div {
+  overflow: hidden;
+  min-height: 0;
+}
+.acordao-bio[data-aberto="true"] {
+  grid-template-rows: 1fr;
+}
+@media (prefers-reduced-motion: reduce) {
+  .acordao-bio {
+    transition: none;
   }
 }
 
-/* ───────────────────────────────────────────────
-   CARTÃO BRONZE — Caixa normalizada pela do Leandro (grau 3)
-   40px de altura, max-width 121px (logo do Leandro, 603×200 a 40px de altura).
-   width: 35% acompanha a coluna quando ela encolhe (mesma razão do grau 2);
-   o max-width trava nos 121px quando a coluna é larga. Antes a largura vinha
-   da proporção natural de cada asset a 40px, o que dava resultados muito
-   irregulares (40–140px); agora todos os bronze partilham a mesma caixa e o
-   object-contain gera letterbox lateral invisível (o fundoHex bate com o fundo
-   baked-in do logo — mesmo princípio do AzulejoLogo do marquee).
+/* Gatilho circular do toggle MISSÃO — anel fino e chevron na cor do TIER,
+   injectada via var(--tier-acento) pelo CartaoPatrocinadora. */
+.gatilho-missao {
+  border: 1px solid var(--tier-acento);
+  color: var(--tier-acento);
+  background: transparent;
+  transition: background-color 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.gatilho-missao:hover {
+  background: color-mix(in srgb, var(--tier-acento) 12%, transparent);
+}
+.gatilho-missao:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--tier-acento) 60%, transparent);
+}
 
-   NB: como no grau 2, o componente NÃO define maxWidth inline neste grau —
-   estilo inline sobrepõe-se a este max-width da stylesheet e perde-se o
-   travão de 121px (em colunas largas o bronze ficaria com 35% da coluna,
-   ~192px, ultrapassando o prata e invertendo a hierarquia).
-   ──────────────────────────────────────────── */
-.caixa-logo-grau-3 {
-  height: 40px;
-  width: 35%;
-  max-width: 121px;
+/* Hover do card (r3): único efeito permitido — scale + sombra suave,
+   desligado em reduced-motion (e só em dispositivos com hover). */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .cartao-patroc-hover:hover {
+    transform: scale(1.03);
+    box-shadow: 0 10px 30px rgb(46 58 51 / 0.12);
+  }
+}
+.cartao-patroc-hover {
+  transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 300ms cubic-bezier(0.22, 1, 0.36, 1);
 }

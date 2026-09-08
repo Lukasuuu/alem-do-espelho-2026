@@ -38,7 +38,16 @@ export default function ListaEsperaPage({ faseInscricaoAtiva }: Props) {
         <Gallery />
         <Realizacao faseInscricaoAtiva={faseInscricaoAtiva} />
       </main>
-      <Footer abrirModal={abrirModal} />
+      {/* Navegação própria: #o-evento (cronograma) só existe na página do evento. */}
+      <Footer
+        abrirModal={abrirModal}
+        navegacao={[
+          { rotulo: "Início", href: "#topo" },
+          { rotulo: "Experiência", href: "#o-que-te-espera" },
+          { rotulo: "Causa social", href: "#alem-de-mim" },
+          { rotulo: "Contactos", href: "#contactos" },
+        ]}
+      />
       <WaitlistModal aberto={modalAberto} fechar={() => setModalAberto(false)} />
     </>
   );

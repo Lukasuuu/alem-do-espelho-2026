@@ -21,6 +21,12 @@ type Props = {
    * este callback.
    */
   onSucesso?: (dados?: { id: string; nome: string }) => void;
+  /**
+   * r3 — progresso do formulário (ronda anti-fecho acidental): true à 1.ª
+   * alteração, false quando o registo é aceite. Opcional — a lista de espera
+   * não usa (a sua modal não tem confirmação de saída).
+   */
+  onSujoChange?: (sujo: boolean) => void;
 };
 
 const NOME_COMPLETO = /^\p{L}[\p{L}'’.-]{1,}(?:\s+\p{L}[\p{L}'’.-]{1,})+$/u;
@@ -38,7 +44,11 @@ function lerUtm(): Record<string, string> {
   return utm;
 }
 
-export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props) {
+export default function WaitlistForm({
+  variant = "waitlist",
+  onSucesso,
+  onSujoChange,
+}: Props) {
   const ehSponsor = variant === "sponsor";
   const anfitria = site.anfitria.empresa.replace("CEO e fundadora do ", "");
 
@@ -89,6 +99,19 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
   useEffect(() => {
     montadoEm.current = Date.now();
   }, []);
+
+  // r3 — sujo: qualquer dado introduzido marca progresso a perder. O sucesso
+  // repor via chamada direta (abaixo); os campos mantêm os valores, mas o
+  // registo já está guardado — fechar deixa de pedir confirmação.
+  useEffect(() => {
+    onSujoChange?.(
+      fullName.trim() !== "" ||
+        email.trim() !== "" ||
+        phone.trim() !== "" ||
+        empresa.trim() !== "" ||
+        consent
+    );
+  }, [fullName, email, phone, empresa, consent, onSujoChange]);
 
   // Depois do mount, o servidor nunca decide se a lista está fechada.
   // O patrocínio não fecha com a lista de espera.
@@ -219,6 +242,8 @@ export default function WaitlistForm({ variant = "waitlist", onSucesso }: Props)
         // O fluxo de patrocínio mantém este modal aberto e abre o passo B
         // (escolha do nível) por cima, entregando o id do registo ao pai.
         setEstado("inativo");
+        // r3 — registo guardado: o fecho da modal A deixa de pedir confirmação.
+        onSujoChange?.(false);
         onSucesso?.({
           id: dados.id,
           nome: normalizarNome(fullName),

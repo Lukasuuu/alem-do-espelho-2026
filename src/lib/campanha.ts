@@ -25,6 +25,13 @@ export const MENSAGEM_LISTA =
 export const MENSAGEM_INSCRICAO =
   "Olá pessoal da Essence of Beauty, fiz a minha inscrição no Além do Espelho 2026 e gostaria de saber mais.";
 
+/**
+ * Mensagem pré-preenchida da bolha WhatsApp flutuante (Bloco H) — para
+ * curiosas/potenciais clientes que chegam à página do evento sem fluxo ativo.
+ */
+export const MENSAGEM_CURIOSOS =
+  "Olá pessoal da Essence of Beauty! Vi o Além do Espelho 2026 e gostaria de saber mais sobre o evento.";
+
 /** Itens do kit de solidariedade — fonte única (CausaSocial e ParabensModal). */
 export const KIT_ITENS = [
   "Escovas de dente (Dentax)",

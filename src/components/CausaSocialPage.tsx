@@ -21,7 +21,16 @@ export default function CausaSocialPage({ faseInscricaoAtiva }: Props) {
       <main>
         <CausaSocial faseInscricaoAtiva={faseInscricaoAtiva} />
       </main>
-      <Footer abrirModal={abrirModal} />
+      {/* Navegação própria: esta página não tem Experience (#o-que-te-espera)
+          nem cronograma (#o-evento) — só âncoras que aqui existem. */}
+      <Footer
+        abrirModal={abrirModal}
+        navegacao={[
+          { rotulo: "Início", href: "#topo" },
+          { rotulo: "Causa social", href: "#alem-de-mim" },
+          { rotulo: "Contactos", href: "#contactos" },
+        ]}
+      />
     </>
   );
 }

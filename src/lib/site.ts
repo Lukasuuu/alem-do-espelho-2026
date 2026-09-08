@@ -74,6 +74,21 @@ export function linkWhatsApp(numero: string, mensagem: string): string {
   return `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;
 }
 
+/**
+ * Horário do evento formatado ("09:00 – 18:00"), derivado de data.iso/data.fim
+ * com Intl (Europe/Lisbon) — SEM hardcode: a fonte única são os ISO em cima.
+ * Usado pelo Cronograma (G.1) e pela coluna Informações do footer (G.2), que
+ * têm de mostrar sempre o mesmo valor.
+ */
+export function horarioEvento(): string {
+  const formato = new Intl.DateTimeFormat("pt-PT", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/Lisbon",
+  });
+  return `${formato.format(new Date(site.data.iso))} – ${formato.format(new Date(site.data.fim))}`;
+}
+
 /** Códigos de país no formulário, ordenados pela realidade do público do evento. */
 export const paises = [
   { code: "PT", dial: "+351", nome: "Portugal", flag: "🇵🇹" },
