@@ -11,7 +11,14 @@ export const dynamic = "force-dynamic";
 // no vercel.json, junto da base de dados (Supabase em eu-west-3).
 
 type Resposta =
-  | { ok: true; status: "sponsor"; id: string; nivel: number | null }
+  | {
+      ok: true;
+      status: "sponsor";
+      id: string;
+      nivel: number | null;
+      /** B1/0011: capability de posse — devolvida UMA vez, nunca em logs. */
+      posseToken: string;
+    }
   | { ok: false; mensagem: string; tipo: TipoErro; campos?: Record<string, string> };
 
 /** Tempo mínimo plausível entre carregar o formulário e submeter. */
@@ -102,7 +109,13 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
     // QA em localhost (ver lib/sponsor-mock.ts) — sem tocar na Supabase.
     console.info("[sponsor] MOCK QA — registo de patrocínio simulado");
     return NextResponse.json(
-      { ok: true, status: "sponsor", id: "00000000-0000-0000-0000-000000000001", nivel: null },
+      {
+        ok: true,
+        status: "sponsor",
+        id: "00000000-0000-0000-0000-000000000001",
+        nivel: null,
+        posseToken: "0".repeat(64),
+      },
       { status: 201 }
     );
   }
@@ -165,10 +178,19 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
       status: "criada" | "ja_existente";
       id: string;
       nivel: number | null;
+      posse_token: string;
     };
+
+    if (!resultado.posse_token) {
+      // Sem token a RPC não é a 0011 (ou falhou a gerar) — a modal ficaria
+      // sem capability para os passos B/C. Tratar como falha de servidor.
+      console.error("[sponsor] RPC sem posse_token na resposta");
+      return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 502 });
+    }
 
     // 7. Observabilidade, sem PII em claro (RGPD) — email mascarado; a empresa
     //    é um nome de marca público, não dado pessoal, e ajuda a identificar.
+    //    O posse_token NUNCA entra em log.
     console.info(
       "[sponsor] novo interesse de patrocínio",
       JSON.stringify({
@@ -183,7 +205,14 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
     );
 
     return NextResponse.json(
-      { ok: true, status: "sponsor", id: resultado.id, nivel: resultado.nivel },
+      {
+        ok: true,
+        status: "sponsor",
+        id: resultado.id,
+        nivel: resultado.nivel,
+        // B1/0011: o token sai UMA vez aqui — nem log, nem storage, nem URL.
+        posseToken: resultado.posse_token,
+      },
       { status: 201 }
     );
   } catch (erro) {

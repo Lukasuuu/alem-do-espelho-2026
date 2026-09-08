@@ -199,26 +199,45 @@ export const sponsorSchema = waitlistSchema.extend({
 
 export type SponsorInput = z.input<typeof sponsorSchema>;
 
-/** PATCH que marca o nível escolhido no passo B (depois do formulário). */
+/**
+ * PATCH que marca o nível escolhido no passo B (depois do formulário).
+ * B1/0011: exige o posse_token devolvido no POST — capability de posse.
+ */
 export const nivelSponsorSchema = z.object({
   sponsorId: z.string().uuid("Parceria inválida."),
   nivel: z.union(
     [z.literal(75), z.literal(150), z.literal(200)],
     { errorMap: () => ({ message: "Escolhe um nível de parceria." }) }
   ),
+  posseToken: posseTokenSchema,
 });
 
 export type NivelSponsorInput = z.input<typeof nivelSponsorSchema>;
 
-/** PATCH que marca o método do patrocínio (MB Way ou transferência). */
+/**
+ * PATCH que marca o método do patrocínio (MB Way ou transferência) e cria o
+ * pagamento na mesma sequência (espelho de /api/inscricao/metodo).
+ */
 export const metodoSponsorSchema = z.object({
   sponsorId: z.string().uuid("Parceria inválida."),
   metodo: z.enum(METODOS_SPONSOR, {
     errorMap: () => ({ message: "Método de pagamento inválido." }),
   }),
+  posseToken: posseTokenSchema,
 });
 
 export type MetodoSponsorInput = z.input<typeof metodoSponsorSchema>;
+
+/**
+ * POST /api/sponsor/estado — polling do passo de comprovativo (0011).
+ * Devolve o estado do pagamento ativo para a modal detetar rejeição.
+ */
+export const estadoSponsorSchema = z.object({
+  sponsorId: z.string().uuid("Parceria inválida."),
+  posseToken: posseTokenSchema,
+});
+
+export type EstadoSponsorInput = z.input<typeof estadoSponsorSchema>;
 
 export type TelefoneValidado = {
   ok: boolean;

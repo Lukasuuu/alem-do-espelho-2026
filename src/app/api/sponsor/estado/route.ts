@@ -2,30 +2,31 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { getSupabase } from "@/lib/supabase";
 import { obterIp, rateLimit } from "@/lib/rate-limit";
-import {
-  MENSAGENS,
-  nivelSponsorSchema,
-  type NivelParceria,
-  type TipoErro,
-} from "@/lib/validation";
+import { MENSAGENS, estadoSponsorSchema, type TipoErro } from "@/lib/validation";
 import { SPONSOR_MOCK_ATIVO } from "@/lib/sponsor-mock";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type Resposta =
-  | { ok: true; sponsorId: string; nivel: NivelParceria }
+  | {
+      ok: true;
+      /** Estado do pagamento ativo (ex.: proof_uploaded, confirmed, rejected). */
+      estado: string;
+      motivoRejeicao: string | null;
+    }
   | { ok: false; mensagem: string; tipo: TipoErro; campos?: Record<string, string> };
 
 /**
- * Marca o nível de parceria escolhido no passo B (depois do formulário).
- * No POST /api/sponsor o nível ainda é null; só aqui fica 75/150/200€, para a
- * reconciliação manual saber que valor cada patrocinadora vai pagar.
+ * Polling do passo de comprovativo do patrocínio (Bloco J/0011, espelho de
+ * estado_inscricao/0009): a modal consulta o estado do pagamento ativo para
+ * detetar rejeição (mostra o motivo e permite reenvio). Leitura, sem escrita,
+ * posse por posse_token. O cliente chama com moderação (não-agressivo).
  */
 export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
   // 1. Limite de tentativas por IP
   const ip = obterIp(request.headers);
-  const limite = rateLimit(`sponsor-nivel:${ip}`);
+  const limite = rateLimit(`sponsor-estado:${ip}`);
 
   if (!limite.permitido) {
     return NextResponse.json(
@@ -47,49 +48,33 @@ export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
     return NextResponse.json({ ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao" }, { status: 400 });
   }
 
-  // 3. Validação do formato (uuid + nível fechado 75/150/200)
+  // 3. Validação do formato (uuid + token de posse)
   let dados;
   try {
-    dados = nivelSponsorSchema.parse(corpo);
+    dados = estadoSponsorSchema.parse(corpo);
   } catch (erro) {
     if (erro instanceof ZodError) {
-      const campos: Record<string, string> = {};
-      for (const issue of erro.issues) {
-        const chave = String(issue.path[0] ?? "form");
-        if (!campos[chave]) campos[chave] = issue.message;
-      }
-      return NextResponse.json(
-        { ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao", campos },
-        { status: 422 }
-      );
+      return NextResponse.json({ ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao" }, { status: 422 });
     }
     return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 500 });
   }
 
-  // 4. Persistência
+  // 4. Leitura
   if (SPONSOR_MOCK_ATIVO) {
     // QA em localhost (ver lib/sponsor-mock.ts) — sem tocar na Supabase.
-    return NextResponse.json({ ok: true, sponsorId: dados.sponsorId, nivel: dados.nivel });
+    return NextResponse.json({ ok: true, estado: "proof_uploaded", motivoRejeicao: null });
   }
 
   try {
     const supabase = getSupabase();
 
-    // B1/0011: posse por token (assinatura 3-arg da RPC).
-    const { data, error } = await supabase.rpc("definir_nivel_sponsor", {
+    const { data, error } = await supabase.rpc("estado_sponsor", {
       p_sponsor_id: dados.sponsorId,
-      p_nivel: dados.nivel,
       p_posse_token: dados.posseToken,
     });
 
     if (error) {
       const codigo = error.message ?? "";
-      if (codigo.includes("invalid_nivel")) {
-        return NextResponse.json(
-          { ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao", campos: { nivel: "Escolhe um nível de parceria." } },
-          { status: 422 }
-        );
-      }
       if (codigo.includes("sponsor_nao_encontrada")) {
         return NextResponse.json(
           { ok: false, mensagem: "Não encontrámos o teu registo. Recarrega e tenta novamente.", tipo: "validacao" },
@@ -98,21 +83,25 @@ export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
       }
       if (codigo.includes("acesso_negado")) {
         // Token de posse não bate — sessão antiga/expirada.
-        return NextResponse.json(
-          { ok: false, mensagem: MENSAGENS.metodoServidor, tipo: "fase" },
-          { status: 403 }
-        );
+        return NextResponse.json({ ok: false, mensagem: MENSAGENS.metodoServidor, tipo: "fase" }, { status: 403 });
       }
 
-      console.error("[sponsor-nivel] erro do supabase:", error.message);
+      console.error("[sponsor-estado] erro do supabase:", error.message);
       return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 502 });
     }
 
-    const resultado = data as { status: "ok"; id: string; nivel: NivelParceria };
+    const resultado = data as {
+      pagamento_estado: string;
+      motivo_rejeicao: string | null;
+    };
 
-    return NextResponse.json({ ok: true, sponsorId: resultado.id, nivel: resultado.nivel });
+    return NextResponse.json({
+      ok: true,
+      estado: resultado.pagamento_estado,
+      motivoRejeicao: resultado.motivo_rejeicao ?? null,
+    });
   } catch (erro) {
-    console.error("[sponsor-nivel] falha inesperada:", erro);
+    console.error("[sponsor-estado] falha inesperada:", erro);
     return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 500 });
   }
 }
