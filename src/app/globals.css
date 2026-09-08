@@ -395,6 +395,31 @@ body {
   transform: scale(1.06);
 }
 
+/* Touch (hover:none ou pointer:coarse): não há hover fiável para revelar —
+   logos a opacidade cheia e sem blur. Tem de vir DEPOIS das regras acima
+   (mesma especificidade, última ganha). */
+@media (hover: none), (pointer: coarse) {
+  .marquee-foco .azulejo-logo {
+    opacity: 1;
+    filter: none;
+    transform: none;
+  }
+}
+
+/* Caixa 16:9 do carrossel da home (logos cards 1600×900). Mobile-first:
+   em ecrã estreito o logo continua grande e legível (62vw); ≥640px volta
+   ao desktop. A largura uniforme entre itens mantém a costura do marquee
+   em -50% (o período é n×(caixa+gap) a qualquer viewport). */
+.caixa-logo-marquee {
+  aspect-ratio: 16 / 9;
+  width: clamp(200px, 62vw, 260px);
+}
+@media (min-width: 640px) {
+  .caixa-logo-marquee {
+    width: clamp(200px, 30vw, 340px);
+  }
+}
+
 /* Grão sutil de papel */
 .grao::before {
   content: "";
@@ -680,21 +705,12 @@ body {
    Tamanhos = produção (56/64px ouro-prata, 40px bronze) com a redução
    Delta 2 de ≈10–15% aplicada: 50/56 e 35.
    ─────────────────────────────────────────────── */
-.caixa-logo-grau-1,
-.caixa-logo-grau-2 {
-  height: 50px;
-  width: 50px;
-}
-.caixa-logo-grau-3 {
-  height: 35px;
-  width: 35px;
-}
-@media (min-width: 1280px) {
-  .caixa-logo-grau-1,
-  .caixa-logo-grau-2 {
-    height: 56px;
-    width: 56px;
-  }
+/* Caixa 16:9 do logo junto ao nome (modal, logos cards 1600×900) — contain,
+   SEM background/padding/radius/borda por cima do asset. Uma só regra para
+   todos os tiers; o nome continua ao lado (flex row no cartão). */
+.caixa-logo-16x9 {
+  aspect-ratio: 16 / 9;
+  width: clamp(150px, 34%, 240px);
 }
 
 /* Acordeão da missão (r3, "modelo Paulo Faustino") — grid-template-rows

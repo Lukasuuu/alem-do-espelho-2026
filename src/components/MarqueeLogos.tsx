@@ -16,12 +16,15 @@ import { patrocinadoresVisiveis } from "@/lib/patrocinadores";
  * aproxima a playbackRate de 0 (travão de veludo ~400ms), usando
  * updatePlaybackRate() em vez de escrever playbackRate directamente.
  *
- * LOGOS NORMALIZADOS: cada marca é uma caixa FIXA quadrada (96×96, gap
- * uniforme 56) — os assets são cards pré-renderizados 1024×1024 (correção
- * pós-r3), portanto a caixa é quadrada e o encaixe é object-contain SEM
+ * LOGOS NORMALIZADOS: cada marca é uma caixa 16:9 (classe .caixa-logo-marquee,
+ * clamp responsivo — mobile clamp(200px,62vw,260px), ≥640px clamp(200px,30vw,
+ * 340px), gap uniforme 64) — os assets são cards pré-renderizados 1600×900,
+ * portanto a caixa é retangular e o encaixe é object-contain SEM
  * fundo/padding/radius por cima do card (fundo, cantos e borda já vêm no
- * asset). Largura uniforme ⇒ o período do ciclo é n×(caixa+gap) e o
- * translateX(-50%) fecha a costura sem salto.
+ * asset). A largura é uniforme ENTRE ITENS a qualquer viewport (o clamp é
+ * igual para todos) ⇒ o período do ciclo é n×(caixa+gap) e o
+ * translateX(-50%) fecha a costura sem salto — a largura real da caixa é
+ * MEDIDA no DOM (não constante) para as repetições calculadas.
  *
  * REPETIÇÕES CALCULADAS: o nº de blocos por metade deriva da largura do
  * contentor (mínimo 2), para a pista NUNCA ficar mais curta que o ecrã — com 2
@@ -45,12 +48,8 @@ import { patrocinadoresVisiveis } from "@/lib/patrocinadores";
  * React 19 dev monta duas vezes — o useEffect tem cleanup completo.
  */
 
-/** Caixa fixa de cada logo (px) — quadrada: os cards 1024×1024 têm fundo,
- *  cantos e borda embutidos no asset. */
-const BOX_W = 96;
-const BOX_H = 96;
-/** Gap uniforme entre logos (px). */
-const GAP = 56;
+/** Gap uniforme entre logos (px) — cards 16:9 são largos, o gap respira. */
+const GAP = 64;
 /** Velocidade constante do marquee (px/s) — medida no diagnóstico. */
 const VELOCIDADE_PX_S = 40;
 /** Constante de tempo do travão de veludo (ms) — 3×τ ≈ 99% ≈ 315ms, ~400ms até 2%. */
@@ -68,6 +67,11 @@ export default function MarqueeLogos() {
   // Estado para evitar hydration mismatch — só renderiza o marquee após montar no client.
   const [montado, setMontado] = useState(false);
 
+  // prefers-reduced-motion: SEM auto-scroll — fila estática no lugar do
+  // marquee (pede o Lucas; as pausas hover/focus continuam a cobrir WCAG
+  // 2.2.2 no modo animado). Avaliado só no client (matchMedia).
+  const [reduzMovimento, setReduzMovimento] = useState(false);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
 
@@ -77,22 +81,27 @@ export default function MarqueeLogos() {
   // Blocos por metade do track — calculados da largura do contentor (efeito 2).
   const [repeticoes, setRepeticoes] = useState(MIN_REPETICOES);
 
-  // 1) Marcar como montado (resolve hydration). Sem ramo reduced-motion:
-  //    o marquee corre em todas as máquinas por decisão de produto.
+  // 1) Marcar como montado (resolve hydration) + ler reduced-motion.
   useEffect(() => {
     setMontado(true);
+    setReduzMovimento(
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    );
   }, []);
 
   // 2) Repetições calculadas — a pista enche sempre o contentor (nunca mais curta
-  //    que o ecrã). Recalcula no ResizeObserver do contentor.
+  //    que o ecrã). A largura da caixa vem do CSS (clamp responsivo), não de
+  //    constantes: MEDIDA no 1.º azulejo. Recalcula no ResizeObserver.
   useEffect(() => {
     if (!montado) return;
     const container = containerRef.current;
     if (!container) return;
 
-    const blocoBase = patrocinadoresVisiveis().length * (BOX_W + GAP);
-    if (blocoBase <= 0) return;
     const calcular = () => {
+      const tile = container.querySelector<HTMLElement>(".azulejo-logo");
+      const caixaW = tile ? tile.getBoundingClientRect().width : 0;
+      if (caixaW <= 0) return;
+      const blocoBase = patrocinadoresVisiveis().length * (caixaW + GAP);
       const n = Math.max(MIN_REPETICOES, Math.ceil(container.clientWidth / blocoBase));
       setRepeticoes((anterior) => (anterior === n ? anterior : n));
     };
@@ -104,9 +113,9 @@ export default function MarqueeLogos() {
 
   // 3) Animação WAAPI + travão de veludo + pausas (só client, só se motion ok).
   //    Depende de `repeticoes`: muda o nº de blocos, a pista re-mede e a animação
-  //    recria com a duração certa.
+  //    recria com a duração certa. Com reduced-motion NEM chega aqui (fila estática).
   useEffect(() => {
-    if (!montado) return;
+    if (!montado || reduzMovimento) return;
     const container = containerRef.current;
     const track = trackRef.current;
     if (!container || !track) return;
@@ -301,7 +310,7 @@ export default function MarqueeLogos() {
       document.removeEventListener("visibilitychange", aoVisibilidade);
       animacao?.cancel();
     };
-  }, [montado, repeticoes]);
+  }, [montado, repeticoes, reduzMovimento]);
 
   // ── Fallback antes de montar no client (evita hydration flash) ──
   if (!montado) {
@@ -312,6 +321,22 @@ export default function MarqueeLogos() {
     return (
       <div
         data-marquee-estado="pre-hidratacao"
+        className="flex flex-wrap items-center justify-center gap-6"
+      >
+        {patrocinadoresVisiveis().map((p) =>
+          p.logo ? <AzulejoLogo key={p.id} logo={p.logo} flexivel /> : null
+        )}
+      </div>
+    );
+  }
+
+  // ── Fila estática com prefers-reduced-motion: SEM auto-scroll ──
+  if (reduzMovimento) {
+    return (
+      <div
+        role="group"
+        aria-label="Marcas patrocinadores do Além do Espelho"
+        data-marquee-estado="estatico"
         className="flex flex-wrap items-center justify-center gap-6"
       >
         {patrocinadoresVisiveis().map((p) =>
@@ -345,8 +370,7 @@ export default function MarqueeLogos() {
                 <AzulejoLogo
                   key={p.id}
                   logo={p.logo}
-                  largura={BOX_W}
-                  altura={BOX_H}
+                  classe="caixa-logo-marquee"
                   altOculto={bloco !== 0}
                 />
               ) : null

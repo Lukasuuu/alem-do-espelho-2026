@@ -106,7 +106,7 @@ export type Patrocinador = {
     width: number;
     height: number;
     /**
-     * "card" (r2→r3): o asset é um card pré-renderizado 1024×1024 com fundo
+     * "card" (r2→r3): o asset é um card pré-renderizado 1600×900 (16:9) com fundo
      * de marca, cantos (~11%) e borda JÁ EMBUTIDOS — renderizar tal-e-qual
      * (object-fit contain, SEM background/borda/radius/padding CSS).
      * Todos os 14 logos são hoje cards; o campo distingue o contrato do asset.
@@ -165,9 +165,9 @@ export const patrocinadores: Patrocinador[] = [
     logo: {
       src: "/patrocinadores/logo-novex.webp",
       alt: "Logótipo Novex",
-      // Card pré-renderizado 1024×1024 (fundo de marca + borda embutidos)
-      width: 1024,
-      height: 1024,
+      // Card pré-renderizado 1600×900 (16:9) (fundo de marca + borda embutidos)
+      width: 1600,
+      height: 900,
       estilo: "card",
     },
     // Texto adaptado pelo Claude (Bloco I) do material enviado pelo Lucas —
@@ -196,9 +196,9 @@ export const patrocinadores: Patrocinador[] = [
     logo: {
       src: "/patrocinadores/logo-ligia-santos.webp",
       alt: "Logótipo Lígia Santos",
-      // Card pré-renderizado 1024×1024 (fundo creme + borda embutidos)
-      width: 1024,
-      height: 1024,
+      // Card pré-renderizado 1600×900 (16:9) (fundo creme + borda embutidos)
+      width: 1600,
+      height: 900,
       estilo: "card",
     },
     // AGUARDA APROVAÇÃO — não publicar sem confirmação escrita da Lígia.
@@ -230,9 +230,9 @@ export const patrocinadores: Patrocinador[] = [
     logo: {
       src: "/patrocinadores/logo-luci-maritan.webp",
       alt: "Logótipo Luci Maritan",
-      // Card pré-renderizado 1024×1024 (fundo azul + borda embutidos)
-      width: 1024,
-      height: 1024,
+      // Card pré-renderizado 1600×900 (16:9) (fundo azul + borda embutidos)
+      width: 1600,
+      height: 900,
       estilo: "card",
     },
     // Texto verbatim aprovado pelo Lucas (Bloco I).
@@ -262,9 +262,9 @@ export const patrocinadores: Patrocinador[] = [
     logo: {
       src: "/patrocinadores/logo-reta-comunicacao.webp",
       alt: "Logótipo Reta Comunicação",
-      // Card pré-renderizado 1024×1024 (fundo branco + borda embutidos)
-      width: 1024,
-      height: 1024,
+      // Card pré-renderizado 1600×900 (16:9) (fundo branco + borda embutidos)
+      width: 1600,
+      height: 900,
       estilo: "card",
     },
     // Texto verbatim aprovado pelo Lucas (Bloco I).
@@ -291,9 +291,9 @@ export const patrocinadores: Patrocinador[] = [
     logo: {
       src: "/patrocinadores/logo-florescer.webp",
       alt: "Logótipo Editora Florescer",
-      // Card pré-renderizado 1024×1024 (fundo verde-oliva + borda embutidos)
-      width: 1024,
-      height: 1024,
+      // Card pré-renderizado 1600×900 (16:9) (fundo verde-oliva + borda embutidos)
+      width: 1600,
+      height: 900,
       estilo: "card",
     },
     // Texto verbatim aprovado pelo Lucas (Bloco I).
@@ -340,9 +340,9 @@ export const patrocinadores: Patrocinador[] = [
     logo: {
       src: "/patrocinadores/logo-fluir.webp",
       alt: "Logótipo Fluir",
-      // Card pré-renderizado 1024×1024 (fundo claro + borda embutidos)
-      width: 1024,
-      height: 1024,
+      // Card pré-renderizado 1600×900 (16:9) (fundo claro + borda embutidos)
+      width: 1600,
+      height: 900,
       estilo: "card",
     },
     // Texto verbatim aprovado pelo Lucas (Bloco I).
@@ -368,10 +368,10 @@ export const patrocinadores: Patrocinador[] = [
     logo: {
       src: "/patrocinadores/logo-tereza-moura.webp",
       alt: "Logótipo de Tereza Moura",
-      // Card pré-renderizado 1024×1024 (fundo creme + borda embutidos) —
+      // Card pré-renderizado 1600×900 (16:9) (fundo creme + borda embutidos) —
       // versão clara do logótipo (pedido da Tereza, 21/08/2026).
-      width: 1024,
-      height: 1024,
+      width: 1600,
+      height: 900,
       estilo: "card",
     },
     // AGUARDA APROVAÇÃO — descricao aprovada pelo Lucas; falta aprovar história/citação.
@@ -395,9 +395,9 @@ export const patrocinadores: Patrocinador[] = [
     logo: {
       src: "/patrocinadores/logo-vanessa-rosa.webp",
       alt: "Logótipo Vanessa Rosa Sabores",
-      // Card pré-renderizado 1024×1024 (fundo lilás + borda embutidos)
-      width: 1024,
-      height: 1024,
+      // Card pré-renderizado 1600×900 (16:9) (fundo lilás + borda embutidos)
+      width: 1600,
+      height: 900,
       estilo: "card",
     },
     // AGUARDA APROVAÇÃO — descricao aprovada pelo Lucas; falta aprovar história/citação.
@@ -421,9 +421,9 @@ export const patrocinadores: Patrocinador[] = [
     logo: {
       src: "/patrocinadores/logo-andreia-ferreira.webp",
       alt: "Logótipo de Andreia Ferreira, consultora imobiliária zZome Real Estate",
-      // Card pré-renderizado 1024×1024 (fundo navy + borda embutidos)
-      width: 1024,
-      height: 1024,
+      // Card pré-renderizado 1600×900 (16:9) (fundo navy + borda embutidos)
+      width: 1600,
+      height: 900,
       estilo: "card",
     },
     // AGUARDA APROVAÇÃO — não publicar sem confirmação escrita da Andreia.
@@ -449,9 +449,9 @@ export const patrocinadores: Patrocinador[] = [
     logo: {
       src: "/patrocinadores/logo-kel-barbearia.webp",
       alt: "Logótipo Kel Barbearia",
-      // Card pré-renderizado 1024×1024 (fundo branco + borda embutidos)
-      width: 1024,
-      height: 1024,
+      // Card pré-renderizado 1600×900 (16:9) (fundo branco + borda embutidos)
+      width: 1600,
+      height: 900,
       estilo: "card",
     },
     // AGUARDA APROVAÇÃO — descricao aprovada pelo Lucas; falta aprovar história/citação.
@@ -477,9 +477,9 @@ export const patrocinadores: Patrocinador[] = [
     logo: {
       src: "/patrocinadores/logo-yeshua.webp",
       alt: "Logótipo Yeshua, Centro de Cuidado Integrado",
-      // Card pré-renderizado 1024×1024 (fundo preto + borda embutidos)
-      width: 1024,
-      height: 1024,
+      // Card pré-renderizado 1600×900 (16:9) (fundo preto + borda embutidos)
+      width: 1600,
+      height: 900,
       estilo: "card",
     },
     // AGUARDA APROVAÇÃO — descricao aprovada pelo Lucas; falta aprovar história/citação.
@@ -507,9 +507,9 @@ export const patrocinadores: Patrocinador[] = [
     logo: {
       src: "/patrocinadores/logo-leanndro-design.webp",
       alt: "Logótipo leandro design",
-      // Card pré-renderizado 1024×1024 (fundo preto + borda embutidos)
-      width: 1024,
-      height: 1024,
+      // Card pré-renderizado 1600×900 (16:9) (fundo preto + borda embutidos)
+      width: 1600,
+      height: 900,
       estilo: "card",
     },
     // AGUARDA APROVAÇÃO — descricao aprovada pelo Lucas; falta aprovar história/citação.
@@ -533,9 +533,9 @@ export const patrocinadores: Patrocinador[] = [
     logo: {
       src: "/patrocinadores/logo-daniella-galiani.webp",
       alt: "Logótipo Daniella Galiani Photography",
-      // Card pré-renderizado 1024×1024 (fundo branco + borda embutidos)
-      width: 1024,
-      height: 1024,
+      // Card pré-renderizado 1600×900 (16:9) (fundo branco + borda embutidos)
+      width: 1600,
+      height: 900,
       estilo: "card",
     },
     historia: "",
@@ -558,9 +558,9 @@ export const patrocinadores: Patrocinador[] = [
     logo: {
       src: "/patrocinadores/logo-chama-creative.webp",
       alt: "Logótipo Chama Creative Studio",
-      // Card pré-renderizado 1024×1024 (fundo navy + borda embutidos)
-      width: 1024,
-      height: 1024,
+      // Card pré-renderizado 1600×900 (16:9) (fundo navy + borda embutidos)
+      width: 1600,
+      height: 900,
       estilo: "card",
     },
     historia: "",

@@ -10,11 +10,10 @@ import { type Patrocinador, TIER_TOKENS, type TierTokenKey } from "@/lib/patroci
  *
  *   Delta 1 — Foto maior: largura clamp(96px, 22vw, 150px), aspect-ratio 4:5
  *             fixo, object-fit cover, fio do tier mantido.
- *   Delta 2 — Logo ligeiramente menor (≈10–15% abaixo dos tamanhos de
- *             produção): caixa QUADRADA via .caixa-logo-grau-1/2/3
+ *   Delta 2 — Logo em caixa 16:9 (assets cards 1600×900): .caixa-logo-16x9
  *             (globals.css) com object-contain e SEM background/padding/
- *             radius/borda por cima do asset — os cards .webp 1024×1024 já
- *             trazem fundo, cantos (~11%) e borda embutidos.
+ *             radius/borda por cima do asset — fundo, cantos e borda já
+ *             embutidos no ficheiro.
  *   Delta 3 — Texto oculto por defeito, revelado só ao clique no toggle
  *             (gatilho circular + acordeão .acordao-bio, mecanismo já
  *             implementado na r3 — estado inicial fechado e toggle de volta).
@@ -24,7 +23,7 @@ import { type Patrocinador, TIER_TOKENS, type TierTokenKey } from "@/lib/patroci
  *   mobile  → empilhado, foto em cima
  *
  * Coluna de conteúdo, por ordem:
- *   1. faixa do logo (quadrada, contain, ao lado do nome) — só pessoa com foto
+ *   1. faixa do logo (16:9, contain, ao lado do nome) — só pessoa com foto
  *      E logo; a marca (tipo "marca", ex.: Novex) mostra o logo no slot da
  *      foto e não repete; patrocinador sem logo (Gracy) salta o slot.
  *   2. nome (text-wrap: balance, sem hyphens)
@@ -104,7 +103,6 @@ export default function CartaoPatrocinadora({
   const caixaLogoJuntoAoNome = foto && logo;
   // Logo no slot da foto — só quando NÃO há foto (marca, ex.: Novex).
   const logoMedia = foto ? undefined : logo;
-  const classeCaixaLogo = `caixa-logo-grau-${destaque}`;
 
   const estiloFio = {
     borderWidth: tier.espessura,
@@ -153,7 +151,7 @@ export default function CartaoPatrocinadora({
         {(foto || logoMedia) && (
           <div
             ref={fotoRef}
-            className={`relative mx-auto shrink-0 md:mx-0 ${
+            className={`relative mx-auto shrink-0 md:mx-0 md:self-start ${
               foto ? "overflow-hidden rounded-sm" : "flex items-center justify-center overflow-hidden"
             } ${isGrau1 && foto ? "bg-creme-profundo" : ""}`}
             style={
@@ -226,15 +224,16 @@ export default function CartaoPatrocinadora({
 
         {/* ── Coluna de conteúdo ── */}
         <div className="mt-5 min-w-0 flex-1 md:mt-0">
-          {/* 1. Faixa do logo (quadrada, contain — Delta 2) ao lado do nome.
-                Só pessoa com foto E logo; sem logo (Gracy) o slot salta e o
-                card não parte. Ver globals.css `.caixa-logo-grau-1/2/3`. */}
+          {/* 1. Faixa do logo (16:9, contain) ao lado do nome — logos cards
+                1600×900, slot clamp(150px, 34%, 240px) (ver globals.css
+                .caixa-logo-16x9). Só pessoa com foto E logo; sem logo (Gracy)
+                o slot salta e o card não parte. */}
           {(caixaLogoJuntoAoNome || !ocultarNome) && (
             <div className="flex items-center gap-3 min-w-0">
               {caixaLogoJuntoAoNome && (
                 <span
                   aria-hidden
-                  className={`inline-flex shrink-0 items-center justify-center overflow-hidden ${classeCaixaLogo}`}
+                  className="caixa-logo-16x9 inline-flex shrink-0 items-center justify-center overflow-hidden"
                   data-caixa-logo
                 >
                   <LocalImage

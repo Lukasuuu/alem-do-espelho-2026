@@ -32,6 +32,12 @@ type Props = {
    */
   largura?: number;
   /**
+   * Classe CSS que define a caixa (ex.: .caixa-logo-marquee 16:9 com clamp
+   * responsivo). Quando presente, NENHUM width/height inline é escrito —
+   * o CSS manda (aspect-ratio + clamp); a imagem encaixa com contain.
+   */
+  classe?: string;
+  /**
    * alt="" nas cópias duplicadas do marquee — não repetir a mesma marca no
    * leitor de ecrã. O contentor duplicado leva também aria-hidden (ver componente).
    */
@@ -47,20 +53,26 @@ export default function AzulejoLogo({
   logo,
   altura = 72,
   largura,
+  classe,
   altOculto = false,
   flexivel = false,
 }: Props) {
-  const modoFixo = typeof largura === "number" && !flexivel;
+  const modoClasse = typeof classe === "string" && classe !== "";
+  const modoFixo = typeof largura === "number" && !flexivel && !modoClasse;
 
   return (
     <span
       className={`azulejo-logo flex items-center justify-center overflow-hidden ${
         flexivel ? "max-w-full" : "shrink-0"
-      }`}
-      style={{
-        width: modoFixo ? largura : undefined,
-        height: altura,
-      }}
+      } ${modoClasse ? classe : ""}`}
+      style={
+        modoClasse
+          ? undefined
+          : {
+              width: modoFixo ? largura : undefined,
+              height: altura,
+            }
+      }
     >
       <LocalImage
         src={logo.src}
@@ -69,15 +81,22 @@ export default function AzulejoLogo({
         height={logo.height}
         className="w-auto object-contain"
         style={
-          modoFixo
+          modoClasse
             ? {
-                // Caixa fixa: o logo encaixa inteiro (aspect preservado), centrado.
-                // maxWidth+maxHeight 100% → object-contain sem distorção; o
-                // letterbox é invisível porque o fundo da caixa = fundo do logo.
+                // Caixa via CSS: a imagem encaixa inteira, centrada, sem
+                // distorção (o aspect-ratio da caixa vem do CSS).
                 maxWidth: "100%",
                 maxHeight: "100%",
               }
-            : {
+            : modoFixo
+              ? {
+                  // Caixa fixa: o logo encaixa inteiro (aspect preservado), centrado.
+                  // maxWidth+maxHeight 100% → object-contain sem distorção; o
+                  // letterbox é invisível porque o fundo da caixa = fundo do logo.
+                  maxWidth: "100%",
+                  maxHeight: "100%",
+                }
+              : {
                 // Modo flexível: altura DEFINIDA + width auto → a largura deriva
                 // da proporção intrínseca (atributos width/height). maxWidth: 100%
                 // só limita quando o azulejo encolhe (mobile).
