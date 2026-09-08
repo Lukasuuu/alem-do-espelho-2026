@@ -30,9 +30,11 @@ const NA_FAIXA = patrocinadoresVisiveis().filter(
  * aproxima a playbackRate de 0 (travão de veludo ~400ms), usando
  * updatePlaybackRate() em vez de escrever playbackRate directamente.
  *
- * LOGOS NORMALIZADOS: cada marca é uma caixa FIXA (180×72, gap uniforme 56).
- * Largura uniforme ⇒ o período do ciclo é n×(caixa+gap) e o translateX(-50%)
- * fecha a costura sem salto.
+ * LOGOS NORMALIZADOS: cada marca é uma caixa 16:9 responsiva de LARGURA
+ * UNIFORME (clamp 200–340px, gap 64 — ver .caixa-logo-marquee em globals.css;
+ * assets cards 1600×900 com fundo/cantos/borda embutidos). Largura uniforme ⇒
+ * o período do ciclo é n×(caixa+gap) e o translateX(-50%) fecha a costura
+ * sem salto.
  *
  * REPETIÇÕES CALCULADAS: o nº de blocos por metade deriva da largura do
  * contentor (mínimo 2), para a pista NUNCA ficar mais curta que o ecrã — com 2
@@ -56,11 +58,14 @@ const NA_FAIXA = patrocinadoresVisiveis().filter(
  * React 19 dev monta duas vezes — o useEffect tem cleanup completo.
  */
 
-/** Caixa fixa de cada logo (px). */
-const BOX_W = 180;
-const BOX_H = 72;
+/**
+ * Largura MÍNIMA da caixa do logo (px) — a caixa real é o clamp responsivo
+ * de .caixa-logo-marquee (200–340px). Para o cálculo de repetições usa-se o
+ * mínimo: garante pista cheia em qualquer viewport.
+ */
+const TILE_LARGURA_MIN = 200;
 /** Gap uniforme entre logos (px). */
-const GAP = 56;
+const GAP = 64;
 /** Velocidade constante do marquee (px/s) — medida no diagnóstico. */
 const VELOCIDADE_PX_S = 40;
 /** Constante de tempo do travão de veludo (ms) — 3×τ ≈ 99% ≈ 315ms, ~400ms até 2%. */
@@ -100,7 +105,7 @@ export default function MarqueeLogos() {
     const container = containerRef.current;
     if (!container) return;
 
-    const blocoBase = NA_FAIXA.length * (BOX_W + GAP);
+    const blocoBase = NA_FAIXA.length * (TILE_LARGURA_MIN + GAP);
     if (blocoBase <= 0) return;
     const calcular = () => {
       const n = Math.max(MIN_REPETICOES, Math.ceil(container.clientWidth / blocoBase));
@@ -354,8 +359,7 @@ export default function MarqueeLogos() {
               <AzulejoLogo
                 key={p.id}
                 logo={p.logo}
-                largura={BOX_W}
-                altura={BOX_H}
+                classe="caixa-logo-marquee"
                 altOculto={bloco !== 0}
               />
             ))}

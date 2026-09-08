@@ -32,6 +32,13 @@ type Props = {
    */
   largura?: number;
   /**
+   * Classe da caixa quando a largura vem de CSS responsivo (ex. 16:9 clamp
+   * de .caixa-logo-marquee). Presente → SEM width/height inline (a classe
+   * manda) e SEM rounded-lg/px-4 — os assets cards já trazem cantos e fundo
+   * embutidos; sobrepor radius/padding seria duplicação visível.
+   */
+  classe?: string;
+  /**
    * alt="" nas cópias duplicadas do marquee — não repetir a mesma marca no
    * leitor de ecrã. O contentor duplicado leva também aria-hidden (ver componente).
    */
@@ -47,20 +54,25 @@ export default function AzulejoLogo({
   logo,
   altura = 72,
   largura,
+  classe,
   altOculto = false,
   flexivel = false,
 }: Props) {
+  const modoClasse = typeof classe === "string" && classe !== "";
   const modoFixo = typeof largura === "number" && !flexivel;
 
   return (
     <span
-      className={`azulejo-logo flex items-center justify-center overflow-hidden rounded-lg ${
-        flexivel ? "max-w-full px-4" : "shrink-0"
+      className={`azulejo-logo flex items-center justify-center overflow-hidden ${
+        modoClasse
+          ? classe
+          : `rounded-lg ${flexivel ? "max-w-full px-4" : "shrink-0"}`
       }`}
-      style={{
-        width: modoFixo ? largura : undefined,
-        height: altura,
-      }}
+      style={
+        modoClasse
+          ? undefined
+          : { width: modoFixo ? largura : undefined, height: altura }
+      }
     >
       <LocalImage
         src={logo.src}
@@ -69,11 +81,11 @@ export default function AzulejoLogo({
         height={logo.height}
         className="w-auto object-contain"
         style={
-          modoFixo
+          modoClasse || modoFixo
             ? {
-                // Caixa fixa: o logo encaixa inteiro (aspect preservado), centrado.
-                // maxWidth+maxHeight 100% → object-contain sem distorção; o
-                // letterbox é invisível porque o fundo da caixa = fundo do logo.
+                // Caixa (fixa ou por classe): o logo encaixa inteiro (aspect
+                // preservado), centrado. maxWidth+maxHeight 100% → contain
+                // sem distorção; o letterbox vem embutido nos assets 16:9.
                 maxWidth: "100%",
                 maxHeight: "100%",
               }
