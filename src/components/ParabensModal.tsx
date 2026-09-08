@@ -22,10 +22,16 @@ type Props =
       comprovativoOk: boolean;
     })
   | (PropsBase & {
-      /** Fluxo de patrocínio: sem comprovativo e sem email (por agora). */
+      /**
+       * Fluxo de patrocínio (Bloco J): comprovativo opcional — quando houve
+       * upload, o estado dele decide a linha de fallback; sem comprovativo
+       * (prop ausente) fica como antes.
+       */
       contexto: "patrocinio";
       /** Nome do nível escolhido (Apoio / Parceiro / Parceiro Principal). */
       nivelLabel: string;
+      /** false = o upload falhou / foi pelo WhatsApp → linha de fallback. */
+      comprovativoOk?: boolean;
     });
 
 /**
@@ -42,8 +48,10 @@ type Props =
  *    (OK → comprovativoOk=true, ou falha → comprovativoOk=false). Se falhou,
  *    uma linha pede o envio pelo WhatsApp. O pai dispara o EmailJS
  *    (fire-and-forget) só quando comprovativoOk=true.
- *  - patrocínio: abre no clique de "Já fiz o pagamento". Sem comprovativo e
- *    sem email por agora — o ponto de extensão fica marcado em comentário.
+ *  - patrocínio: abre na conclusão do fluxo de pagamento (Bloco J) —
+ *    comprovativo recebido (comprovativoOk=true), falhou/pelo WhatsApp
+ *    (false → linha de fallback) ou sem comprovativo (prop ausente). Sem
+ *    email por agora — o ponto de extensão fica marcado em comentário.
  */
 export default function ParabensModal(props: Props) {
   const { aberto, fechar, ctaWhatsApp } = props;
@@ -149,12 +157,30 @@ export default function ParabensModal(props: Props) {
             </div>
           </>
         ) : (
-          <p className="text-[0.9375rem] leading-relaxed text-creme/75">
-            Recebemos o teu patrocínio de{" "}
-            <strong className="font-medium text-creme">{props.nivelLabel}</strong>. Assim que a
-            Essence of Beauty confirmar o teu pagamento, a tua marca entra nos materiais do
-            evento.
-          </p>
+          <>
+            <p className="text-[0.9375rem] leading-relaxed text-creme/75">
+              Recebemos o teu patrocínio de{" "}
+              <strong className="font-medium text-creme">{props.nivelLabel}</strong>. Assim que a
+              Essence of Beauty confirmar o teu pagamento, a tua marca entra nos materiais do
+              evento.
+            </p>
+
+            {/* Bloco J — upload falhou / foi pelo WhatsApp → mesma linha de
+                fallback da inscrição: uma pagante nunca fica sem confirmação
+                por causa de um upload. */}
+            {props.comprovativoOk === false && (
+              <div className="rounded-sm border border-dourado-claro/30 bg-dourado-claro/[0.07] p-4">
+                <p className="flex items-start gap-3 text-[0.875rem] leading-relaxed text-creme/85">
+                  <MessageCircle className="mt-0.5 h-5 w-5 shrink-0 text-dourado-claro" aria-hidden />
+                  <span>
+                    Não conseguimos receber o teu comprovativo aqui. Envia-o pelo WhatsApp{" "}
+                    <strong className="font-medium text-creme">{numeroVisivel}</strong> e
+                    confirmamos o teu patrocínio.
+                  </span>
+                </p>
+              </div>
+            )}
+          </>
         )}
 
         {/* CTA WhatsApp — o caminho humano está sempre à vista */}

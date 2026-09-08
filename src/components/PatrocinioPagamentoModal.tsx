@@ -5,6 +5,8 @@ import { ArrowLeft, ChevronRight, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { WhatsAppIcon, MbWayIcon, TransferenciaIcon } from "./icons";
+import ConfirmacaoSaidaModal from "./ConfirmacaoSaidaModal";
+import PaymentProofUpload from "./PaymentProofUpload";
 import { travarScroll, destravarScroll } from "@/lib/scroll-lock";
 import { MBWAY_NUMERO, TRANSFERENCIA } from "@/lib/pagamento";
 import { linkWhatsAppPatrocinio } from "@/lib/sponsor";
@@ -15,14 +17,23 @@ type Props = {
   fechar: () => void;
   /** Id do patrocínio registado no POST /api/sponsor. */
   sponsorId: string;
+  /**
+   * B1/0011 — capability de posse do patrocínio (vive só em memória no
+   * SponsorFlow). Vai nos PATCHs do método e no upload do comprovativo.
+   */
+  posseToken: string;
   /** Primeiro nome, para a referência da transferência. */
   nome: string;
   /** Nível de parceria escolhido (75 / 150 / 200€). */
   nivel: NivelParceria;
   /** Tema da modal: vinho (escuro) ou claro. */
   tom?: "vinho" | "claro";
-  /** Chamado quando a pessoa diz já ter pago — o pai abre o 4.º modal empilhado. */
-  onPago?: (metodo: MetodoSponsor) => void;
+  /**
+   * Conclusão do fluxo (Bloco J): comprovativo recebido (comprovativoOk=true)
+   * ou envio falhado / preferência pelo WhatsApp (false) — o pai fecha a
+   * cadeia e abre o Parabéns (4.º modal empilhado).
+   */
+  onConcluido?: (metodo: MetodoSponsor, comprovativoOk: boolean) => void;
 };
 
 /** Elementos focáveis dentro do painel, para o foco circular (trap). */
@@ -34,25 +45,33 @@ function focaveis(raiz: HTMLElement): HTMLElement[] {
   ).filter((el) => el.offsetParent !== null || el === document.activeElement);
 }
 
-type Passo = "metodos" | "mbway" | "transferencia";
+type Passo = "metodos" | "mbway" | "transferencia" | "comprovativo";
 
 const TITULO_MODAL = "patrocinio-pagamento-titulo";
 
 /**
  * Modal de pagamento do patrocínio (FASE5) — mesmo padrão do PagamentoModal
- * (portal, focus trap, ESC, clique fora, scroll-lock com contador), mas com
- * APENAS MB Way e transferência bancária. O SumUp/cartão/QR é exclusivo da
- * inscrição e nunca aparece aqui. O "obrigado" é o 4.º modal empilhado no
- * SponsorFlow, por isso este modal não tem esse passo.
+ * (portal, focus trap, clique fora, scroll-lock com contador), mas com APENAS
+ * MB Way e transferência bancária. O SumUp/cartão/QR é exclusivo da inscrição
+ * e nunca aparece aqui. O "obrigado" é o 4.º modal empilhado no SponsorFlow,
+ * por isso este modal não tem esse passo.
+ *
+ * Bloco J (0011): a escolha do método marca-o E cria o pagamento (valor
+ * derivado do nível, pela RPC). "Já fiz o pagamento" abre o passo de
+ * COMPROVATIVO — upload para o bucket privado (espelho do fluxo de inscrição),
+ * com polling do estado para mostrar o motivo quando a Vitória rejeita. O
+ * upload falhou ou a pessoa prefere o WhatsApp → conclusão com comprovativoOk
+ * = false (fallback humano no Parabéns).
  */
 export default function PatrocinioPagamentoModal({
   aberto,
   fechar,
   sponsorId,
+  posseToken,
   nome,
   nivel,
   tom = "vinho",
-  onPago,
+  onConcluido,
 }: Props) {
   const claro = tom === "claro";
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -65,13 +84,39 @@ export default function PatrocinioPagamentoModal({
   const [marcando, setMarcando] = useState(false);
   const [erroMetodo, setErroMetodo] = useState<string | null>(null);
 
+  // Bloco J — pagamento criado pela sequência do método (id + método guardado
+  // para o upload e para o "voltar"), e o motivo de rejeição do polling.
+  const [pagamentoId, setPagamentoId] = useState("");
+  const [metodoEscolhido, setMetodoEscolhido] = useState<MetodoSponsor | null>(null);
+  const [motivoRejeicao, setMotivoRejeicao] = useState<string | null>(null);
+
+  // r3 — anti-fecho (task #17): o clique fora e o ESC não fecham; o X com
+  // progresso a perder (método escolhido) pede confirmação antes de descartar.
+  const [confirmarSaida, setConfirmarSaida] = useState(false);
+
   // createPortal ao <body>, só depois de o cliente montar.
   useEffect(() => setMontado(true), []);
 
-  // Cada abertura volta ao primeiro passo.
+  // Cada abertura volta ao primeiro passo, sem confirmação pendente.
   useEffect(() => {
-    if (aberto) setPasso("metodos");
+    if (aberto) {
+      setPasso("metodos");
+      setConfirmarSaida(false);
+      setPagamentoId("");
+      setMetodoEscolhido(null);
+      setMotivoRejeicao(null);
+    }
   }, [aberto]);
+
+  /** X da modal C: com método já escolhido, pede confirmação primeiro. */
+  function pedirFechar() {
+    if (confirmarSaida) return;
+    if (passo !== "metodos") {
+      setConfirmarSaida(true);
+      return;
+    }
+    fechar();
+  }
 
   useEffect(() => {
     if (!aberto) return;
@@ -83,10 +128,8 @@ export default function PatrocinioPagamentoModal({
     travarScroll();
 
     const aoTecla = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        fechar();
-        return;
-      }
+      // r3 — sem ESC aqui: o fecho é só pelo X (que pede confirmação quando
+      // há progresso). A confirmação própria tem ESC = "cancelar saída".
       if (e.key === "Tab" && painelRef.current) {
         const lista = focaveis(painelRef.current);
         if (lista.length === 0) return;
@@ -119,12 +162,13 @@ export default function PatrocinioPagamentoModal({
     };
   }, [aberto, fechar]);
 
-  function aoClicarFora(e: React.MouseEvent) {
-    if (e.target === overlayRef.current) fechar();
-  }
-
-  /** Marca o método no Supabase e mostra as instruções do método escolhido. */
+  /** Marca o método (cria o pagamento) e mostra as instruções dele. */
   async function escolherMetodo(escolhido: MetodoSponsor) {
+    // B1/0011: sem token de posse não há escrita — a sessão não é a deste registo.
+    if (!posseToken) {
+      setErroMetodo("A tua sessão expirou. Volta a submeter o formulário para continuar.");
+      return;
+    }
     setMarcando(true);
     setErroMetodo(null);
 
@@ -132,7 +176,7 @@ export default function PatrocinioPagamentoModal({
       const resposta = await fetch("/api/sponsor/metodo", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sponsorId, metodo: escolhido }),
+        body: JSON.stringify({ sponsorId, metodo: escolhido, posseToken }),
       });
 
       const dados = await resposta.json();
@@ -142,6 +186,12 @@ export default function PatrocinioPagamentoModal({
         return;
       }
 
+      // Bloco J: a mesma PATCH marca o método E cria o pagamento — o id vem
+      // na resposta e alimenta o upload do comprovativo.
+      setMetodoEscolhido(escolhido);
+      setPagamentoId(
+        typeof dados.pagamento?.pagamentoId === "string" ? dados.pagamento.pagamentoId : ""
+      );
       setPasso(escolhido === "mbway" ? "mbway" : "transferencia");
     } catch {
       setErroMetodo("Sem ligação ao servidor. Tenta novamente.");
@@ -149,6 +199,39 @@ export default function PatrocinioPagamentoModal({
       setMarcando(false);
     }
   }
+
+  // Bloco J — polling do estado do pagamento enquanto o passo de comprovativo
+  // está aberto: se a Vitória rejeitar, o motivo aparece no sítio e a pessoa
+  // reenvia. Intervalo comedido (10 s) e parado quando sai do passo.
+  useEffect(() => {
+    if (!aberto || passo !== "comprovativo" || !sponsorId || !posseToken) return;
+
+    let vivo = true;
+    async function sondar() {
+      try {
+        const resposta = await fetch("/api/sponsor/estado", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sponsorId, posseToken }),
+        });
+        if (!resposta.ok || !vivo) return;
+        const dados = (await resposta.json()) as {
+          ok: boolean;
+          estado?: string;
+          motivoRejeicao?: string | null;
+        };
+        if (vivo && dados.ok) setMotivoRejeicao(dados.motivoRejeicao ?? null);
+      } catch {
+        // polling é best-effort — falha de rede não perturba o passo
+      }
+    }
+
+    const intervalo = window.setInterval(sondar, 10000);
+    return () => {
+      vivo = false;
+      window.clearInterval(intervalo);
+    };
+  }, [aberto, passo, sponsorId, posseToken]);
 
   /* ── Ecrãs ────────────────────────────────────────────────── */
 
@@ -217,7 +300,6 @@ export default function PatrocinioPagamentoModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.25 }}
-          onClick={aoClicarFora}
           role="dialog"
           aria-modal="true"
           aria-labelledby={TITULO_MODAL}
@@ -246,7 +328,7 @@ export default function PatrocinioPagamentoModal({
 
               {/* Botão fechar, alvo de toque ≥ 44×44 */}
               <button
-                onClick={fechar}
+                onClick={pedirFechar}
                 aria-label="Fechar"
                 className={`absolute right-3 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full border transition-colors ${
                   claro
@@ -382,7 +464,7 @@ export default function PatrocinioPagamentoModal({
 
                     <button
                       type="button"
-                      onClick={() => onPago?.("mbway")}
+                      onClick={() => setPasso("comprovativo")}
                       className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full border px-7 py-4 text-[0.9375rem] font-medium transition-colors duration-300 ${
                         claro
                           ? "border-vinho/25 text-vinho hover:border-vinho/45"
@@ -489,7 +571,7 @@ export default function PatrocinioPagamentoModal({
 
                     <button
                       type="button"
-                      onClick={() => onPago?.("transferencia")}
+                      onClick={() => setPasso("comprovativo")}
                       className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full border px-7 py-4 text-[0.9375rem] font-medium transition-colors duration-300 ${
                         claro
                           ? "border-vinho/25 text-vinho hover:border-vinho/45"
@@ -501,6 +583,110 @@ export default function PatrocinioPagamentoModal({
                     </button>
                   </div>
                 )}
+
+                {/* ── PASSO: Comprovativo (Bloco J) — espelho do fluxo de
+                       inscrição: upload ao bucket privado + polling do estado.
+                       O upload falhou ou prefere o WhatsApp → conclusão com
+                       comprovativoOk=false (fallback humano no Parabéns). ── */}
+                {passo === "comprovativo" && (
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => setPasso(metodoEscolhido === "transferencia" ? "transferencia" : "mbway")}
+                      className={`inline-flex min-h-11 items-center gap-2 text-[0.8125rem] ${
+                        claro ? "text-vinho/60 hover:text-vinho" : "text-creme/60 hover:text-creme"
+                      }`}
+                    >
+                      <ArrowLeft className="h-4 w-4" aria-hidden />
+                      Voltar
+                    </button>
+
+                    <h2
+                      id={TITULO_MODAL}
+                      className={`display mt-5 text-[1.75rem] leading-[1.05] sm:text-[2.125rem] ${
+                        claro ? "text-vinho" : "text-creme"
+                      }`}
+                    >
+                      Envia o comprovativo
+                    </h2>
+
+                    <p
+                      className={`mt-4 text-[0.9375rem] leading-relaxed ${
+                        claro ? "text-carvao/70" : "text-creme/70"
+                      }`}
+                    >
+                      Envia a captura do pagamento para agilizarmos a confirmação
+                      do teu patrocínio — sem esperar pelo WhatsApp.
+                    </p>
+
+                    {/* Vitória rejeitou o comprovativo anterior → o motivo do
+                        polling aparece aqui e a pessoa reenvia. */}
+                    {motivoRejeicao && (
+                      <p
+                        role="alert"
+                        className="mt-4 rounded-sm border border-[#e88b8b]/40 bg-[#e88b8b]/10 px-4 py-3 text-[0.875rem] text-[#f3c0c0]"
+                      >
+                        A confirmação devolveu o comprovativo: {motivoRejeicao}. Podes
+                        enviar outro ficheiro.
+                      </p>
+                    )}
+
+                    {pagamentoId && posseToken ? (
+                      <div className="mt-6">
+                        <PaymentProofUpload
+                          inscricaoId={sponsorId}
+                          pagamentoId={pagamentoId}
+                          posseToken={posseToken}
+                          endpoint="/api/sponsor/comprovativo"
+                          idCampo="sponsorId"
+                          onSucesso={() => {
+                            onConcluido?.(metodoEscolhido ?? "mbway", true);
+                          }}
+                          onFalhaServidor={() => {
+                            // Falha do servidor → conclusão com fallback humano
+                            // (o Parabéns diz para combinar pelo WhatsApp).
+                            onConcluido?.(metodoEscolhido ?? "mbway", false);
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <p
+                        role="alert"
+                        className={`mt-6 rounded-sm border px-4 py-3 text-[0.875rem] ${
+                          claro
+                            ? "border-vinho/30 bg-vinho/5 text-vinho/80"
+                            : "border-[#e88b8b]/40 bg-[#e88b8b]/10 text-[#f3c0c0]"
+                        }`}
+                      >
+                        O pagamento ainda não ficou registado. Volta atrás e
+                        escolhe o método de novo.
+                      </p>
+                    )}
+
+                    {/* Fallback humano — mesmo sem upload, o fluxo nunca deixa
+                        uma pagante presa (invariante do Bloco D). */}
+                    <a
+                      href={linkWhatsAppPatrocinio(
+                        metodoEscolhido === "transferencia" ? "transferencia" : "mbway",
+                        nivel
+                      )}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => onConcluido?.(
+                        metodoEscolhido === "transferencia" ? "transferencia" : "mbway",
+                        false
+                      )}
+                      className={`mt-4 flex w-full items-center justify-center gap-2 rounded-full border px-7 py-4 text-[0.9375rem] font-medium transition-colors duration-300 ${
+                        claro
+                          ? "border-vinho/25 text-vinho hover:border-vinho/45"
+                          : "border-creme/25 text-creme/80 hover:border-creme/50 hover:bg-creme/5"
+                      }`}
+                    >
+                      <WhatsAppIcon className="h-4.5 w-4.5" />
+                      Prefiro enviar pelo WhatsApp
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>
@@ -509,5 +695,19 @@ export default function PatrocinioPagamentoModal({
     </AnimatePresence>
   );
 
-  return montado ? createPortal(dialogo, document.body) : null;
+  return montado ? (
+    <>
+      {createPortal(dialogo, document.body)}
+      {/* r3 — confirmação de saída por cima (mesmo padrão do fluxo de inscrição). */}
+      <ConfirmacaoSaidaModal
+        aberto={aberto && confirmarSaida}
+        manter={() => setConfirmarSaida(false)}
+        sair={() => {
+          setConfirmarSaida(false);
+          fechar();
+        }}
+        texto="Escolheste o método de pagamento, mas o patrocínio ainda não está confirmado."
+      />
+    </>
+  ) : null;
 }

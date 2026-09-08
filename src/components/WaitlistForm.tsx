@@ -16,11 +16,12 @@ type Props = {
   /** waitlist (padrão) ou sponsor, muda textos, endpoint e sucesso. */
   variant?: Variante;
   /**
-   * Chamado quando a submissão sponsor é aceite. Entrega o id do registo para
-   * o pai abrir o passo B (escolha do nível) por cima. O waitlist não usa
-   * este callback.
+   * Chamado quando a submissão sponsor é aceite. Entrega o id do registo e o
+   * posseToken (B1/0011, capability devolvida UMA vez pela rota) para o pai
+   * abrir o passo B (escolha do nível) por cima. O waitlist não usa este
+   * callback.
    */
-  onSucesso?: (dados?: { id: string; nome: string }) => void;
+  onSucesso?: (dados?: { id: string; nome: string; posseToken?: string }) => void;
   /**
    * r3 — progresso do formulário (ronda anti-fecho acidental): true à 1.ª
    * alteração, false quando o registo é aceite. Opcional — a lista de espera
@@ -247,6 +248,8 @@ export default function WaitlistForm({
         onSucesso?.({
           id: dados.id,
           nome: normalizarNome(fullName),
+          // B1/0011: capability de posse, usada nos PATCHs seguintes.
+          posseToken: typeof dados.posseToken === "string" ? dados.posseToken : undefined,
         });
       } else {
         setPosicao(dados.posicao ?? null);

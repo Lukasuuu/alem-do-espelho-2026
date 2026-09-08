@@ -32,7 +32,9 @@ function larguraModal() {
  *   B. confirmação + escolha do nível → texto da CORREÇÃO nº5, 3 níveis estilo
  *      "anexo2" com benefícios e badge MAIS PROCURADO; PATCH /api/sponsor/nivel.
  *   C. pagamento → MB Way / transferência apenas (sem cartão, sem QR); a escolha
- *      do método faz PATCH /api/sponsor/metodo e "Já fiz o pagamento" fecha a cadeia.
+ *      do método faz PATCH /api/sponsor/metodo + cria o pagamento (Bloco J/0011,
+ *      valor derivado do nível), "Já fiz o pagamento" abre o passo de
+ *      COMPROVATIVO (upload payment-proofs) e a conclusão fecha a cadeia.
  *
  * Cada modal abre POR CIMA do anterior, que fica aberto — o contador de
  * scroll-lock chega à profundidade 3 (o fundo só destrava quando TODOS fecham).
@@ -40,8 +42,8 @@ function larguraModal() {
  *   - ✕ / clique fora fecham só o modal do topo → volta ao passo anterior;
  *   - ESC fecha a cadeia toda (todos os modais escutam ESC ao mesmo tempo).
  * O fluxo fecha no PARABÉNS partilhado (ParabensModal, contexto "patrocinio"):
- * o "Já fiz o pagamento" abre-o por cima e termina a cadeia. Sem comprovativo
- * e sem email por agora (ponto de extensão do EmailJS marcado no ParabensModal).
+ * a conclusão do comprovativo abre-o por cima e termina a cadeia. Sem email
+ * por agora (ponto de extensão do EmailJS marcado no ParabensModal).
  * Nunca afirma pagamento confirmado — a Vitória verifica à mão.
  */
 export default function SponsorFlow() {
@@ -58,12 +60,21 @@ export default function SponsorFlow() {
   const [nivel, setNivel] = useState<NivelParceria | null>(null);
   const [sponsorId, setSponsorId] = useState("");
   const [nome, setNome] = useState("");
+  /**
+   * B1/0011 — o posseToken vive AQUI, só em memória (estado React) — nem
+   * sessionStorage/localStorage/cookie, nem logs, nem URL. Fechou o browser,
+   * morreu com a tab: a reentrada é re-submeter o formulário (UPDATE → token
+   * NOVO no POST). Mesmo padrão do EventoPage no fluxo de inscrição.
+   */
+  const [posseToken, setPosseToken] = useState("");
 
   const [escolhendoNivel, setEscolhendoNivel] = useState(false);
   const [erroNivel, setErroNivel] = useState<string | null>(null);
 
   const [parabensAberto, setParabensAberto] = useState(false);
   const [metodo, setMetodo] = useState<MetodoSponsor | null>(null);
+  /** Bloco J: true = comprovativo recebido; false = falhou/foi pelo WhatsApp. */
+  const [comprovativoOk, setComprovativoOk] = useState(true);
 
   function fecharTudo() {
     setApresentacaoAberto(false);
@@ -99,17 +110,25 @@ export default function SponsorFlow() {
     setSponsorId("");
     setNome("");
     setMetodo(null);
+    // A capability morre com o fluxo (só em memória).
+    setPosseToken("");
+    setComprovativoOk(true);
   }
 
   /** Passo B: marca o nível no registo (POST ainda tinha nivel null). */
   async function escolherNivel(valor: NivelParceria) {
+    // B1/0011: sem token de posse não há escrita — a sessão não é a deste registo.
+    if (!posseToken) {
+      setErroNivel("A tua sessão expirou. Volta a submeter o formulário para continuar.");
+      return;
+    }
     setEscolhendoNivel(true);
     setErroNivel(null);
     try {
       const resposta = await fetch("/api/sponsor/nivel", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sponsorId, nivel: valor }),
+        body: JSON.stringify({ sponsorId, nivel: valor, posseToken }),
       });
       const dados = await resposta.json();
 
@@ -232,6 +251,8 @@ export default function SponsorFlow() {
                   if (!dados) return;
                   setSponsorId(dados.id);
                   setNome(dados.nome);
+                  // B1/0011: capability em memória — só vive neste componente.
+                  setPosseToken(dados.posseToken ?? "");
                   setNivelAberto(true); // o modal A fica aberto por baixo
                 }}
               />
@@ -333,16 +354,18 @@ export default function SponsorFlow() {
         )}
       </Modal>
 
-      {/* ── C. PAGAMENTO (MB Way / transferência — sem cartão) ─────── */}
-      {nivel !== null && sponsorId !== "" && (
+      {/* ── C. PAGAMENTO (MB Way / transferência + comprovativo — sem cartão) ── */}
+      {nivel !== null && sponsorId !== "" && posseToken !== "" && (
         <PatrocinioPagamentoModal
           aberto={pagamentoAberto}
           fechar={() => setPagamentoAberto(false)}
           sponsorId={sponsorId}
+          posseToken={posseToken}
           nome={nome}
           nivel={nivel}
-          onPago={(metodoEscolhido) => {
+          onConcluido={(metodoEscolhido, comprovativoRecebido) => {
             setMetodo(metodoEscolhido);
+            setComprovativoOk(comprovativoRecebido);
             fecharTudo(); // a cadeia A/B/C fecha — o Parabéns fica sozinho no topo
             setParabensAberto(true);
           }}
@@ -357,6 +380,7 @@ export default function SponsorFlow() {
           contexto="patrocinio"
           nivelLabel={NIVEIS_PARCERIA_COPY[nivel].titulo}
           ctaWhatsApp={linkWhatsAppPatrocinio(metodo, nivel)}
+          comprovativoOk={comprovativoOk}
         />
       )}
     </>

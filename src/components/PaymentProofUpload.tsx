@@ -17,10 +17,21 @@ import {
 import { WhatsAppIcon } from "./icons";
 
 type Props = {
+  /** Id do dono do pagamento — inscricao_id (inscrição) ou sponsor_id (patrocínio). */
   inscricaoId: string;
   pagamentoId: string;
   /** Token de posse da inscrição (B1/0009) — vai no form-data das RPCs. */
   posseToken: string;
+  /**
+   * Endpoint de upload (Bloco J): default "/api/comprovativo" (inscrição);
+   * o fluxo de patrocínio passa "/api/sponsor/comprovativo".
+   */
+  endpoint?: string;
+  /**
+   * Nome do campo do id do dono no form-data: "inscricaoId" (default, inscrição)
+   * ou "sponsorId" (patrocínio, rota /api/sponsor/comprovativo).
+   */
+  idCampo?: "inscricaoId" | "sponsorId";
   /** Chamado com o id do comprovativo registado (estado proof_uploaded). */
   onSucesso: (comprovativoId: string) => void;
   /**
@@ -44,6 +55,8 @@ export default function PaymentProofUpload({
   inscricaoId,
   pagamentoId,
   posseToken,
+  endpoint = "/api/comprovativo",
+  idCampo = "inscricaoId",
   onSucesso,
   onFalhaServidor,
 }: Props) {
@@ -128,14 +141,15 @@ export default function PaymentProofUpload({
     limparErro();
 
     const form = new FormData();
-    form.append("inscricaoId", inscricaoId);
+    // B1/0011: o nome do campo do id depende do fluxo (inscrição vs. patrocínio).
+    form.append(idCampo, inscricaoId);
     form.append("pagamentoId", pagamentoId);
     form.append("posseToken", posseToken);
     form.append("ficheiro", arquivo);
 
     // XHR (e não fetch) por causa do progresso de upload.
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/api/comprovativo");
+    xhr.open("POST", endpoint);
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) setProgresso(Math.round((e.loaded / e.total) * 100));
     };
