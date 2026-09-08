@@ -17,10 +17,8 @@ import MarqueeLogos from "./MarqueeLogos";
  * 2.2.2).
  */
 export default function VitrinePatrocinadoras() {
-  // Tiles maiores (128×128) pedem pista mais larga — 56rem cabe
-  // ~6 azulejos + gaps em desktop sem espremer o fade das pontas.
   return (
-    <div className="mx-auto mt-10 max-w-[56rem]">
+    <div className="mx-auto mt-10 max-w-[42rem]">
       {/* Rótulo do grupo, centrado, entre dois traços dourados */}
       <div className="mb-7 flex items-center justify-center gap-4">
         <span className="h-px w-10 bg-dourado/40" aria-hidden />

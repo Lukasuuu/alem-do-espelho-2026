@@ -1,37 +1,34 @@
 import LocalImage from "./LocalImage";
-import type { PatrocinadorComLogo } from "@/lib/patrocinadores";
+import type { Patrocinador } from "@/lib/patrocinadores";
 
 /**
- * Azulejo de marca — tile QUADRADO e TRANSPARENTE, logo com object-fit: contain
- * e padding interno consistente.
+ * Azulejo de marca — card de logo pré-renderizado 1024×1024 dentro de uma
+ * caixa de encaixe.
  *
- * REFINAMENTO (Bloco I-r2): os tiles deixaram de ter fundo CSS. Os logos OURO
- * novos são cards pré-renderizados 600×600 (fundo de marca, cantos ~11% e borda
- * JÁ embutidos no .webp — `estilo: "card"`); os legados renderizam-se "como
- * vêm" (o rectangle do asset é o próprio asset). Uniformizar o tratamento:
- * nenhum logo leva caixa CSS — o dim/desfoque do efeito `.marquee-foco`
- * (globals.css) aplica-se por igual ao conteúdo, sem diferença de cor sob o
- * efeito. Sem upscale: contain mantém a proporção sem esticar.
+ * ⚠️ SEM SOBREPOSIÇÃO (correção pós-r3): os assets são cards com fundo de
+ * marca, cantos (~11%) e borda JÁ EMBUTIDOS no ficheiro .webp. O contentor
+ * NÃO aplica background-color, padding, border-radius nem border — só
+ * object-contain centrado, tal-e-qual.
  *
  * Dois modos:
- *  - MARQUEE (caixa fixa): `largura` definido → caixa quadrada (BOX_W = BOX_H),
- *    padding interno uniforme, logo centrado com maxWidth/maxHeight 100%.
+ *  - MARQUEE (caixa fixa): `largura` definido → caixa quadrada 96×96, logo
+ *    centrado com maxWidth/maxHeight 100% (object-contain). A largura
+ *    uniforme faz o ciclo do marquee ser periódico e sem costura.
  *  - ESTÁTICO (`flexivel`): encolhe até ao pai, sem esticar o logo.
  *
- * As micro-interações de isolamento de foco (opacity + escala no hover/tap)
+ * As micro-interações de isolamento de foco (opacity/blur + escala no hover)
  * são aplicadas por CSS contextual em .marquee-foco (globals.css) — fora do
  * marquee o tile fica neutro.
  */
 type Props = {
-  // Logo obrigatório — a faixa só renderiza quem tem logo (patrocinadoresNaFaixa).
-  logo: PatrocinadorComLogo["logo"];
+  logo: NonNullable<Patrocinador["logo"]>;
   /**
-   * Lado do tile quadrado em px. Default 128 (desktop).
+   * Altura da caixa em px. Default 72 (desktop).
    */
   altura?: number;
   /**
-   * Lado FIXO do tile em px — modo marquee. Quando presente, o logo é
-   * normalizado para dentro da caixa (contain + padding) e não leva padding extra.
+   * Largura FIXA da caixa em px — modo marquee (ex.: 180). Quando presente,
+   * o logo é normalizado para dentro da caixa e não leva padding.
    */
   largura?: number;
   /**
@@ -46,12 +43,9 @@ type Props = {
   flexivel?: boolean;
 };
 
-/** Padding interno uniforme do tile (px) — respiro igual para todos os logos. */
-const PAD_TILE = 10;
-
 export default function AzulejoLogo({
   logo,
-  altura = 128,
+  altura = 72,
   largura,
   altOculto = false,
   flexivel = false,
@@ -61,16 +55,11 @@ export default function AzulejoLogo({
   return (
     <span
       className={`azulejo-logo flex items-center justify-center overflow-hidden ${
-        flexivel ? "max-w-full px-4" : "shrink-0"
+        flexivel ? "max-w-full" : "shrink-0"
       }`}
       style={{
         width: modoFixo ? largura : undefined,
         height: altura,
-        // Respiro interno UNIFORME no modo marquee: todos os logos ficam à mesma
-        // distância das bordas do tile, independentemente do asset.
-        padding: modoFixo ? PAD_TILE : undefined,
-        // Sem backgroundColor por logo — o card traz fundo embutido e o legado
-        // renderiza-se "como vem" (uniforme sob o dim/desfoque do efeito).
       }}
     >
       <LocalImage
@@ -82,8 +71,9 @@ export default function AzulejoLogo({
         style={
           modoFixo
             ? {
-                // Tile fixo: o logo encaixa inteiro (aspect preservado), centrado
-                // dentro do padding uniforme — object-contain sem distorção.
+                // Caixa fixa: o logo encaixa inteiro (aspect preservado), centrado.
+                // maxWidth+maxHeight 100% → object-contain sem distorção; o
+                // letterbox é invisível porque o fundo da caixa = fundo do logo.
                 maxWidth: "100%",
                 maxHeight: "100%",
               }

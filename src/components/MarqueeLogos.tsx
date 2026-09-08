@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import AzulejoLogo from "./AzulejoLogo";
-import { patrocinadoresNaFaixa } from "@/lib/patrocinadores";
+import { patrocinadoresVisiveis } from "@/lib/patrocinadores";
 
 /**
  * Faixa de logos em marquee — movimento infinito SUAVIZADO.
@@ -16,11 +16,12 @@ import { patrocinadoresNaFaixa } from "@/lib/patrocinadores";
  * aproxima a playbackRate de 0 (travão de veludo ~400ms), usando
  * updatePlaybackRate() em vez de escrever playbackRate directamente.
  *
- * LOGOS NORMALIZADOS: cada marca é uma caixa FIXA QUADRADA (128×128, gap
- * uniforme 40) — tile transparente com contain + padding uniforme, os cards
- * 600×600 OURO mostram-se tal-e-qual (fundo/cantos/borda embutidos). Largura
- * uniforme ⇒ o período do ciclo é n×(caixa+gap) e o translateX(-50%)
- * fecha a costura sem salto.
+ * LOGOS NORMALIZADOS: cada marca é uma caixa FIXA quadrada (96×96, gap
+ * uniforme 56) — os assets são cards pré-renderizados 1024×1024 (correção
+ * pós-r3), portanto a caixa é quadrada e o encaixe é object-contain SEM
+ * fundo/padding/radius por cima do card (fundo, cantos e borda já vêm no
+ * asset). Largura uniforme ⇒ o período do ciclo é n×(caixa+gap) e o
+ * translateX(-50%) fecha a costura sem salto.
  *
  * REPETIÇÕES CALCULADAS: o nº de blocos por metade deriva da largura do
  * contentor (mínimo 2), para a pista NUNCA ficar mais curta que o ecrã — com 2
@@ -44,11 +45,12 @@ import { patrocinadoresNaFaixa } from "@/lib/patrocinadores";
  * React 19 dev monta duas vezes — o useEffect tem cleanup completo.
  */
 
-/** Caixa fixa de cada logo (px) — tile QUADRADO (Bloco I-r2). */
-const BOX_W = 128;
-const BOX_H = 128;
+/** Caixa fixa de cada logo (px) — quadrada: os cards 1024×1024 têm fundo,
+ *  cantos e borda embutidos no asset. */
+const BOX_W = 96;
+const BOX_H = 96;
 /** Gap uniforme entre logos (px). */
-const GAP = 40;
+const GAP = 56;
 /** Velocidade constante do marquee (px/s) — medida no diagnóstico. */
 const VELOCIDADE_PX_S = 40;
 /** Constante de tempo do travão de veludo (ms) — 3×τ ≈ 99% ≈ 315ms, ~400ms até 2%. */
@@ -88,7 +90,7 @@ export default function MarqueeLogos() {
     const container = containerRef.current;
     if (!container) return;
 
-    const blocoBase = patrocinadoresNaFaixa().length * (BOX_W + GAP);
+    const blocoBase = patrocinadoresVisiveis().length * (BOX_W + GAP);
     if (blocoBase <= 0) return;
     const calcular = () => {
       const n = Math.max(MIN_REPETICOES, Math.ceil(container.clientWidth / blocoBase));
@@ -312,9 +314,9 @@ export default function MarqueeLogos() {
         data-marquee-estado="pre-hidratacao"
         className="flex flex-wrap items-center justify-center gap-6"
       >
-        {patrocinadoresNaFaixa().map((p) => (
-          <AzulejoLogo key={p.id} logo={p.logo} flexivel />
-        ))}
+        {patrocinadoresVisiveis().map((p) =>
+          p.logo ? <AzulejoLogo key={p.id} logo={p.logo} flexivel /> : null
+        )}
       </div>
     );
   }
@@ -338,15 +340,17 @@ export default function MarqueeLogos() {
             style={{ gap: GAP, marginRight: GAP }}
             aria-hidden={bloco !== 0 || undefined}
           >
-            {patrocinadoresNaFaixa().map((p) => (
-              <AzulejoLogo
-                key={p.id}
-                logo={p.logo}
-                largura={BOX_W}
-                altura={BOX_H}
-                altOculto={bloco !== 0}
-              />
-            ))}
+            {patrocinadoresVisiveis().map((p) =>
+              p.logo ? (
+                <AzulejoLogo
+                  key={p.id}
+                  logo={p.logo}
+                  largura={BOX_W}
+                  altura={BOX_H}
+                  altOculto={bloco !== 0}
+                />
+              ) : null
+            )}
           </div>
         ))}
       </div>
