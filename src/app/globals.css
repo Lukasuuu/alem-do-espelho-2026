@@ -514,6 +514,9 @@ body {
   max-height: calc(100vh - var(--topo-modal) - 1rem);
   max-height: calc(100dvh - var(--topo-modal) - 1rem);
   overflow-y: auto;
+  /* Touch nativo: só pan vertical (evita que o gesto dentro da modal
+     dispare navegação/gestos horizontais do browser). Sem listeners JS. */
+  touch-action: pan-y;
   border-radius: 0.125rem;
   /* Scrollbar fina estilizada (rosa-velho #BA7984) — substitui a variante que
      escondia a barra nativa. Firefox (scrollbar-width/color) + Chromium/Safari
@@ -685,6 +688,14 @@ body {
 .scroll-ouro {
   scrollbar-width: thin;
   scrollbar-color: rgb(212 175 55 / 0.35) transparent;
+  /* Scroll NATIVO por touch (spec ajuste modal): sem listeners JS, sem
+     preventDefault — pan-y deixa o gesto vertical rolar e mata o conflito
+     com gestos horizontais do browser; momentum iOS no Safari antigo. */
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  /* Gutter reservado mesmo sem overflow — a coluna não "salta" quando os
+     cartões passam a transbordar (no mobile, overlay scrollbar = sem efeito). */
+  scrollbar-gutter: stable;
 }
 .scroll-ouro::-webkit-scrollbar {
   width: 4px;
@@ -695,6 +706,35 @@ body {
 .scroll-ouro::-webkit-scrollbar-thumb {
   background: rgb(212 175 55 / 0.35);
   border-radius: 9999px;
+}
+
+/* Caps de coluna da modal de patrocínio (≥768, duas colunas): cards E
+   formulário cada um com o SEU scroll — o formulário nunca rola dentro do
+   scroll dos cartões (spec ajuste modal). Mobile <768 fica sem cap (rola com
+   o corpo da modal, como em produção). dvh com fallback vh — mesmo padrão
+   de .modal-content (o calc com dvh inválido deixaria max-height a none). */
+@media (min-width: 768px) {
+  [data-lista-patrocinadores-scroll],
+  [data-coluna-formulario] {
+    max-height: min(62vh, 560px);
+    max-height: min(62dvh, 560px);
+  }
+  [data-coluna-formulario] {
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #ba7984 transparent;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable;
+  }
+  [data-coluna-formulario]::-webkit-scrollbar {
+    width: 4px;
+  }
+  [data-coluna-formulario]::-webkit-scrollbar-thumb {
+    background: rgb(212 175 55 / 0.35);
+    border-radius: 9999px;
+  }
 }
 
 /* ───────────────────────────────────────────────

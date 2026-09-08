@@ -96,10 +96,9 @@ export type Patrocinador = {
   /** Tagline/tema em negrito curto (ex.: "Jornada de Vendas & Marketing
    *  Simplificado"). OPCIONAL — renderiza a linha só quando preenchida. */
   tagline?: string;
-  /** Foto 4:5 — OPCIONAL: Novex (marca) entra sem foto; Gracy tem foto
-   *  mas não tem logo. */
+  /** Foto 4:5 — OPCIONAL: Novex (marca) entra sem foto. */
   foto?: { src: string; alt: string; width: number; height: number };
-  /** Logo — OPCIONAL: a Gracy entra só com foto. */
+  /** Logo — OPCIONAL: um patrocinador pode entrar só com foto. */
   logo?: {
     src: string;
     alt: string;
@@ -155,7 +154,7 @@ export function patrocinadoresVisiveis(): Patrocinador[] {
 export const patrocinadores: Patrocinador[] = [
   {
     // ── OURO (Bloco I, ordem confirmada pelo Lucas: Novex → Lígia → Luci →
-    // Renata → Naty → Gracy → Patrícia; depois prata/bronze como estavam) ──
+    // Renata → Naty → Patrícia; depois prata/bronze como estavam) ──
     id: "novex",
     nome: "Novex",
     titulo: "Cuidados capilares · Embelleze",
@@ -305,8 +304,11 @@ export const patrocinadores: Patrocinador[] = [
     visivel: true,
   },
   {
-    // OURO (Bloco I) — SEM logo: no card (r3) salta o slot do logo no meio
-    // do stack; foto → nome → ◆ → cargo → chevron → MISSÃO.
+    // Afastada da vitrine a pedido do Lucas (08/09/2026) — decisão de
+    // apresentação, NÃO de dados: visivel=false remove-a de TODOS os pontos
+    // de renderização (patrocinadoresVisiveis() é o único filtro — Modal A e
+    // faixa de logos). Nenhum DELETE no Supabase nem no ficheiro: o registo
+    // fica aqui preservado; voltar a mostrar = visivel: true.
     id: "gracy-azevedo",
     nome: "Gracy Azevedo",
     titulo: "Coach de CrossFit & Criadora de Conteúdo",
@@ -323,7 +325,7 @@ export const patrocinadores: Patrocinador[] = [
     citacao: "",
     selo: "Ouro",
     destaque: 1,
-    visivel: true,
+    visivel: false,
   },
   {
     // OURO (Bloco I) — Patrícia Ribeiro / Fluir. Logo com fundo claro opaco.
