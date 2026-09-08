@@ -25,7 +25,7 @@ import { type Patrocinador, TIER_TOKENS, type TierTokenKey } from "@/lib/patroci
  * Coluna de conteúdo, por ordem:
  *   1. faixa do logo (16:9, contain, ao lado do nome) — só pessoa com foto
  *      E logo; a marca (tipo "marca", ex.: Novex) mostra o logo no slot da
- *      foto e não repete; patrocinador sem logo (Gracy) salta o slot.
+ *      foto e não repete; patrocinador sem logo salta o slot.
  *   2. nome (text-wrap: balance, sem hyphens)
  *   3. título profissional (text-wrap: pretty, ≤2 linhas)
  *   4. tagline — só quando preenchida
@@ -99,7 +99,7 @@ export default function CartaoPatrocinadora({
   const nomeSizeRem = NOME_BASE_REM * multiplicadorNome;
 
   // Caixa do logo junto ao nome: só quando há FOTO (pessoa) e há logo — a
-  // marca já o mostrou no slot da foto; quem não tem logo (Gracy) salta.
+  // marca já o mostrou no slot da foto; quem não tem logo salta.
   const caixaLogoJuntoAoNome = foto && logo;
   // Logo no slot da foto — só quando NÃO há foto (marca, ex.: Novex).
   const logoMedia = foto ? undefined : logo;
@@ -226,7 +226,7 @@ export default function CartaoPatrocinadora({
         <div className="mt-5 min-w-0 flex-1 md:mt-0">
           {/* 1. Faixa do logo (16:9, contain) ao lado do nome — logos cards
                 1600×900, slot clamp(150px, 34%, 240px) (ver globals.css
-                .caixa-logo-16x9). Só pessoa com foto E logo; sem logo (Gracy)
+                .caixa-logo-16x9). Só pessoa com foto E logo; sem logo
                 o slot salta e o card não parte. */}
           {(caixaLogoJuntoAoNome || !ocultarNome) && (
             <div className="flex items-center gap-3 min-w-0">

@@ -197,7 +197,13 @@ export default function SponsorFlow() {
 
             <div
               data-lista-patrocinadores-scroll
-              className="scroll-ouro mt-6 space-y-4 overflow-y-auto overscroll-contain pr-1 md:max-h-[min(62vh,560px)]"
+              // Scroll NATIVO (sem JS): touch-action pan-y + momentum iOS vêm
+              // do .scroll-ouro em globals.css; o cap dvh (≥768) também lá
+              // está — aqui não há max-height para não brigar com o CSS.
+              tabIndex={0}
+              role="region"
+              aria-label="Lista de patrocinadores (rolável)"
+              className="scroll-ouro mt-6 space-y-4 overflow-y-auto overscroll-contain pr-1"
             >
               {[...patrocinadoresVisiveis()]
                 .sort((a, b) => a.destaque - b.destaque)
@@ -207,7 +213,9 @@ export default function SponsorFlow() {
             </div>
           </div>
 
-          {/* DIREITA — instrução + formulário */}
+          {/* DIREITA — instrução + formulário. ≥768 tem cap dvh + scroll
+              PRÓPRIO (globals.css [data-coluna-formulario]) — o formulário
+              nunca rola dentro do scroll dos cards. <768 rola com o corpo. */}
           <div className="min-w-0" data-coluna-formulario>
             <p className="text-[0.9375rem] leading-relaxed text-creme/70">
               Deixa os teus dados para começares. A seguir escolhes o nível de
