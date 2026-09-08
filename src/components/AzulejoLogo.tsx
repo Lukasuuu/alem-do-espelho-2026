@@ -2,17 +2,17 @@ import LocalImage from "./LocalImage";
 import type { Patrocinador } from "@/lib/patrocinadores";
 
 /**
- * Azulejo de marca — card de logo pré-renderizado 1024×1024 dentro de uma
- * caixa de encaixe.
+ * Azulejo de marca — logo com fundo próprio dentro de um contentor, cantos
+ * arredondados.
  *
- * ⚠️ SEM SOBREPOSIÇÃO (correção pós-r3): os assets são cards com fundo de
- * marca, cantos (~11%) e borda JÁ EMBUTIDOS no ficheiro .webp. O contentor
- * NÃO aplica background-color, padding, border-radius nem border — só
- * object-contain centrado, tal-e-qual.
+ * ⚠️ FUNDO DELIBERADO: os logos têm fundo baked-in e incompatível entre si
+ * (Chama navy #00040c, Lígia creme #EDE6D8). Remover o fundo eliminaria parte
+ * do desenho (testado: -10,4% no Chama). Por isso o fundo de cada logo fica
+ * VISÍVEL — o letterbox do object-contain funde-se no fundo da caixa.
  *
  * Dois modos:
- *  - MARQUEE (caixa fixa): `largura` definido → caixa quadrada 96×96, logo
- *    centrado com maxWidth/maxHeight 100% (object-contain). A largura
+ *  - MARQUEE (caixa fixa): `largura` definido → caixa 180×72, sem padding,
+ *    logo centrado com maxWidth/maxHeight 100% (object-contain). A largura
  *    uniforme faz o ciclo do marquee ser periódico e sem costura.
  *  - ESTÁTICO (`flexivel`): encolhe até ao pai, sem esticar o logo.
  *
@@ -32,12 +32,6 @@ type Props = {
    */
   largura?: number;
   /**
-   * Classe CSS que define a caixa (ex.: .caixa-logo-marquee 16:9 com clamp
-   * responsivo). Quando presente, NENHUM width/height inline é escrito —
-   * o CSS manda (aspect-ratio + clamp); a imagem encaixa com contain.
-   */
-  classe?: string;
-  /**
    * alt="" nas cópias duplicadas do marquee — não repetir a mesma marca no
    * leitor de ecrã. O contentor duplicado leva também aria-hidden (ver componente).
    */
@@ -53,26 +47,20 @@ export default function AzulejoLogo({
   logo,
   altura = 72,
   largura,
-  classe,
   altOculto = false,
   flexivel = false,
 }: Props) {
-  const modoClasse = typeof classe === "string" && classe !== "";
-  const modoFixo = typeof largura === "number" && !flexivel && !modoClasse;
+  const modoFixo = typeof largura === "number" && !flexivel;
 
   return (
     <span
-      className={`azulejo-logo flex items-center justify-center overflow-hidden ${
-        flexivel ? "max-w-full" : "shrink-0"
-      } ${modoClasse ? classe : ""}`}
-      style={
-        modoClasse
-          ? undefined
-          : {
-              width: modoFixo ? largura : undefined,
-              height: altura,
-            }
-      }
+      className={`azulejo-logo flex items-center justify-center overflow-hidden rounded-lg ${
+        flexivel ? "max-w-full px-4" : "shrink-0"
+      }`}
+      style={{
+        width: modoFixo ? largura : undefined,
+        height: altura,
+      }}
     >
       <LocalImage
         src={logo.src}
@@ -81,22 +69,15 @@ export default function AzulejoLogo({
         height={logo.height}
         className="w-auto object-contain"
         style={
-          modoClasse
+          modoFixo
             ? {
-                // Caixa via CSS: a imagem encaixa inteira, centrada, sem
-                // distorção (o aspect-ratio da caixa vem do CSS).
+                // Caixa fixa: o logo encaixa inteiro (aspect preservado), centrado.
+                // maxWidth+maxHeight 100% → object-contain sem distorção; o
+                // letterbox é invisível porque o fundo da caixa = fundo do logo.
                 maxWidth: "100%",
                 maxHeight: "100%",
               }
-            : modoFixo
-              ? {
-                  // Caixa fixa: o logo encaixa inteiro (aspect preservado), centrado.
-                  // maxWidth+maxHeight 100% → object-contain sem distorção; o
-                  // letterbox é invisível porque o fundo da caixa = fundo do logo.
-                  maxWidth: "100%",
-                  maxHeight: "100%",
-                }
-              : {
+            : {
                 // Modo flexível: altura DEFINIDA + width auto → a largura deriva
                 // da proporção intrínseca (atributos width/height). maxWidth: 100%
                 // só limita quando o azulejo encolhe (mobile).

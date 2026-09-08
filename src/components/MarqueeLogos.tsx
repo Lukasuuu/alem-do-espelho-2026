@@ -2,7 +2,21 @@
 
 import { useEffect, useRef, useState } from "react";
 import AzulejoLogo from "./AzulejoLogo";
-import { patrocinadoresVisiveis } from "@/lib/patrocinadores";
+import {
+  patrocinadoresVisiveis,
+  type Patrocinador,
+} from "@/lib/patrocinadores";
+
+/**
+ * Marcas que entram na faixa — só quem TEM logo (o modelo de dados atual
+ * permite patrocinador sem logo; esse não renderiza tile).
+ */
+type PatrocinadorComLogo = Patrocinador & {
+  logo: NonNullable<Patrocinador["logo"]>;
+};
+const NA_FAIXA = patrocinadoresVisiveis().filter(
+  (p): p is PatrocinadorComLogo => p.logo !== undefined
+);
 
 /**
  * Faixa de logos em marquee — movimento infinito SUAVIZADO.
@@ -16,15 +30,9 @@ import { patrocinadoresVisiveis } from "@/lib/patrocinadores";
  * aproxima a playbackRate de 0 (travão de veludo ~400ms), usando
  * updatePlaybackRate() em vez de escrever playbackRate directamente.
  *
- * LOGOS NORMALIZADOS: cada marca é uma caixa 16:9 (classe .caixa-logo-marquee,
- * clamp responsivo — mobile clamp(200px,62vw,260px), ≥640px clamp(200px,30vw,
- * 340px), gap uniforme 64) — os assets são cards pré-renderizados 1600×900,
- * portanto a caixa é retangular e o encaixe é object-contain SEM
- * fundo/padding/radius por cima do card (fundo, cantos e borda já vêm no
- * asset). A largura é uniforme ENTRE ITENS a qualquer viewport (o clamp é
- * igual para todos) ⇒ o período do ciclo é n×(caixa+gap) e o
- * translateX(-50%) fecha a costura sem salto — a largura real da caixa é
- * MEDIDA no DOM (não constante) para as repetições calculadas.
+ * LOGOS NORMALIZADOS: cada marca é uma caixa FIXA (180×72, gap uniforme 56).
+ * Largura uniforme ⇒ o período do ciclo é n×(caixa+gap) e o translateX(-50%)
+ * fecha a costura sem salto.
  *
  * REPETIÇÕES CALCULADAS: o nº de blocos por metade deriva da largura do
  * contentor (mínimo 2), para a pista NUNCA ficar mais curta que o ecrã — com 2
@@ -48,8 +56,11 @@ import { patrocinadoresVisiveis } from "@/lib/patrocinadores";
  * React 19 dev monta duas vezes — o useEffect tem cleanup completo.
  */
 
-/** Gap uniforme entre logos (px) — cards 16:9 são largos, o gap respira. */
-const GAP = 64;
+/** Caixa fixa de cada logo (px). */
+const BOX_W = 180;
+const BOX_H = 72;
+/** Gap uniforme entre logos (px). */
+const GAP = 56;
 /** Velocidade constante do marquee (px/s) — medida no diagnóstico. */
 const VELOCIDADE_PX_S = 40;
 /** Constante de tempo do travão de veludo (ms) — 3×τ ≈ 99% ≈ 315ms, ~400ms até 2%. */
@@ -67,11 +78,6 @@ export default function MarqueeLogos() {
   // Estado para evitar hydration mismatch — só renderiza o marquee após montar no client.
   const [montado, setMontado] = useState(false);
 
-  // prefers-reduced-motion: SEM auto-scroll — fila estática no lugar do
-  // marquee (pede o Lucas; as pausas hover/focus continuam a cobrir WCAG
-  // 2.2.2 no modo animado). Avaliado só no client (matchMedia).
-  const [reduzMovimento, setReduzMovimento] = useState(false);
-
   const containerRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
 
@@ -81,27 +87,22 @@ export default function MarqueeLogos() {
   // Blocos por metade do track — calculados da largura do contentor (efeito 2).
   const [repeticoes, setRepeticoes] = useState(MIN_REPETICOES);
 
-  // 1) Marcar como montado (resolve hydration) + ler reduced-motion.
+  // 1) Marcar como montado (resolve hydration). Sem ramo reduced-motion:
+  //    o marquee corre em todas as máquinas por decisão de produto.
   useEffect(() => {
     setMontado(true);
-    setReduzMovimento(
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
-    );
   }, []);
 
   // 2) Repetições calculadas — a pista enche sempre o contentor (nunca mais curta
-  //    que o ecrã). A largura da caixa vem do CSS (clamp responsivo), não de
-  //    constantes: MEDIDA no 1.º azulejo. Recalcula no ResizeObserver.
+  //    que o ecrã). Recalcula no ResizeObserver do contentor.
   useEffect(() => {
     if (!montado) return;
     const container = containerRef.current;
     if (!container) return;
 
+    const blocoBase = NA_FAIXA.length * (BOX_W + GAP);
+    if (blocoBase <= 0) return;
     const calcular = () => {
-      const tile = container.querySelector<HTMLElement>(".azulejo-logo");
-      const caixaW = tile ? tile.getBoundingClientRect().width : 0;
-      if (caixaW <= 0) return;
-      const blocoBase = patrocinadoresVisiveis().length * (caixaW + GAP);
       const n = Math.max(MIN_REPETICOES, Math.ceil(container.clientWidth / blocoBase));
       setRepeticoes((anterior) => (anterior === n ? anterior : n));
     };
@@ -113,9 +114,9 @@ export default function MarqueeLogos() {
 
   // 3) Animação WAAPI + travão de veludo + pausas (só client, só se motion ok).
   //    Depende de `repeticoes`: muda o nº de blocos, a pista re-mede e a animação
-  //    recria com a duração certa. Com reduced-motion NEM chega aqui (fila estática).
+  //    recria com a duração certa.
   useEffect(() => {
-    if (!montado || reduzMovimento) return;
+    if (!montado) return;
     const container = containerRef.current;
     const track = trackRef.current;
     if (!container || !track) return;
@@ -310,7 +311,7 @@ export default function MarqueeLogos() {
       document.removeEventListener("visibilitychange", aoVisibilidade);
       animacao?.cancel();
     };
-  }, [montado, repeticoes, reduzMovimento]);
+  }, [montado, repeticoes]);
 
   // ── Fallback antes de montar no client (evita hydration flash) ──
   if (!montado) {
@@ -323,25 +324,9 @@ export default function MarqueeLogos() {
         data-marquee-estado="pre-hidratacao"
         className="flex flex-wrap items-center justify-center gap-6"
       >
-        {patrocinadoresVisiveis().map((p) =>
-          p.logo ? <AzulejoLogo key={p.id} logo={p.logo} flexivel /> : null
-        )}
-      </div>
-    );
-  }
-
-  // ── Fila estática com prefers-reduced-motion: SEM auto-scroll ──
-  if (reduzMovimento) {
-    return (
-      <div
-        role="group"
-        aria-label="Marcas patrocinadores do Além do Espelho"
-        data-marquee-estado="estatico"
-        className="flex flex-wrap items-center justify-center gap-6"
-      >
-        {patrocinadoresVisiveis().map((p) =>
-          p.logo ? <AzulejoLogo key={p.id} logo={p.logo} flexivel /> : null
-        )}
+        {NA_FAIXA.map((p) => (
+          <AzulejoLogo key={p.id} logo={p.logo} flexivel />
+        ))}
       </div>
     );
   }
@@ -365,16 +350,15 @@ export default function MarqueeLogos() {
             style={{ gap: GAP, marginRight: GAP }}
             aria-hidden={bloco !== 0 || undefined}
           >
-            {patrocinadoresVisiveis().map((p) =>
-              p.logo ? (
-                <AzulejoLogo
-                  key={p.id}
-                  logo={p.logo}
-                  classe="caixa-logo-marquee"
-                  altOculto={bloco !== 0}
-                />
-              ) : null
-            )}
+            {NA_FAIXA.map((p) => (
+              <AzulejoLogo
+                key={p.id}
+                logo={p.logo}
+                largura={BOX_W}
+                altura={BOX_H}
+                altOculto={bloco !== 0}
+              />
+            ))}
           </div>
         ))}
       </div>
