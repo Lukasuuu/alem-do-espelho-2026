@@ -708,16 +708,31 @@ body {
   border-radius: 9999px;
 }
 
-/* Caps de coluna da modal de patrocínio (≥768, duas colunas): cards E
-   formulário cada um com o SEU scroll — o formulário nunca rola dentro do
-   scroll dos cartões (spec ajuste modal). Mobile <768 fica sem cap (rola com
-   o corpo da modal, como em produção). dvh com fallback vh — mesmo padrão
-   de .modal-content (o calc com dvh inválido deixaria max-height a none). */
+/* Duas colunas da modal de patrocínio (≥768): o GRELHA tem o orçamento de
+   altura do viewport (− topo da modal − folga do overlay − cabeçalho da
+   modal ~9rem) e a linha única é minmax(0,1fr) — as duas colunas ficam
+   SEMPRE com a MESMA altura (a mais alta vence; sem cap fixo que corte o
+   formulário nem vão vazio sob os cards), cada uma com o SEU scroll interno
+   quando o conteúdo transborda. O formulário nunca rola dentro do scroll
+   dos cartões (spec ajuste modal). dvh com fallback vh — mesmo padrão de
+   .modal-content (o calc com dvh inválido deixaria max-height a none). */
 @media (min-width: 768px) {
-  [data-lista-patrocinadores-scroll],
+  [data-modal-patrocinadores-grelha] {
+    max-height: calc(100vh - var(--topo-modal) - 9rem);
+    max-height: calc(100dvh - var(--topo-modal) - 9rem);
+    grid-template-rows: minmax(0, 1fr);
+  }
+  [data-coluna-patrocinadores],
   [data-coluna-formulario] {
-    max-height: min(62vh, 560px);
-    max-height: min(62dvh, 560px);
+    min-height: 0;
+  }
+  [data-coluna-patrocinadores] {
+    display: flex;
+    flex-direction: column;
+  }
+  [data-lista-patrocinadores-scroll] {
+    flex: 1 1 0;
+    min-height: 0;
   }
   [data-coluna-formulario] {
     overflow-y: auto;
