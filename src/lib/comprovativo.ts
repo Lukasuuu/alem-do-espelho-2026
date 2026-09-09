@@ -10,6 +10,13 @@
 /** Bucket privado onde vivem os comprovativos (nunca público). */
 export const BUCKET_COMPROVATIVOS = "payment-proofs";
 
+/**
+ * Bucket PRIVADO dedicado ao PATROCÍNIO (0011 r2) — isolado do bucket das
+ * inscrições (payment-proofs): policies, guards e paths próprios. Nunca
+ * público, nunca partilhado.
+ */
+export const BUCKET_COMPROVATIVOS_SPONSOR = "sponsor-payment-proofs";
+
 /** Tamanho máximo de upload: 8 MB (igual ao file_size_limit do bucket). */
 export const TAMANHO_MAXIMO = 8 * 1024 * 1024;
 

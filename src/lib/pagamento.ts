@@ -35,8 +35,8 @@ export const MBWAY_NUMERO_COPIAR = "928400069";
  */
 export const TRANSFERENCIA = {
   iban: "IE60SUMU99036513007149",
-  /** Titular da conta — fornecido pelo Lucas (Vitória Silva). */
-  beneficiario: "Vitória Silva",
+  /** Titular da conta — nome completo confirmado pelo Lucas (Bloco J r2). */
+  beneficiario: "Vitória Silva da Conceição Gomes",
   /** BIC/SWIFT da conta (SEPA). */
   bic: "SUMUIE22XXX",
   /** Instituição titular da conta. */

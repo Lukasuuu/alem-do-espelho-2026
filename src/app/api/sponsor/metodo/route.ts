@@ -19,12 +19,18 @@ type Resposta =
   | { ok: false; mensagem: string; tipo: TipoErro; campos?: Record<string, string> };
 
 /**
- * Marca o método de pagamento do patrocínio escolhido na modal E cria o
- * pagamento na mesma sequência (espelho de /api/inscricao/metodo, Bloco J/0011):
- *   definir_metodo_sponsor → criar_pagamento_sponsor (valor derivado do nível).
- * Chamado ao abrir MB Way ou Transferência, para a reconciliação manual saber
- * por onde cada patrocinador pagou. Só mbway/transferencia — o SumUp é
- * exclusivo da inscrição e nunca aparece aqui.
+ * Marca o método de pagamento do patrocínio E cria/atualiza o pagamento numa
+ * ÚNICA transação (0011 r2: iniciar_pagamento_sponsor — atómica e race-safe).
+ * Antes eram duas RPCs sequenciais: se a segunda falhava, sponsors.metodo_
+ * pagamento ficava escrito sem pagamento — já não acontece.
+ *
+ * Semântica (devolvida em `pagamento.status`):
+ *   • "criado" — pagamento novo (payment_started, valor derivado do nível);
+ *   • "existente" — pagamento ativo reutilizado (duplo clique / retry);
+ *   • troca de método antes do comprovativo (payment_started/awaiting_proof)
+ *     atualiza o MESMO pagamento; depois (proof_uploaded/under_review) → 409
+ *     pagamento_em_analise; confirmado → 409 pagamento_confirmado.
+ * Só mbway/transferencia — o SumUp é exclusivo da inscrição e nunca aparece aqui.
  */
 export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
   // 1. Limite de tentativas por IP
@@ -84,39 +90,10 @@ export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
   try {
     const supabase = getSupabase();
 
-    // Sequência espelho de /api/inscricao/metodo (B1/0011):
-    // 1. marca o método (guard de posse pela RPC);
-    const { error: erroMetodo } = await supabase.rpc("definir_metodo_sponsor", {
-      p_sponsor_id: dados.sponsorId,
-      p_metodo: dados.metodo,
-      p_posse_token: dados.posseToken,
-    });
-
-    if (erroMetodo) {
-      const codigo = erroMetodo.message ?? "";
-      if (codigo.includes("invalid_metodo")) {
-        return NextResponse.json(
-          { ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao", campos: { metodo: "Método de pagamento inválido." } },
-          { status: 422 }
-        );
-      }
-      if (codigo.includes("sponsor_nao_encontrada")) {
-        return NextResponse.json(
-          { ok: false, mensagem: "Não encontrámos o teu registo. Recarrega e tenta novamente.", tipo: "validacao" },
-          { status: 404 }
-        );
-      }
-      if (codigo.includes("acesso_negado")) {
-        // Token de posse não bate — sessão antiga/expirada.
-        return NextResponse.json({ ok: false, mensagem: MENSAGENS.metodoServidor, tipo: "fase" }, { status: 403 });
-      }
-
-      console.error("[sponsor-metodo] erro ao definir método:", erroMetodo.message);
-      return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 502 });
-    }
-
-    // 2. cria o pagamento (idempotente; valor derivado do nível pela RPC).
-    const { data: pagamento, error: erroPagamento } = await supabase.rpc("criar_pagamento_sponsor", {
+    // RPC ATÓMICA (0011 r2): valida método → posse → sponsor → nível →
+    // valor derivado → trata pagamento ativo (reutiliza/troca/bloqueia) →
+    // atualiza sponsors.metodo_pagamento → devolve o pagamento.
+    const { data: pagamento, error: erroPagamento } = await supabase.rpc("iniciar_pagamento_sponsor", {
       p_sponsor_id: dados.sponsorId,
       p_metodo: dados.metodo,
       p_posse_token: dados.posseToken,
@@ -143,11 +120,24 @@ export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
           { status: 422 }
         );
       }
+      if (codigo.includes("pagamento_em_analise")) {
+        return NextResponse.json(
+          { ok: false, mensagem: MENSAGENS.pagamentoEmAnalise, tipo: "fase" },
+          { status: 409 }
+        );
+      }
+      if (codigo.includes("pagamento_confirmado")) {
+        return NextResponse.json(
+          { ok: false, mensagem: MENSAGENS.pagamentoConfirmado, tipo: "fase" },
+          { status: 409 }
+        );
+      }
       if (codigo.includes("acesso_negado")) {
-        return NextResponse.json({ ok: false, mensagem: MENSAGENS.metodoServidor, tipo: "fase" }, { status: 403 });
+        // Token de posse não bate — sessão antiga/expirada.
+        return NextResponse.json({ ok: false, mensagem: MENSAGENS.sessaoExpirada, tipo: "fase" }, { status: 403 });
       }
 
-      console.error("[sponsor-metodo] erro ao criar pagamento:", erroPagamento.message);
+      console.error("[sponsor-metodo] erro ao iniciar pagamento:", erroPagamento.message);
       return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 502 });
     }
 

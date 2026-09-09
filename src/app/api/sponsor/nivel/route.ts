@@ -96,10 +96,22 @@ export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
           { status: 404 }
         );
       }
+      if (codigo.includes("nivel_bloqueado")) {
+        // 0011 r2: com pagamento ativo o nível está congelado (o valor já
+        // derivou dele) — a alteração passa pelo WhatsApp da Vitória.
+        return NextResponse.json(
+          {
+            ok: false,
+            mensagem: "O pagamento já está em curso com o nível escolhido. Para o alterar, fala com a Vitória no WhatsApp.",
+            tipo: "fase",
+          },
+          { status: 409 }
+        );
+      }
       if (codigo.includes("acesso_negado")) {
         // Token de posse não bate — sessão antiga/expirada.
         return NextResponse.json(
-          { ok: false, mensagem: MENSAGENS.metodoServidor, tipo: "fase" },
+          { ok: false, mensagem: MENSAGENS.sessaoExpirada, tipo: "fase" },
           { status: 403 }
         );
       }

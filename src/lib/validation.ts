@@ -239,6 +239,61 @@ export const estadoSponsorSchema = z.object({
 
 export type EstadoSponsorInput = z.input<typeof estadoSponsorSchema>;
 
+/**
+ * POST /api/sponsor/comprovativo — pedido de URL de upload direto (signed
+ * upload). O ficheiro NÃO passa pela rota (o proxy da Vercel corta a ~4,5 MB
+ * e o bucket aceita 8 MB): o cliente envia só o NOME, o TAMANHO e os PRIMEIROS
+ * BYTES (base64, máx. 64) para o servidor validar a extensão e os magic bytes
+ * ANTES de emitir a URL. O PUT do ficheiro vai direto ao Supabase.
+ */
+export const sponsorUploadPedidoSchema = z.object({
+  sponsorId: z.string().uuid("Parceria inválida."),
+  pagamentoId: z.string().uuid("Pagamento inválido."),
+  posseToken: posseTokenSchema,
+  nomeFicheiro: z.string().min(1, "Escolhe um ficheiro.").max(255, "Nome do ficheiro demasiado longo."),
+  tamanho: z.number().int().positive("O ficheiro está vazio."),
+  primeirosBytesBase64: z
+    .string()
+    .max(128, "Pré-visualização dos bytes demasiado grande."),
+});
+
+export type SponsorUploadPedidoInput = z.input<typeof sponsorUploadPedidoSchema>;
+
+/**
+ * POST /api/sponsor/comprovativo/registo — após o PUT direto ao bucket, o
+ * cliente pede o registo dos metadados (2.ª metade do signed upload). O
+ * servidor confere o path contra o pagamento e a RPC faz a transição para
+ * proof_uploaded. Nunca o conteúdo — só metadados.
+ */
+export const sponsorUploadRegistoSchema = z.object({
+  sponsorId: z.string().uuid("Parceria inválida."),
+  pagamentoId: z.string().uuid("Pagamento inválido."),
+  posseToken: posseTokenSchema,
+  storagePath: z
+    .string()
+    .min(1)
+    .max(400)
+    .regex(/^sponsor-payment-proofs\/[^/]+\/[^/]+\/[^/]+\.[a-z0-9]+$/, "Caminho de storage inválido."),
+  nomeFicheiro: z.string().min(1).max(255),
+  tamanho: z.number().int().positive(),
+  mime: z.string().min(3).max(100),
+});
+
+export type SponsorUploadRegistoInput = z.input<typeof sponsorUploadRegistoSchema>;
+
+/**
+ * PATCH /api/sponsor/whatsapp — handoff: a pessoa vai enviar o comprovativo à
+ * Vitória pelo WhatsApp. A rota REGISTRA o handoff (canal + momento) ANTES de
+ * abrir a conversa — só abre se a escrita responder OK.
+ */
+export const sponsorWhatsappSchema = z.object({
+  sponsorId: z.string().uuid("Parceria inválida."),
+  pagamentoId: z.string().uuid("Pagamento inválido."),
+  posseToken: posseTokenSchema,
+});
+
+export type SponsorWhatsappInput = z.input<typeof sponsorWhatsappSchema>;
+
 export type TelefoneValidado = {
   ok: boolean;
   e164?: string;
@@ -282,4 +337,13 @@ export const MENSAGENS = {
   /** Rota /api/inscricao/metodo: quem falhou foi o registo da escolha/pagamento,
       não a inscrição — a mensagem genérica "guardar a tua inscrição" enganava. */
   metodoServidor: "Não conseguimos registar a escolha de pagamento. Tenta novamente.",
+  /** Bloco J r2: token de posse não bate — a capability morreu com a sessão.
+      Antes as rotas sponsor reutilizavam metodoServidor aqui (engano). */
+  sessaoExpirada: "A tua sessão expirou. Volta a submeter o formulário para continuar.",
+  /** 409 — pagamento em análise: não se troca método/valor depois do comprovativo. */
+  pagamentoEmAnalise:
+    "O comprovativo deste pagamento já foi enviado e está em análise. Se precisares de mudar o método, fala com a Vitória no WhatsApp.",
+  /** 409 — pagamento já confirmado pelo admin. */
+  pagamentoConfirmado:
+    "Este patrocínio já foi confirmado pela equipa. Se achas que há algum erro, fala com a Vitória no WhatsApp.",
 } as const;

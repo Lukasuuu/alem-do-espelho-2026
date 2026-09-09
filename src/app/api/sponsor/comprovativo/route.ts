@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { z } from "zod";
+import { ZodError } from "zod";
 import { getSupabase } from "@/lib/supabase";
 import { obterIp, rateLimit } from "@/lib/rate-limit";
-import { MENSAGENS, posseTokenSchema, type TipoErro } from "@/lib/validation";
+import { MENSAGENS, sponsorUploadPedidoSchema, type TipoErro } from "@/lib/validation";
+import { SPONSOR_MOCK_ATIVO } from "@/lib/sponsor-mock";
 import {
-  BUCKET_COMPROVATIVOS,
+  BUCKET_COMPROVATIVOS_SPONSOR,
   FORMATOS_COMPROVATIVO,
   MENSAGENS_COMPROVATIVO,
   TAMANHO_MAXIMO,
@@ -17,26 +18,25 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type Resposta =
-  | { ok: true; comprovativoId: string; pagamentoId: string; pagamentoEstado: string }
+  | { ok: true; signedUrl: string; storagePath: string; pagamentoEstado: string }
   | { ok: false; mensagem: string; tipo: TipoErro; campos?: Record<string, string> };
 
-// Espelho de /api/comprovativo (Bloco J/0011) — campo sponsorId em vez de inscricaoId.
-const idsSchema = z.object({
-  sponsorId: z.string().uuid("Parceria inválida."),
-  pagamentoId: z.string().uuid("Pagamento inválido."),
-  posseToken: posseTokenSchema,
-});
-
 /**
- * Recebe o comprovativo do PATROCÍNIO (multipart/form-data) e:
- *   1. valida tamanho (≤ 8 MB) e formato por MAGIC BYTES no servidor
- *      (nunca confiar só na extensão do nome);
- *   2. verifica o dono e o estado do pagamento via RPC (devolve o
- *      proof_token gerado no servidor — o cliente nunca o envia);
- *   3. guarda o ficheiro no bucket PRIVADO payment-proofs no caminho
- *      payment-proofs/{sponsor_id}/{proof_token}/{uuid}.{ext};
- *   4. regista os metadados em comprovativos_sponsor e passa o pagamento a
- *      proof_uploaded. Nunca armazena base64 — só o path.
+ * SIGNED UPLOAD do comprovativo do PATROCÍNIO — fase 1 de 2 (0011 r2).
+ *
+ * Por que em vez do multipart: o proxy da Vercel corta o corpo do request a
+ * ~4,5 MB, mas o bucket aceita 8 MB — um comprovativo de 6 MB era validado
+ * aqui e PERDIDO no proxy. Em vez disso:
+ *   1. o cliente envia SÓ o nome, o tamanho e os primeiros 64 bytes (base64);
+ *   2. esta rota valida extensão + tamanho + magic bytes NO SERVIDOR;
+ *   3. valida ownership/estado via RPC (posse_token, devolve proof_token);
+ *   4. emite uma signed upload URL para o bucket PRIVADO
+ *      sponsor-payment-proofs — o PUT do ficheiro vai direto ao Supabase,
+ *      sem passar por esta rota;
+ *   5. o cliente chama POST /api/sponsor/comprovativo/registo para registar
+ *      os metadados (fase 2).
+ * O path é construído AQUI (nunca pelo cliente):
+ *   sponsor-payment-proofs/{sponsor_id}/{proof_token}/{uuid}.{ext}
  */
 export async function POST(request: Request): Promise<NextResponse<Resposta>> {
   const ip = obterIp(request.headers);
@@ -54,58 +54,41 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
     );
   }
 
-  // 1. Corpo multipart
-  let form: FormData;
+  // 1. Corpo JSON (não multipart — o ficheiro grande nunca passa por aqui)
+  let corpo: unknown;
   try {
-    form = await request.formData();
+    corpo = await request.json();
   } catch {
-    return NextResponse.json(
-      { ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao" },
-      { status: 400 }
-    );
+    return NextResponse.json({ ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao" }, { status: 400 });
   }
 
-  const ids = idsSchema.safeParse({
-    sponsorId: form.get("sponsorId"),
-    pagamentoId: form.get("pagamentoId"),
-    posseToken: form.get("posseToken"),
-  });
-  if (!ids.success) {
-    const campos: Record<string, string> = {};
-    for (const issue of ids.error.issues) {
-      const chave = String(issue.path[0] ?? "form");
-      if (!campos[chave]) campos[chave] = issue.message;
+  let dados;
+  try {
+    dados = sponsorUploadPedidoSchema.parse(corpo);
+  } catch (erro) {
+    if (erro instanceof ZodError) {
+      const campos: Record<string, string> = {};
+      for (const issue of erro.issues) {
+        const chave = String(issue.path[0] ?? "form");
+        if (!campos[chave]) campos[chave] = issue.message;
+      }
+      return NextResponse.json(
+        { ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao", campos },
+        { status: 422 }
+      );
     }
-    return NextResponse.json(
-      { ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao", campos },
-      { status: 422 }
-    );
+    return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 500 });
   }
-
-  const ficheiro = form.get("ficheiro");
-  if (!ficheiro || typeof ficheiro === "string") {
-    return NextResponse.json(
-      { ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao", campos: { ficheiro: "Escolhe um ficheiro." } },
-      { status: 422 }
-    );
-  }
-  const arquivo = ficheiro as File;
 
   // 2. Tamanho e extensão (nome)
-  if (arquivo.size === 0) {
-    return NextResponse.json(
-      { ok: false, mensagem: MENSAGENS_COMPROVATIVO.vazio, tipo: "validacao", campos: { ficheiro: MENSAGENS_COMPROVATIVO.vazio } },
-      { status: 422 }
-    );
-  }
-  if (arquivo.size > TAMANHO_MAXIMO) {
+  if (dados.tamanho > TAMANHO_MAXIMO) {
     return NextResponse.json(
       { ok: false, mensagem: MENSAGENS_COMPROVATIVO.grande, tipo: "validacao", campos: { ficheiro: MENSAGENS_COMPROVATIVO.grande } },
       { status: 422 }
     );
   }
 
-  const extensao = extensaoDe(arquivo.name);
+  const extensao = extensaoDe(dados.nomeFicheiro);
   if (!extensao) {
     return NextResponse.json(
       { ok: false, mensagem: MENSAGENS_COMPROVATIVO.formato, tipo: "validacao", campos: { ficheiro: MENSAGENS_COMPROVATIVO.formato } },
@@ -113,10 +96,18 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
     );
   }
 
-  // 3. Conteúdo real (magic bytes). O MIME detetado tem de bater com o da
-  // extensão reclamada — senão é uma extensão disfarçada e recusamos.
-  const buffer = await arquivo.arrayBuffer();
-  const tipo = detetarTipo(new Uint8Array(buffer));
+  // 3. Conteúdo real (magic bytes do prefixo). O MIME detetado tem de bater
+  //    certo com o da extensão reclamada — senão é extensão disfarçada.
+  let prefixo: Uint8Array;
+  try {
+    prefixo = new Uint8Array(Buffer.from(dados.primeirosBytesBase64, "base64"));
+  } catch {
+    return NextResponse.json(
+      { ok: false, mensagem: MENSAGENS_COMPROVATIVO.formato, tipo: "validacao", campos: { ficheiro: MENSAGENS_COMPROVATIVO.formato } },
+      { status: 422 }
+    );
+  }
+  const tipo = detetarTipo(prefixo);
   if (!tipo) {
     return NextResponse.json(
       { ok: false, mensagem: MENSAGENS_COMPROVATIVO.formato, tipo: "validacao", campos: { ficheiro: MENSAGENS_COMPROVATIVO.formato } },
@@ -130,74 +121,74 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
     );
   }
 
-  const supabase = getSupabase();
+  try {
+    const supabase = getSupabase();
 
-  // 4. Ownership + estado do pagamento; recebe o proof_token do servidor.
-  // B1/0011: ownership pelo posse_token (capability), não por ip_hash.
-  const { data: validacao, error: erroValidacao } = await supabase.rpc("validar_comprovativo_upload_sponsor", {
-    p_pagamento_id: ids.data.pagamentoId,
-    p_sponsor_id: ids.data.sponsorId,
-    p_posse_token: ids.data.posseToken,
-  });
-
-  if (erroValidacao) {
-    const codigo = erroValidacao.message ?? "";
-    if (codigo.includes("pagamento_nao_encontrado") || codigo.includes("estado_invalido")) {
-      return NextResponse.json(
-        { ok: false, mensagem: MENSAGENS_COMPROVATIVO.semPagamento, tipo: "validacao", campos: { ficheiro: MENSAGENS_COMPROVATIVO.semPagamento } },
-        { status: 404 }
-      );
+    if (SPONSOR_MOCK_ATIVO) {
+      // QA em localhost (ver lib/sponsor-mock.ts) — sem tocar na Supabase.
+      return NextResponse.json({
+        ok: true,
+        signedUrl: "https://mock.supabase.local/storage/v1/upload/sign/mock",
+        storagePath: `sponsor-payment-proofs/${dados.sponsorId}/00000000-0000-0000-0000-000000000003/${randomUUID()}.${tipo.ext}`,
+        pagamentoEstado: "awaiting_proof",
+      });
     }
-    if (codigo.includes("acesso_negado")) {
-      console.error("[sponsor-comprovativo] acesso_negado no upload");
-      return NextResponse.json(
-        { ok: false, mensagem: "Não tens permissão para enviar o comprovativo deste patrocínio.", tipo: "validacao" },
-        { status: 403 }
-      );
+
+    // 4. Ownership + estado do pagamento; recebe o proof_token do servidor.
+    // B1/0011: ownership pelo posse_token (capability). Também faz a
+    // transição payment_started/rejected → awaiting_proof.
+    const { data: validacao, error: erroValidacao } = await supabase.rpc("validar_comprovativo_upload_sponsor", {
+      p_pagamento_id: dados.pagamentoId,
+      p_sponsor_id: dados.sponsorId,
+      p_posse_token: dados.posseToken,
+    });
+
+    if (erroValidacao) {
+      const codigo = erroValidacao.message ?? "";
+      if (codigo.includes("pagamento_nao_encontrado") || codigo.includes("estado_invalido")) {
+        return NextResponse.json(
+          { ok: false, mensagem: MENSAGENS_COMPROVATIVO.semPagamento, tipo: "validacao", campos: { ficheiro: MENSAGENS_COMPROVATIVO.semPagamento } },
+          { status: 404 }
+        );
+      }
+      if (codigo.includes("acesso_negado")) {
+        console.error("[sponsor-comprovativo] acesso_negado no pedido de URL");
+        return NextResponse.json(
+          { ok: false, mensagem: "Não tens permissão para enviar o comprovativo deste patrocínio.", tipo: "validacao" },
+          { status: 403 }
+        );
+      }
+      console.error("[sponsor-comprovativo] erro ao validar pagamento:", erroValidacao.message);
+      return NextResponse.json({ ok: false, mensagem: MENSAGENS_COMPROVATIVO.servidor, tipo: "servidor" }, { status: 502 });
     }
-    console.error("[sponsor-comprovativo] erro ao validar pagamento:", erroValidacao.message);
-    return NextResponse.json({ ok: false, mensagem: MENSAGENS_COMPROVATIVO.servidor, tipo: "servidor" }, { status: 502 });
-  }
 
-  const proofToken = (validacao as { proof_token: string }).proof_token;
-  const storagePath = `${BUCKET_COMPROVATIVOS}/${ids.data.sponsorId}/${proofToken}/${randomUUID()}.${tipo.ext}`;
+    const proofToken = (validacao as { proof_token: string }).proof_token;
+    const storagePath = `${BUCKET_COMPROVATIVOS_SPONSOR}/${dados.sponsorId}/${proofToken}/${randomUUID()}.${tipo.ext}`;
 
-  // 5. Upload para o bucket privado (policy token-gated sponsor, anon)
-  const { error: erroUpload } = await supabase.storage
-    .from(BUCKET_COMPROVATIVOS)
-    .upload(storagePath, new Uint8Array(buffer), { contentType: tipo.mime, upsert: false });
+    // 5. URL de upload direto. A policy de INSERT do bucket (token-gated
+    //    sponsor-payment-proofs) é avaliada AQUI; o PUT subsequente usa o URL
+    //    assinado — o ficheiro nunca atravessa a Vercel.
+    const { data: url, error: erroUrl } = await supabase.storage
+      .from(BUCKET_COMPROVATIVOS_SPONSOR)
+      .createSignedUploadUrl(storagePath);
 
-  if (erroUpload) {
-    console.error("[sponsor-comprovativo] erro de storage:", erroUpload.message);
-    return NextResponse.json({ ok: false, mensagem: MENSAGENS_COMPROVATIVO.servidor, tipo: "servidor" }, { status: 502 });
-  }
+    if (erroUrl || !url) {
+      console.error("[sponsor-comprovativo] erro de signed upload URL:", erroUrl?.message ?? "sem URL");
+      return NextResponse.json({ ok: false, mensagem: MENSAGENS_COMPROVATIVO.servidor, tipo: "servidor" }, { status: 502 });
+    }
 
-  // 6. Metadados + transição proof_uploaded (Bloco J/0011)
-  const { data: registo, error: erroRegisto } = await supabase.rpc("registar_comprovativo_sponsor", {
-    p_pagamento_id: ids.data.pagamentoId,
-    p_storage_path: storagePath,
-    p_original_filename: arquivo.name,
-    p_mime_type: tipo.mime,
-    p_file_size: arquivo.size,
-    p_posse_token: ids.data.posseToken,
-  });
-
-  if (erroRegisto) {
-    // Higiene: se os metadados falharem, o ficheiro não pode ficar órfão.
-    console.error("[sponsor-comprovativo] erro ao registar metadados:", erroRegisto.message);
-    await supabase.storage.from(BUCKET_COMPROVATIVOS).remove([storagePath]);
-    return NextResponse.json({ ok: false, mensagem: MENSAGENS_COMPROVATIVO.servidor, tipo: "servidor" }, { status: 502 });
-  }
-
-  const resultado = registo as { comprovativo_id: string; pagamento_estado: string };
-
-  return NextResponse.json(
-    {
+    return NextResponse.json({
       ok: true,
-      comprovativoId: resultado.comprovativo_id,
-      pagamentoId: ids.data.pagamentoId,
-      pagamentoEstado: resultado.pagamento_estado,
-    },
-    { status: 201 }
-  );
+      signedUrl: url.signedUrl,
+      storagePath,
+      pagamentoEstado: "awaiting_proof",
+    });
+  } catch (erro) {
+    console.error("[sponsor-comprovativo] falha inesperada:", erro);
+    return NextResponse.json({ ok: false, mensagem: MENSAGENS_COMPROVATIVO.servidor, tipo: "servidor" }, { status: 500 });
+  }
+}
+
+export async function GET() {
+  return NextResponse.json({ ok: false, mensagem: "Método não permitido." }, { status: 405 });
 }

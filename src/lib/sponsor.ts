@@ -72,23 +72,43 @@ export function nomeMetodoSponsor(metodo: MetodoSponsor): string {
 }
 
 /**
- * Mensagem pré-preenchida de confirmação do patrocínio — número ÚNICO do
- * projeto (SALON_WHATSAPP, o do salão). Mesma estrutura da confirmação de
- * pagamento da inscrição: neutra, sem nomear destinatário.
+ * Mensagem pré-preenchida do handoff WhatsApp (Bloco J r2) — número ÚNICO do
+ * projeto (SALON_WHATSAPP) e destinatária fixa: a Vitória. Texto definido no
+ * prompt do Bloco J; NUNCA inclui tokens, ids de pagamento ou qualquer dado
+ * técnico — só o que a Vitória precisa para associar a pessoa ao registo.
  */
-export function mensagemConfirmacaoPatrocinio(
-  metodo: MetodoSponsor,
-  nivel: NivelParceria
-): string {
-  return `Olá! Acabei de fazer um patrocínio de ${nivel}€ no Além do Espelho por ${nomeMetodoSponsor(
-    metodo
-  )}. Como confirmo o pagamento?`;
+export function mensagemWhatsappPatrocinio({
+  nome,
+  empresa,
+  metodo,
+  nivel,
+}: {
+  nome: string;
+  empresa?: string | null;
+  metodo: MetodoSponsor;
+  nivel: NivelParceria;
+}): string {
+  const nivelTitulo = NIVEIS_PARCERIA_COPY[nivel].titulo;
+  const quem =
+    empresa && empresa.trim() !== ""
+      ? `Sou ${nome.trim()}, da ${empresa.trim()}.`
+      : `Sou ${nome.trim()}.`;
+  return [
+    `Olá, Vitória. ${quem}`,
+    `Escolhi o patrocínio ${nivelTitulo}, no valor de ${nivel}€, por ${nomeMetodoSponsor(metodo)}.`,
+    "Vou enviar aqui o comprovativo do pagamento.",
+  ].join(" ");
 }
 
-/** Link wa.me com a mensagem de confirmação do patrocínio (MB Way/transferência). */
+/** Link wa.me do handoff WhatsApp do patrocínio (mensagens sem dados técnicos). */
 export function linkWhatsAppPatrocinio(
   metodo: MetodoSponsor,
-  nivel: NivelParceria
+  nivel: NivelParceria,
+  nome: string,
+  empresa?: string | null
 ): string {
-  return linkWhatsApp(SALON_WHATSAPP, mensagemConfirmacaoPatrocinio(metodo, nivel));
+  return linkWhatsApp(
+    SALON_WHATSAPP,
+    mensagemWhatsappPatrocinio({ nome, empresa, metodo, nivel })
+  );
 }

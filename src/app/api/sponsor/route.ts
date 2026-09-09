@@ -16,8 +16,11 @@ type Resposta =
       status: "sponsor";
       id: string;
       nivel: number | null;
-      /** B1/0011: capability de posse — devolvida UMA vez, nunca em logs. */
-      posseToken: string;
+      /** B1/0011: capability de posse — devolvida UMA vez, nunca em logs.
+          Ausente (e `jaExistente: true`) quando o email já tem pagamento
+          ativo/confirmado: anti-takeover, recuperação humana pela Vitória. */
+      posseToken?: string;
+      jaExistente?: boolean;
     }
   | { ok: false; mensagem: string; tipo: TipoErro; campos?: Record<string, string> };
 
@@ -178,8 +181,30 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
       status: "criada" | "ja_existente";
       id: string;
       nivel: number | null;
-      posse_token: string;
+      posse_token: string | null;
     };
+
+    // ANTI-TAKEOVER (0011 r2): email já registado com pagamento ativo ou
+    // patrocínio confirmado → a RPC devolve 'ja_existente' SEM posse_token,
+    // SEM alterar nada. Não é erro: resposta 200 que o formulário mostra como
+    // alerta "já recebemos o teu pedido" com o CTA da Vitória — quem só
+    // conhece o email NÃO toma posse do registo de outra pessoa.
+    if (resultado.status === "ja_existente" && !resultado.posse_token) {
+      console.info(
+        "[sponsor] ja_existente protegido (pagamento ativo/confirmado)",
+        JSON.stringify({ email: mascararEmail(dados.email), id: resultado.id })
+      );
+      return NextResponse.json(
+        {
+          ok: true,
+          status: "sponsor",
+          jaExistente: true,
+          id: resultado.id,
+          nivel: null,
+        },
+        { status: 200 }
+      );
+    }
 
     if (!resultado.posse_token) {
       // Sem token a RPC não é a 0011 (ou falhou a gerar) — a modal ficaria
