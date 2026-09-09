@@ -23,9 +23,10 @@ export const site = {
   // (alemdoespelho2026.com é domínio secundário; o canónico fica sempre no principal.)
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://essenceofbeautysalon.com",
   data: {
-    // 17 de outubro de 2026, hora local de Braga (WEST, UTC+1)
-    iso: "2026-10-17T09:00:00+01:00",
-    // Hora de fim (09:00–18:00, dia completo) — confirmada por Lucas a 11/08;
+    // 17 de outubro de 2026, hora local de Braga (WEST, UTC+1).
+    // Início 09:30 confirmado pelo Lucas (09/09/2026) — o fim continua às 18:00.
+    iso: "2026-10-17T09:30:00+01:00",
+    // Hora de fim (09:30–18:00) — confirmada por Lucas a 11/08;
     // usada no endDate do JSON-LD (o Google descarta eventos sem data de fim).
     fim: "2026-10-17T18:00:00+01:00",
     extenso: "17 de outubro de 2026",
@@ -75,7 +76,7 @@ export function linkWhatsApp(numero: string, mensagem: string): string {
 }
 
 /**
- * Horário do evento formatado ("09:00 – 18:00"), derivado de data.iso/data.fim
+ * Horário do evento formatado ("09:30 – 18:00"), derivado de data.iso/data.fim
  * com Intl (Europe/Lisbon) — SEM hardcode: a fonte única são os ISO em cima.
  * Usado pelo Cronograma (G.1) e pela coluna Informações do footer (G.2), que
  * têm de mostrar sempre o mesmo valor.
