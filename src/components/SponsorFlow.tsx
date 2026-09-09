@@ -5,11 +5,11 @@ import { Check, ChevronRight } from "lucide-react";
 import Modal from "./Modal";
 import WaitlistForm from "./WaitlistForm";
 import PatrocinioPagamentoModal from "./PatrocinioPagamentoModal";
-import ParabensModal from "./ParabensModal";
+import PatrocinioObrigadoModal from "./PatrocinioObrigadoModal";
 import ConfirmacaoSaidaModal from "./ConfirmacaoSaidaModal";
 import CartaoPatrocinadora from "./CartaoPatrocinadora";
 import { patrocinadoresVisiveis } from "@/lib/patrocinadores";
-import { NIVEIS_PARCERIA_COPY, linkWhatsAppPatrocinio } from "@/lib/sponsor";
+import { NIVEIS_PARCERIA_COPY } from "@/lib/sponsor";
 import { NIVEIS_PARCERIA, type MetodoSponsor, type NivelParceria } from "@/lib/validation";
 
 /** Largura do modal por breakpoint (desktop/tablet). Mobile <768 não toca. */
@@ -31,20 +31,22 @@ function larguraModal() {
  *      NÃO é escolhido aqui — o POST /api/sponsor guarda o registo com nivel null.
  *   B. confirmação + escolha do nível → texto da CORREÇÃO nº5, 3 níveis estilo
  *      "anexo2" com benefícios e badge MAIS PROCURADO; PATCH /api/sponsor/nivel.
- *   C. pagamento → MB Way / transferência apenas (sem cartão, sem QR); a escolha
- *      do método faz PATCH /api/sponsor/metodo + cria o pagamento (Bloco J/0011,
- *      valor derivado do nível), "Já fiz o pagamento" abre o passo de
- *      COMPROVATIVO (upload payment-proofs) e a conclusão fecha a cadeia.
+ *   C. pagamento → MB Way / transferência apenas (sem cartão, sem QR); a
+ *      escolha do método faz PATCH /api/sponsor/metodo → RPC ATÓMICA
+ *      iniciar_pagamento_sponsor (marca o método E cria o pagamento) e passa
+ *      ao passo DADOS: instruções + UPLOAD do comprovativo (signed upload,
+ *      bucket sponsor-payment-proofs) + WhatsApp da Vitória com handoff
+ *      registado ANTES de abrir (Bloco J r2) — SEM passo "Já fiz o pagamento".
  *
  * Cada modal abre POR CIMA do anterior, que fica aberto — o contador de
  * scroll-lock chega à profundidade 3 (o fundo só destrava quando TODOS fecham).
  * Comportamento de fecho (igual ao anterior, agora a 3 modais):
  *   - ✕ / clique fora fecham só o modal do topo → volta ao passo anterior;
  *   - ESC fecha a cadeia toda (todos os modais escutam ESC ao mesmo tempo).
- * O fluxo fecha no PARABÉNS partilhado (ParabensModal, contexto "patrocinio"):
- * a conclusão do comprovativo abre-o por cima e termina a cadeia. Sem email
- * por agora (ponto de extensão do EmailJS marcado no ParabensModal).
- * Nunca afirma pagamento confirmado — a Vitória verifica à mão.
+ * O fluxo fecha no OBRIGADO DEDICADO (PatrocinioObrigadoModal, Bloco J r2 —
+ * NÃO na ParabensModal partilhada): a conclusão (upload OK ou handoff OK)
+ * abre-o por cima e termina a cadeia. Nunca afirma pagamento confirmado —
+ * a Vitória verifica à mão.
  */
 export default function SponsorFlow() {
   const [apresentacaoAberto, setApresentacaoAberto] = useState(false);
@@ -60,6 +62,8 @@ export default function SponsorFlow() {
   const [nivel, setNivel] = useState<NivelParceria | null>(null);
   const [sponsorId, setSponsorId] = useState("");
   const [nome, setNome] = useState("");
+  /** Bloco J r2 — empresa entra na mensagem do WhatsApp e no Obrigado. */
+  const [empresa, setEmpresa] = useState("");
   /**
    * B1/0011 — o posseToken vive AQUI, só em memória (estado React) — nem
    * sessionStorage/localStorage/cookie, nem logs, nem URL. Fechou o browser,
@@ -103,12 +107,13 @@ export default function SponsorFlow() {
     setApresentacaoAberto(false);
   }
 
-  /** Fim do fluxo: fecha o Parabéns e limpa o estado para o próximo patrocínio. */
+  /** Fim do fluxo: fecha o Obrigado e limpa o estado para o próximo patrocínio. */
   function fecharParabens() {
     setParabensAberto(false);
     setNivel(null);
     setSponsorId("");
     setNome("");
+    setEmpresa("");
     setMetodo(null);
     // A capability morre com o fluxo (só em memória).
     setPosseToken("");
@@ -251,6 +256,8 @@ export default function SponsorFlow() {
                   if (!dados) return;
                   setSponsorId(dados.id);
                   setNome(dados.nome);
+                  // Bloco J r2 — empresa entra na mensagem do WhatsApp.
+                  setEmpresa(dados.empresa ?? "");
                   // B1/0011: capability em memória — só vive neste componente.
                   setPosseToken(dados.posseToken ?? "");
                   setNivelAberto(true); // o modal A fica aberto por baixo
@@ -354,7 +361,7 @@ export default function SponsorFlow() {
         )}
       </Modal>
 
-      {/* ── C. PAGAMENTO (MB Way / transferência + comprovativo — sem cartão) ── */}
+      {/* ── C. PAGAMENTO (r2: dados + upload + WhatsApp na mesma modal) ── */}
       {nivel !== null && sponsorId !== "" && posseToken !== "" && (
         <PatrocinioPagamentoModal
           aberto={pagamentoAberto}
@@ -362,24 +369,25 @@ export default function SponsorFlow() {
           sponsorId={sponsorId}
           posseToken={posseToken}
           nome={nome}
+          empresa={empresa}
           nivel={nivel}
           onConcluido={(metodoEscolhido, comprovativoRecebido) => {
             setMetodo(metodoEscolhido);
             setComprovativoOk(comprovativoRecebido);
-            fecharTudo(); // a cadeia A/B/C fecha — o Parabéns fica sozinho no topo
+            fecharTudo(); // a cadeia A/B/C fecha — o Obrigado fica sozinho no topo
             setParabensAberto(true);
           }}
         />
       )}
 
-      {/* ── PARABÉNS (partilhado) — fecha o fluxo de patrocínio ─────────── */}
+      {/* ── OBRIGADO (dedicado do patrocínio, Bloco J r2) — fecha o fluxo ── */}
       {metodo !== null && nivel !== null && (
-        <ParabensModal
+        <PatrocinioObrigadoModal
           aberto={parabensAberto}
           fechar={fecharParabens}
-          contexto="patrocinio"
+          nome={nome}
+          empresa={empresa}
           nivelLabel={NIVEIS_PARCERIA_COPY[nivel].titulo}
-          ctaWhatsApp={linkWhatsAppPatrocinio(metodo, nivel)}
           comprovativoOk={comprovativoOk}
         />
       )}

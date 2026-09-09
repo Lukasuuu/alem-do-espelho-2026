@@ -21,7 +21,13 @@ type Props = {
    * abrir o passo B (escolha do nível) por cima. O waitlist não usa este
    * callback.
    */
-  onSucesso?: (dados?: { id: string; nome: string; posseToken?: string }) => void;
+  onSucesso?: (dados?: {
+    id: string;
+    nome: string;
+    /** Empresa/marca (opcional) — entra na mensagem do WhatsApp (Bloco J r2). */
+    empresa?: string;
+    posseToken?: string;
+  }) => void;
   /**
    * r3 — progresso do formulário (ronda anti-fecho acidental): true à 1.ª
    * alteração, false quando o registo é aceite. Opcional — a lista de espera
@@ -93,6 +99,11 @@ export default function WaitlistForm({
   const [jaInscrita, setJaInscrita] = useState(false);
   /** FIX-3: falha de servidor/ligação — mostra o caminho humano (WhatsApp). */
   const [falhaServidor, setFalhaServidor] = useState(false);
+  /**
+   * Bloco J r2 — anti-takeover: o email já tem patrocínio ativo/confirmado.
+   * A modal A mostra o alerta com CTA para a Vitória (nunca abre o passo B).
+   */
+  const [jaExistenteSponsor, setJaExistenteSponsor] = useState(false);
 
   const montadoEm = useRef<number>(Date.now());
   const regiaoEstado = useRef<HTMLDivElement>(null);
@@ -172,6 +183,7 @@ export default function WaitlistForm({
     }
 
     setEstado("a-enviar");
+    setJaExistenteSponsor(false);
 
     try {
       const resposta = await fetch(config.endpoint, {
@@ -240,6 +252,23 @@ export default function WaitlistForm({
       }
 
       if (ehSponsor) {
+        // Bloco J r2 — ANTI-TAKEOVER: a rota responde 200 com jaExistente
+        // quando o email já tem um patrocínio com pagamento ativo ou
+        // confirmado. NÃO há onSucesso (não abre o passo B — sem
+        // posseToken não há escrita possível) e o alerta na modal A dá o
+        // caminho humano (Vitória), que pode ver o registo do lado dela.
+        if (dados.jaExistente === true) {
+          setEstado("erro");
+          setFalhaServidor(false);
+          setJaExistenteSponsor(true);
+          setErros({
+            form:
+              "Já recebemos um pedido de patrocínio com este email. Para continuar ou alterar algo, fala com a Vitória no WhatsApp.",
+          });
+          regiaoEstado.current?.focus();
+          return;
+        }
+
         // O fluxo de patrocínio mantém este modal aberto e abre o passo B
         // (escolha do nível) por cima, entregando o id do registo ao pai.
         setEstado("inativo");
@@ -248,6 +277,8 @@ export default function WaitlistForm({
         onSucesso?.({
           id: dados.id,
           nome: normalizarNome(fullName),
+          // Bloco J r2 — empresa entra na mensagem do WhatsApp da Vitória.
+          empresa: empresa.trim() !== "" ? empresa.trim() : undefined,
           // B1/0011: capability de posse, usada nos PATCHs seguintes.
           posseToken: typeof dados.posseToken === "string" ? dados.posseToken : undefined,
         });
@@ -350,7 +381,24 @@ export default function WaitlistForm({
               className="mb-6 rounded-sm border border-[#e88b8b]/40 bg-[#e88b8b]/10 px-4 py-3 text-[0.875rem] text-[#f3c0c0]"
             >
               {erros.form}
-              {falhaServidor && (
+              {/* Bloco J r2 — anti-takeover: caminho humano direto à Vitória
+                  (mensagem sem dados técnicos). */}
+              {jaExistenteSponsor && (
+                <a
+                  href={linkWhatsApp(
+                    SALON_WHATSAPP,
+                    "Olá, Vitória. Já tinha submetido um pedido de patrocínio no site e quero continuar."
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Abrir conversa no WhatsApp para continuar o meu patrocínio"
+                  className="mt-3 inline-flex items-center gap-2 rounded-full border border-[#f3c0c0]/40 px-4 py-2 text-[0.8125rem] font-medium text-[#f3c0c0] transition-colors duration-300 hover:border-[#f3c0c0] hover:bg-[#f3c0c0]/10"
+                >
+                  <WhatsAppIcon className="h-4 w-4" />
+                  Falar com a Vitória
+                </a>
+              )}
+              {falhaServidor && !jaExistenteSponsor && (
                 <a
                   href={linkWhatsApp(
                     SALON_WHATSAPP,
