@@ -177,9 +177,10 @@ export default function SponsorFlow() {
         fecharAoClicarFora={false}
       >
         <div
+          data-modal-patrocinadores-grelha
           className={`flex flex-col gap-6 ${
             duasColunas
-              ? "md:grid md:grid-cols-[minmax(0,58fr)_minmax(0,42fr)] md:items-start md:gap-10"
+              ? "md:grid md:grid-cols-[minmax(0,58fr)_minmax(0,42fr)] md:gap-10"
               : ""
           }`}
         >
@@ -198,8 +199,8 @@ export default function SponsorFlow() {
             <div
               data-lista-patrocinadores-scroll
               // Scroll NATIVO (sem JS): touch-action pan-y + momentum iOS vêm
-              // do .scroll-ouro em globals.css; o cap dvh (≥768) também lá
-              // está — aqui não há max-height para não brigar com o CSS.
+              // do .scroll-ouro em globals.css; ≥768 a lista enche o resto da
+              // altura da coluna (flex-1, ver grelha em globals.css).
               tabIndex={0}
               role="region"
               aria-label="Lista de patrocinadores (rolável)"
@@ -213,9 +214,10 @@ export default function SponsorFlow() {
             </div>
           </div>
 
-          {/* DIREITA — instrução + formulário. ≥768 tem cap dvh + scroll
-              PRÓPRIO (globals.css [data-coluna-formulario]) — o formulário
-              nunca rola dentro do scroll dos cards. <768 rola com o corpo. */}
+          {/* DIREITA — instrução + formulário. ≥768 as duas colunas ficam com
+              a MESMA altura (grelha minmax(0,1fr) em globals.css) e o
+              formulário rola SÓ aqui dentro quando transborda — nunca dentro
+              do scroll dos cards. <768 rola com o corpo. */}
           <div className="min-w-0" data-coluna-formulario>
             <p className="text-[0.9375rem] leading-relaxed text-creme/70">
               Deixa os teus dados para começares. A seguir escolhes o nível de
