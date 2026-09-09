@@ -10,7 +10,7 @@
 Landing page de captação da **2ª edição do evento "Além do Espelho"**, um dia de
 desenvolvimento pessoal feminino, autoestima e networking.
 
-- **Evento:** 17 de outubro de 2026, 09:00 (WEST) — INNSiDE by Meliá, Braga, Portugal.
+- **Evento:** 17 de outubro de 2026, 09:30 (WEST) — INNSiDE by Meliá, Braga, Portugal.
 - **Capacidade:** 100 vagas.
 - **Anfitriã:** Vitória Gomes — empresária, escritora, ativista social feminina;
   CEO e fundadora do **Essence of Beauty**.
