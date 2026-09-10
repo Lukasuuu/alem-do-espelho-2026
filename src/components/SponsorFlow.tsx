@@ -142,9 +142,10 @@ export default function SponsorFlow() {
         fecharAoClicarFora={false}
       >
         <div
+          data-modal-patrocinadores-grelha
           className={`flex flex-col gap-6 ${
             duasColunas
-              ? "md:grid md:grid-cols-[minmax(0,58fr)_minmax(0,42fr)] md:items-start md:gap-10"
+              ? "md:grid md:grid-cols-[minmax(0,58fr)_minmax(0,42fr)] md:gap-10"
               : ""
           }`}
         >
