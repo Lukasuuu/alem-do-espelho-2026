@@ -1,16 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Check, ChevronRight } from "lucide-react";
 import Modal from "./Modal";
 import WaitlistForm from "./WaitlistForm";
 import PatrocinioPagamentoModal from "./PatrocinioPagamentoModal";
-import PatrocinioObrigadoModal from "./PatrocinioObrigadoModal";
+import AgradecimentoSponsorModal from "./AgradecimentoSponsorModal";
 import ConfirmacaoSaidaModal from "./ConfirmacaoSaidaModal";
 import CartaoPatrocinadora from "./CartaoPatrocinadora";
 import { patrocinadoresVisiveis } from "@/lib/patrocinadores";
-import { NIVEIS_PARCERIA_COPY } from "@/lib/sponsor";
-import { NIVEIS_PARCERIA, type MetodoSponsor, type NivelParceria } from "@/lib/validation";
+import type { MetodoSponsor, NivelParceria } from "@/lib/validation";
 
 /** Largura do modal por breakpoint (desktop/tablet). Mobile <768 não toca. */
 function larguraModal() {
@@ -24,33 +22,29 @@ function larguraModal() {
 }
 
 /**
- * Fluxo "Quero Patrocinar" (FASE5, CORREÇÃO nº3) — cadeia de 3 modais EMPILHADOS:
+ * Fluxo "Quero Patrocinar" — SIMPLIFICADO (3 passos, como a inscrição):
  *
- *   A. apresentação + cadastro → quem já é patrocinadora (2 cartões), convocatória
- *      e FORM (nome/telemóvel/email/empresa opcional/consentimento RGPD). O nível
- *      NÃO é escolhido aqui — o POST /api/sponsor guarda o registo com nivel null.
- *   B. confirmação + escolha do nível → texto da CORREÇÃO nº5, 3 níveis estilo
- *      "anexo2" com benefícios e badge MAIS PROCURADO; PATCH /api/sponsor/nivel.
- *   C. pagamento → MB Way / transferência apenas (sem cartão, sem QR); a
- *      escolha do método faz PATCH /api/sponsor/metodo → RPC ATÓMICA
- *      iniciar_pagamento_sponsor (marca o método E cria o pagamento) e passa
- *      ao passo DADOS: instruções + UPLOAD do comprovativo (signed upload,
- *      bucket sponsor-payment-proofs) + WhatsApp da Vitória com handoff
- *      registado ANTES de abrir (Bloco J r2) — SEM passo "Já fiz o pagamento".
+ *   A. apresentação + cadastro → quem já é patrocinadora (2 cartões),
+ *      convocatória e FORM (nome/telemóvel/email/empresa opcional) com o
+ *      NÍVEL DE PARCERIA ESCOLHIDO INLINE (rádio 75/150/200€). O POST
+ *      /api/sponsor guarda logo o nível (p_nivel).
+ *   B. pagamento → MB Way / transferência APENAS (sem cartão, sem QR), com
+ *      os MESMOS ecrãs partilhados da inscrição (EcrasPagamentoMetodo). A
+ *      escolha do método faz PATCH /api/sponsor/metodo
+ *      (definir_metodo_sponsor) e "Já fiz a transferência/pagamento" termina.
+ *   C. AGRADECIMENTO → AgradecimentoSponsorModal: recap dos dados de
+ *      depósito + CTA WhatsApp verde para enviar o comprovativo à Vitória.
  *
  * Cada modal abre POR CIMA do anterior, que fica aberto — o contador de
  * scroll-lock chega à profundidade 3 (o fundo só destrava quando TODOS fecham).
- * Comportamento de fecho (igual ao anterior, agora a 3 modais):
- *   - ✕ / clique fora fecham só o modal do topo → volta ao passo anterior;
- *   - ESC fecha a cadeia toda (todos os modais escutam ESC ao mesmo tempo).
- * O fluxo fecha no OBRIGADO DEDICADO (PatrocinioObrigadoModal, Bloco J r2 —
- * NÃO na ParabensModal partilhada): a conclusão (upload OK ou handoff OK)
- * abre-o por cima e termina a cadeia. Nunca afirma pagamento confirmado —
- * a Vitória verifica à mão.
+ * Comportamento de fecho: X / clique fora fecham só o modal do topo → volta
+ * ao passo anterior (com confirmação quando há progresso a perder). Sem
+ * comprovativo na app e sem email por agora (ponto de extensão do EmailJS
+ * marcado no Agradecimento). Nunca afirma pagamento confirmado — a Vitória
+ * verifica à mão.
  */
 export default function SponsorFlow() {
   const [apresentacaoAberto, setApresentacaoAberto] = useState(false);
-  const [nivelAberto, setNivelAberto] = useState(false);
   const [pagamentoAberto, setPagamentoAberto] = useState(false);
 
   // Fecho A com confirmação (r3, padrão InscricaoModal): o clique fora não
@@ -60,29 +54,15 @@ export default function SponsorFlow() {
   const [confirmarSaida, setConfirmarSaida] = useState(false);
 
   const [nivel, setNivel] = useState<NivelParceria | null>(null);
+  const [metodo, setMetodo] = useState<MetodoSponsor | null>(null);
   const [sponsorId, setSponsorId] = useState("");
   const [nome, setNome] = useState("");
-  /** Bloco J r2 — empresa entra na mensagem do WhatsApp e no Obrigado. */
-  const [empresa, setEmpresa] = useState("");
-  /**
-   * B1/0011 — o posseToken vive AQUI, só em memória (estado React) — nem
-   * sessionStorage/localStorage/cookie, nem logs, nem URL. Fechou o browser,
-   * morreu com a tab: a reentrada é re-submeter o formulário (UPDATE → token
-   * NOVO no POST). Mesmo padrão do EventoPage no fluxo de inscrição.
-   */
-  const [posseToken, setPosseToken] = useState("");
+  const [empresa, setEmpresa] = useState<string | null>(null);
 
-  const [escolhendoNivel, setEscolhendoNivel] = useState(false);
-  const [erroNivel, setErroNivel] = useState<string | null>(null);
-
-  const [parabensAberto, setParabensAberto] = useState(false);
-  const [metodo, setMetodo] = useState<MetodoSponsor | null>(null);
-  /** Bloco J: true = comprovativo recebido; false = falhou/foi pelo WhatsApp. */
-  const [comprovativoOk, setComprovativoOk] = useState(true);
+  const [agradecimentoAberto, setAgradecimentoAberto] = useState(false);
 
   function fecharTudo() {
     setApresentacaoAberto(false);
-    setNivelAberto(false);
     setPagamentoAberto(false);
   }
 
@@ -107,51 +87,15 @@ export default function SponsorFlow() {
     setApresentacaoAberto(false);
   }
 
-  /** Fim do fluxo: fecha o Obrigado e limpa o estado para o próximo patrocínio. */
-  function fecharParabens() {
-    setParabensAberto(false);
+  /** Fim do fluxo: fecha o Agradecimento e limpa o estado para o próximo. */
+  function fecharAgradecimento() {
+    setAgradecimentoAberto(false);
     setNivel(null);
+    setMetodo(null);
     setSponsorId("");
     setNome("");
-    setEmpresa("");
-    setMetodo(null);
-    // A capability morre com o fluxo (só em memória).
-    setPosseToken("");
-    setComprovativoOk(true);
+    setEmpresa(null);
   }
-
-  /** Passo B: marca o nível no registo (POST ainda tinha nivel null). */
-  async function escolherNivel(valor: NivelParceria) {
-    // B1/0011: sem token de posse não há escrita — a sessão não é a deste registo.
-    if (!posseToken) {
-      setErroNivel("A tua sessão expirou. Volta a submeter o formulário para continuar.");
-      return;
-    }
-    setEscolhendoNivel(true);
-    setErroNivel(null);
-    try {
-      const resposta = await fetch("/api/sponsor/nivel", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sponsorId, nivel: valor, posseToken }),
-      });
-      const dados = await resposta.json();
-
-      if (!resposta.ok || !dados.ok) {
-        setErroNivel(dados.mensagem ?? "Não conseguimos guardar o nível. Tenta novamente.");
-        return;
-      }
-
-      setNivel(valor);
-      setPagamentoAberto(true); // o modal B fica aberto por baixo
-    } catch {
-      setErroNivel("Sem ligação ao servidor. Tenta novamente.");
-    } finally {
-      setEscolhendoNivel(false);
-    }
-  }
-
-  const primeiroNome = nome.trim().split(/\s+/)[0] ?? "";
 
   // Largura do modal responsiva + controle de layout colunas
   const [larguraModalAtual, setLarguraModalAtual] = useState("64rem");
@@ -187,10 +131,7 @@ export default function SponsorFlow() {
         </span>
       </button>
 
-      {/* ── A. APRESENTAÇÃO + CADASTRO — lista única com scroll (correção
-              pós-r3): card HORIZONTAL de produção + 3 deltas (foto maior,
-              logo menor, MISSÃO em toggle). Ordem por tier ouro → prata →
-              bronze sem badge; fecho só pelo X + ConfirmaçãoSaida. ── */}
+      {/* ── A. APRESENTAÇÃO + CADASTRO (com nível inline no formulário) ── */}
       <Modal
         aberto={apresentacaoAberto}
         fechar={pedirFechar}
@@ -201,10 +142,9 @@ export default function SponsorFlow() {
         fecharAoClicarFora={false}
       >
         <div
-          data-modal-patrocinadores-grelha
           className={`flex flex-col gap-6 ${
             duasColunas
-              ? "md:grid md:grid-cols-[minmax(0,58fr)_minmax(0,42fr)] md:gap-10"
+              ? "md:grid md:grid-cols-[minmax(0,58fr)_minmax(0,42fr)] md:items-start md:gap-10"
               : ""
           }`}
         >
@@ -223,8 +163,8 @@ export default function SponsorFlow() {
             <div
               data-lista-patrocinadores-scroll
               // Scroll NATIVO (sem JS): touch-action pan-y + momentum iOS vêm
-              // do .scroll-ouro em globals.css; ≥768 a lista enche o resto da
-              // altura da coluna (flex-1, ver grelha em globals.css).
+              // do .scroll-ouro em globals.css; o cap dvh (≥768) também lá
+              // está — aqui não há max-height para não brigar com o CSS.
               tabIndex={0}
               role="region"
               aria-label="Lista de patrocinadores (rolável)"
@@ -238,14 +178,14 @@ export default function SponsorFlow() {
             </div>
           </div>
 
-          {/* DIREITA — instrução + formulário. ≥768 as duas colunas ficam com
-              a MESMA altura (grelha minmax(0,1fr) em globals.css) e o
-              formulário rola SÓ aqui dentro quando transborda — nunca dentro
-              do scroll dos cards. <768 rola com o corpo. */}
+          {/* DIREITA — instrução + formulário com o NÍVEL INLINE (rádio
+              75/150/200€). ≥768 tem cap dvh + scroll PRÓPRIO (globals.css
+              [data-coluna-formulario]) — o formulário nunca rola dentro do
+              scroll dos cards. <768 rola com o corpo. */}
           <div className="min-w-0" data-coluna-formulario>
             <p className="text-[0.9375rem] leading-relaxed text-creme/70">
-              Deixa os teus dados para começares. A seguir escolhes o nível de
-              parceria e o método de pagamento — tudo aqui, em menos de dois minutos.
+              Deixa os teus dados, escolhe o nível de parceria e o método de
+              pagamento — tudo aqui, em menos de dois minutos.
             </p>
 
             <div className="mt-6">
@@ -253,14 +193,12 @@ export default function SponsorFlow() {
                 variant="sponsor"
                 onSujoChange={setSujo}
                 onSucesso={(dados) => {
-                  if (!dados) return;
+                  if (!dados || dados.nivel === undefined || dados.nivel === null) return;
                   setSponsorId(dados.id);
                   setNome(dados.nome);
-                  // Bloco J r2 — empresa entra na mensagem do WhatsApp.
-                  setEmpresa(dados.empresa ?? "");
-                  // B1/0011: capability em memória — só vive neste componente.
-                  setPosseToken(dados.posseToken ?? "");
-                  setNivelAberto(true); // o modal A fica aberto por baixo
+                  setEmpresa(dados.empresa ?? null);
+                  setNivel(dados.nivel);
+                  setPagamentoAberto(true); // a modal A fica aberta por baixo
                 }}
               />
             </div>
@@ -277,121 +215,34 @@ export default function SponsorFlow() {
         texto="Os dados do patrocínio ainda não foram guardados e perdem-se ao sair."
       />
 
-      {/* ── B. CONFIRMAÇÃO + ESCOLHA DO NÍVEL ──────────────────────── */}
-      <Modal
-        aberto={nivelAberto}
-        fechar={() => setNivelAberto(false)}
-        titulo="Escolhe o teu nível de parceria"
-        eyebrow="Quero Patrocinar"
-        larguraMax="34rem"
-        fecharAoClicarFora={false}
-      >
-        <p className="text-[0.9375rem] leading-relaxed text-creme/70">
-          {primeiroNome ? `${primeiroNome}, recebemos os teus dados.` : "Recebemos os teus dados."}{" "}
-          Escolhe o nível de parceria e conclui o pagamento para confirmares o
-          teu patrocínio.
-        </p>
-
-        <div className="mt-6 space-y-3">
-          {NIVEIS_PARCERIA.map((valor) => {
-            const copy = NIVEIS_PARCERIA_COPY[valor];
-            return (
-              <button
-                key={valor}
-                type="button"
-                onClick={() => escolherNivel(valor)}
-                disabled={escolhendoNivel}
-                className="group flex w-full items-start gap-4 rounded-sm border border-creme/20 bg-creme/5 p-4 text-left transition-all duration-300 hover:border-creme/40 hover:bg-creme/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rosa/50 disabled:cursor-wait disabled:opacity-60"
-              >
-                <span className="display shrink-0 text-3xl text-blush tabular-nums">
-                  {valor}€
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="flex flex-wrap items-center gap-2">
-                    <span className="text-[0.9375rem] font-medium text-creme">
-                      {copy.titulo}
-                    </span>
-                    {copy.maisProcurado && (
-                      <span className="rounded-full border border-dourado/50 bg-dourado/10 px-2 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wider text-dourado-claro">
-                        Mais procurado
-                      </span>
-                    )}
-                  </span>
-                  <span className="mt-1 block text-[0.8125rem] leading-relaxed text-creme/60">
-                    {copy.descricao}
-                  </span>
-                  {copy.vagas && (
-                    <span className="mt-2 block text-[0.75rem] font-medium text-dourado-claro/80">
-                      Apenas {copy.vagas} {copy.vagas === 1 ? "vaga" : "vagas"}
-                    </span>
-                  )}
-                  {copy.beneficios.length > 0 && (
-                    <ul className="mt-2 space-y-1">
-                      {copy.beneficios.map((beneficio) => (
-                        <li
-                          key={beneficio}
-                          className="flex items-start gap-2 text-[0.8125rem] leading-relaxed text-creme/65"
-                        >
-                          <Check
-                            className="mt-0.5 h-3.5 w-3.5 shrink-0 text-blush"
-                            aria-hidden
-                          />
-                          {beneficio}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </span>
-                <ChevronRight
-                  className="mt-1 h-4 w-4 shrink-0 text-creme/40 transition-transform duration-300 group-hover:translate-x-0.5"
-                  aria-hidden
-                />
-              </button>
-            );
-          })}
-        </div>
-
-        {erroNivel && (
-          <p
-            role="alert"
-            className="mt-4 rounded-sm border border-[#e88b8b]/40 bg-[#e88b8b]/10 px-4 py-3 text-[0.875rem] text-[#f3c0c0]"
-          >
-            {erroNivel}
-          </p>
-        )}
-      </Modal>
-
-      {/* ── C. PAGAMENTO (r2: dados + upload + WhatsApp na mesma modal) ── */}
-      {nivel !== null && sponsorId !== "" && posseToken !== "" && (
+      {/* ── B. PAGAMENTO (MB Way / transferência — sem cartão) ─────── */}
+      {nivel !== null && sponsorId !== "" && (
         <PatrocinioPagamentoModal
           aberto={pagamentoAberto}
           fechar={() => setPagamentoAberto(false)}
           sponsorId={sponsorId}
-          posseToken={posseToken}
           nome={nome}
           empresa={empresa}
           nivel={nivel}
-          onConcluido={(metodoEscolhido, comprovativoRecebido) => {
+          onDeclararPagamento={(metodoEscolhido) => {
             setMetodo(metodoEscolhido);
-            setComprovativoOk(comprovativoRecebido);
-            fecharTudo(); // a cadeia A/B/C fecha — o Obrigado fica sozinho no topo
-            setParabensAberto(true);
+            fecharTudo(); // a cadeia A/pagamento fecha — o Agradecimento fica sozinho no topo
+            setAgradecimentoAberto(true);
           }}
         />
       )}
 
-      {/* ── OBRIGADO (dedicado do patrocínio, Bloco J r2) — fecha o fluxo ── */}
+      {/* ── C. AGRADECIMENTO — fecha o fluxo de patrocínio ─────────────── */}
       {metodo !== null && nivel !== null && (
-        <PatrocinioObrigadoModal
-          aberto={parabensAberto}
-          fechar={fecharParabens}
+        <AgradecimentoSponsorModal
+          aberto={agradecimentoAberto}
+          fechar={fecharAgradecimento}
+          metodo={metodo}
+          nivel={nivel}
           nome={nome}
           empresa={empresa}
-          nivelLabel={NIVEIS_PARCERIA_COPY[nivel].titulo}
-          comprovativoOk={comprovativoOk}
         />
       )}
     </>
   );
 }
-

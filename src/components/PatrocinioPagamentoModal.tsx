@@ -4,11 +4,10 @@ import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ChevronRight, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { WhatsAppIcon, MbWayIcon, TransferenciaIcon } from "./icons";
+import { MbWayIcon, TransferenciaIcon } from "./icons";
 import ConfirmacaoSaidaModal from "./ConfirmacaoSaidaModal";
-import SponsorPaymentProofUpload from "./SponsorPaymentProofUpload";
+import { EcranMbWay, EcranTransferencia } from "./EcrasPagamentoMetodo";
 import { travarScroll, destravarScroll } from "@/lib/scroll-lock";
-import { MBWAY_NUMERO, MBWAY_NUMERO_COPIAR, TRANSFERENCIA } from "@/lib/pagamento";
 import { linkWhatsAppPatrocinio } from "@/lib/sponsor";
 import type { MetodoSponsor, NivelParceria } from "@/lib/validation";
 
@@ -17,25 +16,20 @@ type Props = {
   fechar: () => void;
   /** Id do patrocínio registado no POST /api/sponsor. */
   sponsorId: string;
-  /**
-   * B1/0011 — capability de posse do patrocínio (vive só em memória no
-   * SponsorFlow). Vai nos PATCHs do método/handoff e no upload do comprovativo.
-   */
-  posseToken: string;
   /** Nome completo (o 1.º nome entra na referência da transferência). */
   nome: string;
   /** Empresa/marca, opcional — entra na mensagem do WhatsApp (Bloco J r2). */
   empresa?: string | null;
-  /** Nível de parceria escolhido (75 / 150 / 200€). */
+  /** Nível de parceria escolhido INLINE no formulário (75 / 150 / 200€). */
   nivel: NivelParceria;
   /** Tema da modal: vinho (escuro) ou claro. */
   tom?: "vinho" | "claro";
   /**
-   * Conclusão do fluxo (Bloco J r2): comprovativo recebido pelo upload
-   * (comprovativoOk=true) ou handoff WhatsApp registado / upload falhado
-   * (false) — o pai fecha a cadeia e abre o Obrigado.
+   * Fim do fluxo de pagamento: a pessoa marcou "Já fiz a
+   * transferência/pagamento". O pai fecha esta modal e abre o Agradecimento.
+   * Nunca se afirma pagamento confirmado — a Vitória confirma à parte.
    */
-  onConcluido?: (metodo: MetodoSponsor, comprovativoOk: boolean) => void;
+  onDeclararPagamento?: (metodo: MetodoSponsor) => void;
 };
 
 /** Elementos focáveis dentro do painel, para o foco circular (trap). */
@@ -52,35 +46,29 @@ type Passo = "metodos" | "dados";
 const TITULO_MODAL = "patrocinio-pagamento-titulo";
 
 /**
- * Modal de pagamento do patrocínio (FASE5 + Bloco J r2) — mesmo padrão do
- * PagamentoModal (portal, focus trap, clique fora, scroll-lock com contador),
- * mas com APENAS MB Way e transferência bancária. O SumUp/cartão/QR é
- * exclusivo da inscrição e nunca aparece aqui.
+ * Modal de pagamento do patrocínio — mesmo padrão do PagamentoModal (portal,
+ * focus trap, clique fora, scroll-lock com contador), com APENAS MB Way e
+ * transferência bancária. O SumUp/cartão/QR é exclusivo da inscrição.
  *
- * FLUXO r2 (revisão do prompt) — dois passos, sem "Já fiz o pagamento":
- *
+ * FLUXO SIMPLES (3 passos):
  *   1. MÉTODOS — escolher MB Way ou transferência (PATCH /api/sponsor/metodo
- *      → RPC iniciar_pagamento_sponsor: marca o método E cria o pagamento
- *      numa transação, valor derivado do nível).
- *   2. DADOS DO PAGAMENTO — na MESMA modal, por baixo das instruções
- *      (número/valor do MB Way ou beneficiário/IBAN/BIC/valor), o UPLOAD do
- *      comprovativo (signed upload direto ao bucket sponsor-payment-proofs)
- *      e logo abaixo o WhatsApp da Vitória (com handoff registado ANTES de
- *      abrir — a conversa só abre se a escrita responder OK).
+ *      → RPC definir_metodo_sponsor, 2-arg — a RPC viva em produção).
+ *   2. INSTRUÇÕES — os MESMOS ecrãs partilhados da inscrição
+ *      (EcrasPagamentoMetodo), com valor = nível e referência de patrocínio.
+ *      "Já fiz a transferência/pagamento" → onDeclararPagamento → Agradecimento.
  *
- * A conclusão (upload OK ou handoff OK) chama onConcluido e o SponsorFlow
- * abre o Obrigado — nunca se afirma pagamento confirmado; a Vitória verifica.
+ * Sem comprovativo na app, sem upload, sem polling: o comprovativo vai à
+ * Vitória por WhatsApp (como na inscrição).
  */
 export default function PatrocinioPagamentoModal({
   aberto,
   fechar,
   sponsorId,
-  posseToken,
   nome,
   empresa,
   nivel,
   tom = "vinho",
-  onConcluido,
+  onDeclararPagamento,
 }: Props) {
   const claro = tom === "claro";
   const painelRef = useRef<HTMLDivElement>(null);
@@ -91,15 +79,7 @@ export default function PatrocinioPagamentoModal({
   const [passo, setPasso] = useState<Passo>("metodos");
   const [marcando, setMarcando] = useState(false);
   const [erroMetodo, setErroMetodo] = useState<string | null>(null);
-
-  // Bloco J — pagamento criado pela RPC atómica (id alimenta o upload), e o
-  // motivo de rejeição do polling.
-  const [pagamentoId, setPagamentoId] = useState("");
   const [metodoEscolhido, setMetodoEscolhido] = useState<MetodoSponsor | null>(null);
-  const [motivoRejeicao, setMotivoRejeicao] = useState<string | null>(null);
-
-  // Handoff WhatsApp: a rota PATCH /api/sponsor/whatsapp corre ANTES de abrir.
-  const [abrirWhatsapp, setAbrirWhatsapp] = useState(false);
 
   // r3 — anti-fecho: o clique fora e o ESC não fecham; o X com progresso a
   // perder (método escolhido) pede confirmação antes de descartar.
@@ -113,15 +93,12 @@ export default function PatrocinioPagamentoModal({
     if (aberto) {
       setPasso("metodos");
       setConfirmarSaida(false);
-      setPagamentoId("");
       setMetodoEscolhido(null);
-      setMotivoRejeicao(null);
-      setAbrirWhatsapp(false);
       setErroMetodo(null);
     }
   }, [aberto]);
 
-  /** X da modal C: com método já escolhido, pede confirmação primeiro. */
+  /** X da modal: com método já escolhido, pede confirmação primeiro. */
   function pedirFechar() {
     if (confirmarSaida) return;
     if (passo !== "metodos") {
@@ -175,13 +152,8 @@ export default function PatrocinioPagamentoModal({
     };
   }, [aberto, fechar]);
 
-  /** Marca o método e cria o pagamento (RPC ATÓMICA) numa só chamada. */
+  /** Marca o método (RPC definir_metodo_sponsor — 2-arg, a viva em produção). */
   async function escolherMetodo(escolhido: MetodoSponsor) {
-    // B1/0011: sem token de posse não há escrita — a sessão não é a deste registo.
-    if (!posseToken) {
-      setErroMetodo("A tua sessão expirou. Volta a submeter o formulário para continuar.");
-      return;
-    }
     setMarcando(true);
     setErroMetodo(null);
 
@@ -189,7 +161,7 @@ export default function PatrocinioPagamentoModal({
       const resposta = await fetch("/api/sponsor/metodo", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sponsorId, metodo: escolhido, posseToken }),
+        body: JSON.stringify({ sponsorId, metodo: escolhido }),
       });
 
       const dados = await resposta.json();
@@ -199,12 +171,7 @@ export default function PatrocinioPagamentoModal({
         return;
       }
 
-      // A mesma PATCH marca o método E cria/atualiza o pagamento — o id vem
-      // na resposta e alimenta o upload do comprovativo.
       setMetodoEscolhido(escolhido);
-      setPagamentoId(
-        typeof dados.pagamento?.pagamentoId === "string" ? dados.pagamento.pagamentoId : ""
-      );
       setPasso("dados");
     } catch {
       setErroMetodo("Sem ligação ao servidor. Tenta novamente.");
@@ -212,90 +179,6 @@ export default function PatrocinioPagamentoModal({
       setMarcando(false);
     }
   }
-
-  /** Handoff WhatsApp: REGISTAR antes de abrir (Bloco J r2). Só abre se OK. */
-  async function enviarPeloWhatsApp() {
-    if (abrirWhatsapp) return;
-    if (!posseToken || !pagamentoId) {
-      setErroMetodo("O pagamento ainda não ficou registado. Volta atrás e escolhe o método de novo.");
-      return;
-    }
-    setAbrirWhatsapp(true);
-    setErroMetodo(null);
-
-    // A janela abre vazia DENTRO do gesto do clique (popup blockers só
-    // honram o gesto direto) e é preenchida depois de a escrita responder.
-    const janela = window.open("", "_blank");
-
-    try {
-      const resposta = await fetch("/api/sponsor/whatsapp", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sponsorId, pagamentoId, posseToken }),
-      });
-      const dados = await resposta.json();
-
-      if (!resposta.ok || !dados.ok) {
-        // Handoff não registado → a conversa NÃO abre (a Vitória não recebe
-        // contexto) e o erro aparece na modal.
-        janela?.close();
-        setErroMetodo(dados.mensagem ?? "Não conseguimos registar o envio pelo WhatsApp. Tenta novamente.");
-        return;
-      }
-
-      const link = linkWhatsAppPatrocinio(
-        metodoEscolhido ?? "mbway",
-        nivel,
-        nome,
-        empresa
-      );
-      if (janela) {
-        janela.location.href = link;
-      } else {
-        // Popup bloqueado: abre pelo href normal (ainda após o registo OK).
-        window.location.href = link;
-      }
-      onConcluido?.(metodoEscolhido ?? "mbway", false);
-    } catch {
-      janela?.close();
-      setErroMetodo("Sem ligação ao servidor. Tenta novamente.");
-    } finally {
-      setAbrirWhatsapp(false);
-    }
-  }
-
-  // Bloco J — polling do estado do pagamento enquanto os dados estão abertos:
-  // se a Vitória rejeitar, o motivo aparece no sítio e a pessoa reenvia.
-  // Intervalo comedido (10 s) e parado quando sai do passo.
-  useEffect(() => {
-    if (!aberto || passo !== "dados" || !sponsorId || !posseToken) return;
-
-    let vivo = true;
-    async function sondar() {
-      try {
-        const resposta = await fetch("/api/sponsor/estado", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sponsorId, posseToken }),
-        });
-        if (!resposta.ok || !vivo) return;
-        const dados = (await resposta.json()) as {
-          ok: boolean;
-          estado?: string;
-          motivoRejeicao?: string | null;
-        };
-        if (vivo && dados.ok) setMotivoRejeicao(dados.motivoRejeicao ?? null);
-      } catch {
-        // polling é best-effort — falha de rede não perturba o passo
-      }
-    }
-
-    const intervalo = window.setInterval(sondar, 10000);
-    return () => {
-      vivo = false;
-      window.clearInterval(intervalo);
-    };
-  }, [aberto, passo, sponsorId, posseToken]);
 
   /* ── Ecrãs ────────────────────────────────────────────────── */
 
@@ -332,7 +215,15 @@ export default function PatrocinioPagamentoModal({
           {icone}
         </span>
         <span className="flex-1">
-          <span className="block text-[0.9375rem] font-medium text-inherit">{titulo}</span>
+          {/* r4 — cor explícita: text-inherit puxava o carvão do body e
+              deixava os títulos MB Way/Transferência escuros sobre o vinho. */}
+          <span
+            className={`block text-[0.9375rem] font-medium ${
+              claro ? "text-vinho" : "text-creme"
+            }`}
+          >
+            {titulo}
+          </span>
           <span
             className={`mt-0.5 block text-[0.8125rem] leading-relaxed ${
               claro ? "text-carvao/60" : "text-creme/60"
@@ -353,6 +244,15 @@ export default function PatrocinioPagamentoModal({
 
   const primeiroNome = nome.trim().split(/\s+/)[0] ?? "";
   const animacaoEntrada = reduzido ? false : { opacity: 0, scale: 0.95, y: 10 };
+
+  // Dados partilhados dos ecrãs de instrução — IGUAIS aos da inscrição, só
+  // muda o valor (nível) e a copy "para confirmarmos o teu patrocínio".
+  const valorText = `${nivel.toFixed(2).replace(".", ",")} €`;
+  const valorCopiar = String(nivel);
+  const whatsappHref =
+    metodoEscolhido !== null
+      ? linkWhatsAppPatrocinio(metodoEscolhido, nivel, nome, empresa)
+      : "";
 
   const dialogo = (
     <AnimatePresence>
@@ -470,10 +370,11 @@ export default function PatrocinioPagamentoModal({
                   </div>
                 )}
 
-                {/* ── PASSO: DADOS DO PAGAMENTO (r2) — instruções + UPLOAD +
-                       WhatsApp na MESMA modal, por esta ordem. Sem o passo
-                       "Já fiz o pagamento": o comprovativo é logo aqui. ── */}
-                {passo === "dados" && (
+                {/* ── PASSO: instruções de pagamento — MESMOS ecrãs da
+                       inscrição (componente partilhado), com o valor do
+                       nível e a copy de patrocínio. Sem upload: o
+                       comprovativo vai à Vitória por WhatsApp. ── */}
+                {passo === "dados" && metodoEscolhido !== null && (
                   <div>
                     <button
                       type="button"
@@ -486,261 +387,51 @@ export default function PatrocinioPagamentoModal({
                       Voltar aos métodos
                     </button>
 
-                    {metodoEscolhido === "mbway" ? (
-                      <>
-                        <h2
-                          id={TITULO_MODAL}
-                          className={`display mt-5 flex items-center gap-3 text-[1.75rem] leading-[1.05] sm:text-[2.125rem] ${
-                            claro ? "text-vinho" : "text-creme"
-                          }`}
-                        >
-                          <MbWayIcon className="h-7 w-7 text-blush" />
-                          MB Way
-                        </h2>
-
-                        <p
-                          className={`mt-4 text-[0.9375rem] leading-relaxed ${
-                            claro ? "text-carvao/75" : "text-creme/75"
-                          }`}
-                        >
-                          Efetua o pagamento pelo MB WAY e envia o comprovativo abaixo.
-                        </p>
-
-                        <dl className="mt-6 space-y-3">
-                          <div
-                            className={`rounded-sm border px-4 py-3 ${
-                              claro
-                                ? "border-vinho/15 bg-creme-profundo/60"
-                                : "border-creme/20 bg-creme/5"
-                            }`}
-                          >
-                            <dt
-                              className={`eyebrow ${
-                                claro ? "text-vinho/50" : "text-creme/45"
-                              }`}
-                            >
-                              Número MB Way
-                            </dt>
-                            <dd
-                              className={`mt-1 flex items-center justify-between gap-3 font-medium tabular-nums tracking-wide ${
-                                claro ? "text-carvao/85" : "text-creme/85"
-                              }`}
-                            >
-                              <span>{MBWAY_NUMERO}</span>
-                              <span className="flex shrink-0 gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    void navigator.clipboard?.writeText(MBWAY_NUMERO_COPIAR);
-                                  }}
-                                  className="min-h-11 rounded-sm border px-3 text-[0.75rem] uppercase tracking-wide transition-colors"
-                                  aria-label="Copiar número MB Way"
-                                >
-                                  Copiar
-                                </button>
-                              </span>
-                            </dd>
-                          </div>
-                          <div
-                            className={`rounded-sm border px-4 py-3 ${
-                              claro
-                                ? "border-vinho/15 bg-creme-profundo/60"
-                                : "border-creme/20 bg-creme/5"
-                            }`}
-                          >
-                            <dt
-                              className={`eyebrow ${
-                                claro ? "text-vinho/50" : "text-creme/45"
-                              }`}
-                            >
-                              Valor
-                            </dt>
-                            <dd className="display mt-1 text-2xl text-blush tabular-nums">
-                              {nivel}€
-                            </dd>
-                          </div>
-                        </dl>
-                      </>
-                    ) : (
-                      <>
-                        <h2
-                          id={TITULO_MODAL}
-                          className={`display mt-5 flex items-center gap-3 text-[1.75rem] leading-[1.05] sm:text-[2.125rem] ${
-                            claro ? "text-vinho" : "text-creme"
-                          }`}
-                        >
-                          <TransferenciaIcon className="h-7 w-7 text-blush" />
-                          Transferência bancária
-                        </h2>
-
-                        <p
-                          className={`mt-4 text-[0.9375rem] leading-relaxed ${
-                            claro ? "text-carvao/75" : "text-creme/75"
-                          }`}
-                        >
-                          Efetua a transferência e envia o comprovativo abaixo.
-                        </p>
-
-                        <dl className="mt-6 space-y-3">
-                          <div
-                            className={`rounded-sm border px-4 py-3 ${
-                              claro
-                                ? "border-vinho/15 bg-creme-profundo/60"
-                                : "border-creme/20 bg-creme/5"
-                            }`}
-                          >
-                            <dt
-                              className={`eyebrow ${
-                                claro ? "text-vinho/50" : "text-creme/45"
-                              }`}
-                            >
-                              Beneficiário
-                            </dt>
-                            <dd
-                              className={`mt-1 font-medium ${
-                                claro ? "text-carvao/85" : "text-creme/85"
-                              }`}
-                            >
-                              {TRANSFERENCIA.beneficiario}
-                            </dd>
-                          </div>
-                          <div
-                            className={`rounded-sm border px-4 py-3 ${
-                              claro
-                                ? "border-vinho/15 bg-creme-profundo/60"
-                                : "border-creme/20 bg-creme/5"
-                            }`}
-                          >
-                            <dt
-                              className={`eyebrow ${
-                                claro ? "text-vinho/50" : "text-creme/45"
-                              }`}
-                            >
-                              IBAN
-                            </dt>
-                            <dd
-                              className={`mt-1 font-medium tabular-nums tracking-wide ${
-                                claro ? "text-carvao/85" : "text-creme/85"
-                              }`}
-                            >
-                              {TRANSFERENCIA.iban}
-                            </dd>
-                          </div>
-                          <div
-                            className={`rounded-sm border px-4 py-3 ${
-                              claro
-                                ? "border-vinho/15 bg-creme-profundo/60"
-                                : "border-creme/20 bg-creme/5"
-                            }`}
-                          >
-                            <dt
-                              className={`eyebrow ${
-                                claro ? "text-vinho/50" : "text-creme/45"
-                              }`}
-                            >
-                              BIC / SWIFT
-                            </dt>
-                            <dd
-                              className={`mt-1 font-medium tabular-nums tracking-wide ${
-                                claro ? "text-carvao/85" : "text-creme/85"
-                              }`}
-                            >
-                              {TRANSFERENCIA.bic}
-                            </dd>
-                          </div>
-                          <div
-                            className={`rounded-sm border px-4 py-3 ${
-                              claro
-                                ? "border-vinho/15 bg-creme-profundo/60"
-                                : "border-creme/20 bg-creme/5"
-                            }`}
-                          >
-                            <dt
-                              className={`eyebrow ${
-                                claro ? "text-vinho/50" : "text-creme/45"
-                              }`}
-                            >
-                              Valor
-                            </dt>
-                            <dd className="display mt-1 text-2xl text-blush tabular-nums">
-                              {nivel}€
-                            </dd>
-                          </div>
-                        </dl>
-
-                        <p
-                          className={`mt-4 text-[0.8125rem] leading-relaxed ${
-                            claro ? "text-carvao/60" : "text-creme/60"
-                          }`}
-                        >
-                          Referência da transferência:{" "}
-                          <span className="font-medium">
-                            {primeiroNome} · Patrocínio Além do Espelho 2026
-                          </span>
-                        </p>
-                      </>
-                    )}
-
-                    {/* Vitória rejeitou o comprovativo anterior → o motivo do
-                        polling aparece aqui e a pessoa reenvia. */}
-                    {motivoRejeicao && (
-                      <p
-                        role="alert"
-                        className="mt-4 rounded-sm border border-[#e88b8b]/40 bg-[#e88b8b]/10 px-4 py-3 text-[0.875rem] text-[#f3c0c0]"
-                      >
-                        A confirmação devolveu o comprovativo: {motivoRejeicao}. Podes
-                        enviar outro ficheiro.
-                      </p>
-                    )}
-
-                    {pagamentoId && posseToken ? (
-                      <div className="mt-6">
-                        <SponsorPaymentProofUpload
-                          sponsorId={sponsorId}
-                          pagamentoId={pagamentoId}
-                          posseToken={posseToken}
-                          onSucesso={() => {
-                            onConcluido?.(metodoEscolhido ?? "mbway", true);
-                          }}
-                          onFalhaServidor={() => {
-                            // Falha do servidor → conclusão com fallback humano
-                            // (o Obrigado diz para enviar pelo WhatsApp).
-                            onConcluido?.(metodoEscolhido ?? "mbway", false);
-                          }}
-                        />
-                      </div>
-                    ) : (
-                      <p
-                        role="alert"
-                        className={`mt-6 rounded-sm border px-4 py-3 text-[0.875rem] ${
-                          claro
-                            ? "border-vinho/30 bg-vinho/5 text-vinho/80"
-                            : "border-[#e88b8b]/40 bg-[#e88b8b]/10 text-[#f3c0c0]"
-                        }`}
-                      >
-                        O pagamento ainda não ficou registado. Volta atrás e
-                        escolhe o método de novo.
-                      </p>
-                    )}
-
-                    {/* Handoff WhatsApp — REGISTADO antes de abrir; a conversa
-                        só abre se a escrita responder OK. A mensagem é montada
-                        pela lib (nome/empresa/nível/valor — sem dados técnicos). */}
-                    <button
-                      type="button"
-                      onClick={() => void enviarPeloWhatsApp()}
-                      disabled={abrirWhatsapp}
-                      className={`mt-4 flex w-full items-center justify-center gap-2 rounded-full border px-7 py-4 text-[0.9375rem] font-medium transition-colors duration-300 ${
-                        claro
-                          ? "border-vinho/25 text-vinho hover:border-vinho/45"
-                          : "border-creme/25 text-creme/80 hover:border-creme/50 hover:bg-creme/5"
+                    <h2
+                      id={TITULO_MODAL}
+                      className={`display mt-5 flex items-center gap-3 text-[1.75rem] leading-[1.05] sm:text-[2.125rem] ${
+                        claro ? "text-vinho" : "text-creme"
                       }`}
                     >
-                      <WhatsAppIcon className="h-4.5 w-4.5" />
-                      {abrirWhatsapp
-                        ? "A registar o envio…"
-                        : "Enviar pelo WhatsApp à Vitória"}
-                    </button>
+                      {metodoEscolhido === "mbway" ? (
+                        <MbWayIcon className="h-7 w-7 text-blush" />
+                      ) : (
+                        <TransferenciaIcon className="h-7 w-7 text-blush" />
+                      )}
+                      {metodoEscolhido === "mbway" ? "MB Way" : "Transferência bancária"}
+                    </h2>
+
+                    <p
+                      className={`mt-4 text-[0.9375rem] leading-relaxed ${
+                        claro ? "text-carvao/75" : "text-creme/75"
+                      }`}
+                    >
+                      {metodoEscolhido === "mbway"
+                        ? `Efetua o pagamento de ${nivel}€ pelo MB Way para confirmarmos o teu patrocínio.`
+                        : `Efetua a transferência de ${nivel}€ para confirmarmos o teu patrocínio.`}
+                    </p>
+
+                    {metodoEscolhido === "mbway" ? (
+                      <EcranMbWay
+                        claro={claro}
+                        valorText={valorText}
+                        valorCopiar={valorCopiar}
+                        whatsappHref={whatsappHref}
+                        aoDeclararPagamento={() => onDeclararPagamento?.(metodoEscolhido)}
+                        textoBotaoDeclarar="Já fiz o pagamento"
+                        textoPassoFinal="Volta aqui e marca “Já fiz o pagamento”."
+                      />
+                    ) : (
+                      <EcranTransferencia
+                        claro={claro}
+                        valorText={valorText}
+                        valorCopiar={valorCopiar}
+                        whatsappHref={whatsappHref}
+                        aoDeclararPagamento={() => onDeclararPagamento?.(metodoEscolhido)}
+                        textoBotaoDeclarar="Já fiz a transferência"
+                        referencia={`${primeiroNome} · Patrocínio Além do Espelho 2026`}
+                      />
+                    )}
                   </div>
                 )}
               </div>

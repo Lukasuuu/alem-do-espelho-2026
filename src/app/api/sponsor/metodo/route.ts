@@ -13,23 +13,15 @@ type Resposta =
       ok: true;
       sponsorId: string;
       metodo: MetodoSponsor;
-      /** Pagamento ativo criado pela sequência (valor derivado do nível). */
-      pagamento: { pagamentoId: string; estado: string };
     }
   | { ok: false; mensagem: string; tipo: TipoErro; campos?: Record<string, string> };
 
 /**
- * Marca o método de pagamento do patrocínio E cria/atualiza o pagamento numa
- * ÚNICA transação (0011 r2: iniciar_pagamento_sponsor — atómica e race-safe).
- * Antes eram duas RPCs sequenciais: se a segunda falhava, sponsors.metodo_
- * pagamento ficava escrito sem pagamento — já não acontece.
- *
- * Semântica (devolvida em `pagamento.status`):
- *   • "criado" — pagamento novo (payment_started, valor derivado do nível);
- *   • "existente" — pagamento ativo reutilizado (duplo clique / retry);
- *   • troca de método antes do comprovativo (payment_started/awaiting_proof)
- *     atualiza o MESMO pagamento; depois (proof_uploaded/under_review) → 409
- *     pagamento_em_analise; confirmado → 409 pagamento_confirmado.
+ * Marca o método de pagamento do patrocínio (fluxo simples de 3 passos) via
+ * RPC definir_metodo_sponsor — a RPC viva em produção recebe SÓ
+ * p_sponsor_id + p_metodo (sem token de posse, sem criar pagamento: o valor
+ * do patrocínio já está no registo do nível, e a confirmação do pagamento é
+ * humana, pela Vitória, via comprovativo no WhatsApp).
  * Só mbway/transferencia — o SumUp é exclusivo da inscrição e nunca aparece aqui.
  */
 export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
@@ -83,24 +75,19 @@ export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
       ok: true,
       sponsorId: dados.sponsorId,
       metodo: dados.metodo,
-      pagamento: { pagamentoId: "00000000-0000-0000-0000-000000000002", estado: "payment_started" },
     });
   }
 
   try {
     const supabase = getSupabase();
 
-    // RPC ATÓMICA (0011 r2): valida método → posse → sponsor → nível →
-    // valor derivado → trata pagamento ativo (reutiliza/troca/bloqueia) →
-    // atualiza sponsors.metodo_pagamento → devolve o pagamento.
-    const { data: pagamento, error: erroPagamento } = await supabase.rpc("iniciar_pagamento_sponsor", {
+    const { error } = await supabase.rpc("definir_metodo_sponsor", {
       p_sponsor_id: dados.sponsorId,
       p_metodo: dados.metodo,
-      p_posse_token: dados.posseToken,
     });
 
-    if (erroPagamento) {
-      const codigo = erroPagamento.message ?? "";
+    if (error) {
+      const codigo = error.message ?? "";
       if (codigo.includes("invalid_metodo")) {
         return NextResponse.json(
           { ok: false, mensagem: MENSAGENS.invalido, tipo: "validacao", campos: { metodo: "Método de pagamento inválido." } },
@@ -113,45 +100,15 @@ export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
           { status: 404 }
         );
       }
-      if (codigo.includes("nivel_nao_definido")) {
-        // Falha de fase: o nível ainda não foi escolhido no passo B.
-        return NextResponse.json(
-          { ok: false, mensagem: "Escolhe primeiro o nível de parceria.", tipo: "fase" },
-          { status: 422 }
-        );
-      }
-      if (codigo.includes("pagamento_em_analise")) {
-        return NextResponse.json(
-          { ok: false, mensagem: MENSAGENS.pagamentoEmAnalise, tipo: "fase" },
-          { status: 409 }
-        );
-      }
-      if (codigo.includes("pagamento_confirmado")) {
-        return NextResponse.json(
-          { ok: false, mensagem: MENSAGENS.pagamentoConfirmado, tipo: "fase" },
-          { status: 409 }
-        );
-      }
-      if (codigo.includes("acesso_negado")) {
-        // Token de posse não bate — sessão antiga/expirada.
-        return NextResponse.json({ ok: false, mensagem: MENSAGENS.sessaoExpirada, tipo: "fase" }, { status: 403 });
-      }
 
-      console.error("[sponsor-metodo] erro ao iniciar pagamento:", erroPagamento.message);
+      console.error("[sponsor-metodo] erro ao marcar método:", error.message);
       return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 502 });
     }
-
-    const resultado = pagamento as {
-      status: "criado" | "existente";
-      pagamento_id: string;
-      estado: string;
-    };
 
     return NextResponse.json({
       ok: true,
       sponsorId: dados.sponsorId,
       metodo: dados.metodo,
-      pagamento: { pagamentoId: resultado.pagamento_id, estado: resultado.estado },
     });
   } catch (erro) {
     console.error("[sponsor-metodo] falha inesperada:", erro);

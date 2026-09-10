@@ -168,10 +168,11 @@ export const METODOS_SPONSOR = ["mbway", "transferencia"] as const;
 export type MetodoSponsor = (typeof METODOS_SPONSOR)[number];
 
 /**
- * Registo de patrocínio (CORREÇÃO nº3): mesmos campos do waitlist (nome,
- * email, telemóvel, consentimento, anti-bot) mais a empresa/marca OPCIONAL.
- * O nível já NÃO entra aqui — a escolha passou para o passo B (depois do
- * formulário) e é marcada num PATCH próprio (/api/sponsor/nivel).
+ * Registo de patrocínio (fluxo simples de 3 passos): mesmos campos do
+ * waitlist (nome, email, telemóvel, consentimento, anti-bot), empresa/marca
+ * OPCIONAL e o nível ESCOLHIDO NO PRÓPRIO FORMULÁRIO (rádio inline) —
+ * obrigatório, vai direto na RPC registar_sponsor (p_nivel). Não há mais
+ * passo separado de nível nem PATCH /api/sponsor/nivel.
  */
 export const sponsorSchema = waitlistSchema.extend({
   // Campo novo (CORREÇÃO nº6): empresa/marca, opcional — quem patrocina a
@@ -187,112 +188,28 @@ export const sponsorSchema = waitlistSchema.extend({
     .optional()
     .default(""),
 
-  // Nível escolhido no passo B — ausente no POST do formulário (null),
-  // presente apenas se algo o enviar (mantém a validação de fronteira).
-  nivel: z
-    .union(
-      [z.literal(75), z.literal(150), z.literal(200)],
-      { errorMap: () => ({ message: "Escolhe um nível de parceria." }) }
-    )
-    .nullish(),
+  // Nível escolhido INLINE no formulário (rádio) — obrigatório na fronteira.
+  nivel: z.union(
+    [z.literal(75), z.literal(150), z.literal(200)],
+    { errorMap: () => ({ message: "Escolhe um nível de parceria." }) }
+  ),
 });
 
 export type SponsorInput = z.input<typeof sponsorSchema>;
 
 /**
- * PATCH que marca o nível escolhido no passo B (depois do formulário).
- * B1/0011: exige o posse_token devolvido no POST — capability de posse.
- */
-export const nivelSponsorSchema = z.object({
-  sponsorId: z.string().uuid("Parceria inválida."),
-  nivel: z.union(
-    [z.literal(75), z.literal(150), z.literal(200)],
-    { errorMap: () => ({ message: "Escolhe um nível de parceria." }) }
-  ),
-  posseToken: posseTokenSchema,
-});
-
-export type NivelSponsorInput = z.input<typeof nivelSponsorSchema>;
-
-/**
- * PATCH que marca o método do patrocínio (MB Way ou transferência) e cria o
- * pagamento na mesma sequência (espelho de /api/inscricao/metodo).
+ * PATCH que marca o método do patrocínio (MB Way ou transferência) via RPC
+ * definir_metodo_sponsor — 2 argumentos, sem token de posse (a RPC viva em
+ * produção não o recebe).
  */
 export const metodoSponsorSchema = z.object({
   sponsorId: z.string().uuid("Parceria inválida."),
   metodo: z.enum(METODOS_SPONSOR, {
     errorMap: () => ({ message: "Método de pagamento inválido." }),
   }),
-  posseToken: posseTokenSchema,
 });
 
 export type MetodoSponsorInput = z.input<typeof metodoSponsorSchema>;
-
-/**
- * POST /api/sponsor/estado — polling do passo de comprovativo (0011).
- * Devolve o estado do pagamento ativo para a modal detetar rejeição.
- */
-export const estadoSponsorSchema = z.object({
-  sponsorId: z.string().uuid("Parceria inválida."),
-  posseToken: posseTokenSchema,
-});
-
-export type EstadoSponsorInput = z.input<typeof estadoSponsorSchema>;
-
-/**
- * POST /api/sponsor/comprovativo — pedido de URL de upload direto (signed
- * upload). O ficheiro NÃO passa pela rota (o proxy da Vercel corta a ~4,5 MB
- * e o bucket aceita 8 MB): o cliente envia só o NOME, o TAMANHO e os PRIMEIROS
- * BYTES (base64, máx. 64) para o servidor validar a extensão e os magic bytes
- * ANTES de emitir a URL. O PUT do ficheiro vai direto ao Supabase.
- */
-export const sponsorUploadPedidoSchema = z.object({
-  sponsorId: z.string().uuid("Parceria inválida."),
-  pagamentoId: z.string().uuid("Pagamento inválido."),
-  posseToken: posseTokenSchema,
-  nomeFicheiro: z.string().min(1, "Escolhe um ficheiro.").max(255, "Nome do ficheiro demasiado longo."),
-  tamanho: z.number().int().positive("O ficheiro está vazio."),
-  primeirosBytesBase64: z
-    .string()
-    .max(128, "Pré-visualização dos bytes demasiado grande."),
-});
-
-export type SponsorUploadPedidoInput = z.input<typeof sponsorUploadPedidoSchema>;
-
-/**
- * POST /api/sponsor/comprovativo/registo — após o PUT direto ao bucket, o
- * cliente pede o registo dos metadados (2.ª metade do signed upload). O
- * servidor confere o path contra o pagamento e a RPC faz a transição para
- * proof_uploaded. Nunca o conteúdo — só metadados.
- */
-export const sponsorUploadRegistoSchema = z.object({
-  sponsorId: z.string().uuid("Parceria inválida."),
-  pagamentoId: z.string().uuid("Pagamento inválido."),
-  posseToken: posseTokenSchema,
-  storagePath: z
-    .string()
-    .min(1)
-    .max(400)
-    .regex(/^sponsor-payment-proofs\/[^/]+\/[^/]+\/[^/]+\.[a-z0-9]+$/, "Caminho de storage inválido."),
-  nomeFicheiro: z.string().min(1).max(255),
-  tamanho: z.number().int().positive(),
-  mime: z.string().min(3).max(100),
-});
-
-export type SponsorUploadRegistoInput = z.input<typeof sponsorUploadRegistoSchema>;
-
-/**
- * PATCH /api/sponsor/whatsapp — handoff: a pessoa vai enviar o comprovativo à
- * Vitória pelo WhatsApp. A rota REGISTRA o handoff (canal + momento) ANTES de
- * abrir a conversa — só abre se a escrita responder OK.
- */
-export const sponsorWhatsappSchema = z.object({
-  sponsorId: z.string().uuid("Parceria inválida."),
-  pagamentoId: z.string().uuid("Pagamento inválido."),
-  posseToken: posseTokenSchema,
-});
-
-export type SponsorWhatsappInput = z.input<typeof sponsorWhatsappSchema>;
 
 export type TelefoneValidado = {
   ok: boolean;
@@ -337,13 +254,4 @@ export const MENSAGENS = {
   /** Rota /api/inscricao/metodo: quem falhou foi o registo da escolha/pagamento,
       não a inscrição — a mensagem genérica "guardar a tua inscrição" enganava. */
   metodoServidor: "Não conseguimos registar a escolha de pagamento. Tenta novamente.",
-  /** Bloco J r2: token de posse não bate — a capability morreu com a sessão.
-      Antes as rotas sponsor reutilizavam metodoServidor aqui (engano). */
-  sessaoExpirada: "A tua sessão expirou. Volta a submeter o formulário para continuar.",
-  /** 409 — pagamento em análise: não se troca método/valor depois do comprovativo. */
-  pagamentoEmAnalise:
-    "O comprovativo deste pagamento já foi enviado e está em análise. Se precisares de mudar o método, fala com a Vitória no WhatsApp.",
-  /** 409 — pagamento já confirmado pelo admin. */
-  pagamentoConfirmado:
-    "Este patrocínio já foi confirmado pela equipa. Se achas que há algum erro, fala com a Vitória no WhatsApp.",
 } as const;

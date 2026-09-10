@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { ArrowLeft, ChevronRight, Check, QrCode, X } from "lucide-react";
+import { ArrowLeft, ChevronRight, QrCode, X } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -10,15 +10,18 @@ import LocalImage from "./LocalImage";
 import CartaoMetodoPagamento from "./CartaoMetodoPagamento";
 import PaymentProofUpload from "./PaymentProofUpload";
 import ConfirmacaoSaidaModal from "./ConfirmacaoSaidaModal";
+// Ecrãs de instrução MB Way/Transferência EXTRAÍDOS para componente
+// partilhado (EcrasPagamentoMetodo.tsx, que já usa BotaoCopiar.tsx) —
+// usados AQUI (inscrição) e no patrocínio (PatrocinioPagamentoModal):
+// paridade visual real, um só componente, nenhum risco de divergir.
+import { EcranMbWay, EcranTransferencia } from "./EcrasPagamentoMetodo";
 import { travarScroll, destravarScroll } from "@/lib/scroll-lock";
+// MBWAY_NUMERO/MBWAY_NUMERO_COPIAR/TRANSFERENCIA/formatarIban vivem agora
+// DENTRO dos ecrãs partilhados — aqui não se usam mais (fonte única).
 import {
-  MBWAY_NUMERO,
-  MBWAY_NUMERO_COPIAR,
   SUMUP_URL,
-  TRANSFERENCIA,
   VALOR_INSCRICAO,
   VALOR_INSCRICAO_TEXT,
-  formatarIban,
   linkWhatsAppPagamento,
   mensagemRecuperacaoPagamento,
 } from "@/lib/pagamento";
@@ -56,62 +59,6 @@ type Props = {
    */
   onComprovativoFalha: () => void;
 };
-
-/**
- * Botão de copiar (navigator.clipboard) — usado nos passos MB Way e
- * transferência para colar o valor EXATO SEM espaços (nº MB Way, IBAN, "40").
- * Estados: "Copiar" → "Copiado!"; falha de clipboard (contexto não seguro)
- * → silêncio, não rebenta o fluxo.
- */
-function BotaoCopiar({
-  texto,
-  claro,
-}: {
-  /** Valor exato a colar (ex.: "928400069", "IE60SUMU…", "40"). */
-  texto: string;
-  claro?: boolean;
-}) {
-  const [copiado, setCopiado] = useState(false);
-  const timeoutRef = useRef<number | null>(null);
-
-  // Limpa o timeout do "Copiado!" se a modal desmontar a meio.
-  useEffect(
-    () => () => {
-      if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
-    },
-    []
-  );
-
-  async function copiar() {
-    try {
-      await navigator.clipboard.writeText(texto);
-    } catch {
-      return; // clipboard indisponível → não bloquear o pagamento por causa disto
-    }
-    setCopiado(true);
-    if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
-    timeoutRef.current = window.setTimeout(() => setCopiado(false), 2000);
-  }
-
-  const borda = copiado
-    ? "border-[#4fce5d]/60"
-    : claro
-      ? "border-vinho/25 text-vinho/75 hover:border-vinho/45 hover:text-vinho"
-      : "border-creme/30 text-creme/70 hover:border-creme/50 hover:text-creme";
-  const textoEstado = copiado ? (claro ? "text-[#2f9e3a]" : "text-[#6fd97b]") : "";
-
-  return (
-    <button
-      type="button"
-      onClick={copiar}
-      aria-label={`Copiar ${texto}`}
-      className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[0.75rem] font-medium transition-colors duration-300 ${borda} ${textoEstado}`}
-    >
-      {copiado && <Check className="h-3.5 w-3.5" aria-hidden />}
-      {copiado ? "Copiado!" : "Copiar"}
-    </button>
-  );
-}
 
 /** Elementos focáveis dentro do painel, para o foco circular (trap). */
 function focaveis(raiz: HTMLElement): HTMLElement[] {
@@ -851,255 +798,28 @@ export default function PagamentoModal({
 
                 {/* ── PASSO: MB Way (cabeçalho e voltar estão na zona fixa) ── */}
                 {passo === "mbway" && (
-                  <div>
-                    <ol
-                      className={`mt-4 space-y-4 text-[0.9375rem] leading-relaxed ${
-                        claro ? "text-carvao/75" : "text-creme/75"
-                      }`}
-                    >
-                      <li className="flex gap-3">
-                        <span className="font-medium text-blush">1.</span>
-                        Abre a app MB Way e escolhe pagar por número de telemóvel.
-                      </li>
-                      <li className="flex gap-3">
-                        <span className="font-medium text-blush">2.</span>
-                        Confere os dados abaixo e confirma o pagamento.
-                      </li>
-                      <li className="flex gap-3">
-                        <span className="font-medium text-blush">3.</span>
-                        Depois de pagar, envia o comprovativo para garantirmos o teu lugar.
-                      </li>
-                    </ol>
-
-                    <dl className="mt-6 space-y-3">
-                      <div
-                        className={`rounded-sm border px-4 py-3 ${
-                          claro
-                            ? "border-vinho/15 bg-creme-profundo/60"
-                            : "border-creme/20 bg-creme/5"
-                        }`}
-                      >
-                        <dt className={`eyebrow ${claro ? "text-vinho/50" : "text-creme/60"}`}>
-                          Número
-                        </dt>
-                        <dd
-                          className={`mt-1 flex items-center justify-between gap-3 ${
-                            claro ? "text-carvao/85" : "text-creme/85"
-                          }`}
-                        >
-                          <span className="font-medium tabular-nums tracking-wide">
-                            {MBWAY_NUMERO}
-                          </span>
-                          <BotaoCopiar texto={MBWAY_NUMERO_COPIAR} claro={claro} />
-                        </dd>
-                      </div>
-                      <div
-                        className={`rounded-sm border px-4 py-3 ${
-                          claro
-                            ? "border-vinho/15 bg-creme-profundo/60"
-                            : "border-creme/20 bg-creme/5"
-                        }`}
-                      >
-                        <dt className={`eyebrow ${claro ? "text-vinho/50" : "text-creme/60"}`}>
-                          Valor
-                        </dt>
-                        <dd
-                          className={`mt-1 flex items-center justify-between gap-3 ${
-                            claro ? "text-carvao/85" : "text-creme/85"
-                          }`}
-                        >
-                          <span className="font-medium tabular-nums">{VALOR_INSCRICAO_TEXT}</span>
-                          <BotaoCopiar texto={String(VALOR_INSCRICAO)} claro={claro} />
-                        </dd>
-                      </div>
-                      <div
-                        className={`rounded-sm border px-4 py-3 ${
-                          claro
-                            ? "border-vinho/15 bg-creme-profundo/60"
-                            : "border-creme/20 bg-creme/5"
-                        }`}
-                      >
-                        <dt className={`eyebrow ${claro ? "text-vinho/50" : "text-creme/60"}`}>
-                          Titular
-                        </dt>
-                        <dd
-                          className={`mt-1 flex items-center justify-between gap-3 ${
-                            claro ? "text-carvao/85" : "text-creme/85"
-                          }`}
-                        >
-                          <span className="font-medium">{TRANSFERENCIA.beneficiario}</span>
-                        </dd>
-                      </div>
-                    </dl>
-
-                    <a
-                      href={linkWhatsAppPagamento("mbway")}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-7 inline-flex w-full items-center justify-center gap-3 rounded-full bg-whatsapp px-7 py-4 text-[0.9375rem] font-medium text-white transition-all duration-300 hover:brightness-105"
-                    >
-                      <WhatsAppIcon className="h-4.5 w-4.5" />
-                      Combinar confirmação por WhatsApp
-                    </a>
-
-                    <button
-                      type="button"
-                      onClick={declararPagamento}
-                      className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full border px-7 py-4 text-[0.9375rem] font-medium transition-colors duration-300 ${
-                        claro
-                          ? "border-vinho/25 text-vinho hover:border-vinho/45"
-                          : "border-creme/25 text-creme/80 hover:border-creme/50 hover:bg-creme/5"
-                      }`}
-                    >
-                      Já fiz o pagamento
-                      <ChevronRight className="h-4 w-4" aria-hidden />
-                    </button>
-                  </div>
+                  <EcranMbWay
+                    claro={claro}
+                    valorText={VALOR_INSCRICAO_TEXT}
+                    valorCopiar={String(VALOR_INSCRICAO)}
+                    whatsappHref={linkWhatsAppPagamento("mbway")}
+                    aoDeclararPagamento={declararPagamento}
+                    textoBotaoDeclarar="Já fiz o pagamento"
+                    textoPassoFinal="Depois de pagar, envia o comprovativo para garantirmos o teu lugar."
+                  />
                 )}
 
                 {/* ── PASSO: Transferência (cabeçalho e voltar estão na zona fixa) ── */}
                 {passo === "transferencia" && (
-                  <div>
-                    <dl className="mt-4 space-y-3">
-                      <div
-                        className={`rounded-sm border px-4 py-3 ${
-                          claro
-                            ? "border-vinho/15 bg-creme-profundo/60"
-                            : "border-creme/20 bg-creme/5"
-                        }`}
-                      >
-                        <dt className={`eyebrow ${claro ? "text-vinho/50" : "text-creme/60"}`}>
-                          IBAN
-                        </dt>
-                        <dd
-                          className={`mt-1 flex items-center justify-between gap-3 ${
-                            claro ? "text-carvao/85" : "text-creme/85"
-                          }`}
-                        >
-                          <span className="font-medium tabular-nums tracking-wide">
-                            {formatarIban(TRANSFERENCIA.iban)}
-                          </span>
-                          <BotaoCopiar texto={TRANSFERENCIA.iban} claro={claro} />
-                        </dd>
-                      </div>
-                      <div
-                        className={`rounded-sm border px-4 py-3 ${
-                          claro
-                            ? "border-vinho/15 bg-creme-profundo/60"
-                            : "border-creme/20 bg-creme/5"
-                        }`}
-                      >
-                        <dt className={`eyebrow ${claro ? "text-vinho/50" : "text-creme/60"}`}>
-                          Beneficiário
-                        </dt>
-                        <dd
-                          className={`mt-1 font-medium ${
-                            claro ? "text-carvao/85" : "text-creme/85"
-                          }`}
-                        >
-                          {TRANSFERENCIA.beneficiario}
-                        </dd>
-                      </div>
-                      <div
-                        className={`rounded-sm border px-4 py-3 ${
-                          claro
-                            ? "border-vinho/15 bg-creme-profundo/60"
-                            : "border-creme/20 bg-creme/5"
-                        }`}
-                      >
-                        <dt className={`eyebrow ${claro ? "text-vinho/50" : "text-creme/60"}`}>
-                          BIC / SWIFT
-                        </dt>
-                        <dd
-                          className={`mt-1 font-medium tabular-nums ${
-                            claro ? "text-carvao/85" : "text-creme/85"
-                          }`}
-                        >
-                          {TRANSFERENCIA.bic}
-                        </dd>
-                      </div>
-                      <div
-                        className={`rounded-sm border px-4 py-3 ${
-                          claro
-                            ? "border-vinho/15 bg-creme-profundo/60"
-                            : "border-creme/20 bg-creme/5"
-                        }`}
-                      >
-                        <dt className={`eyebrow ${claro ? "text-vinho/50" : "text-creme/60"}`}>
-                          Instituição
-                        </dt>
-                        <dd
-                          className={`mt-1 font-medium ${
-                            claro ? "text-carvao/85" : "text-creme/85"
-                          }`}
-                        >
-                          {TRANSFERENCIA.instituicao}
-                        </dd>
-                      </div>
-                      <div
-                        className={`rounded-sm border px-4 py-3 ${
-                          claro
-                            ? "border-vinho/15 bg-creme-profundo/60"
-                            : "border-creme/20 bg-creme/5"
-                        }`}
-                      >
-                        <dt className={`eyebrow ${claro ? "text-vinho/50" : "text-creme/60"}`}>
-                          Valor
-                        </dt>
-                        <dd
-                          className={`mt-1 flex items-center justify-between gap-3 ${
-                            claro ? "text-carvao/85" : "text-creme/85"
-                          }`}
-                        >
-                          <span className="font-medium tabular-nums">{VALOR_INSCRICAO_TEXT}</span>
-                          <BotaoCopiar texto={String(VALOR_INSCRICAO)} claro={claro} />
-                        </dd>
-                      </div>
-                    </dl>
-
-                    <p
-                      className={`mt-4 text-[0.8125rem] leading-relaxed ${
-                        claro ? "text-carvao/60" : "text-creme/70"
-                      }`}
-                    >
-                      Referência da transferência:{" "}
-                      <span className="font-medium">
-                        {primeiroNome} · Além do Espelho 2026
-                      </span>
-                    </p>
-
-                    <p
-                      className={`mt-3 text-[0.75rem] leading-relaxed ${
-                        claro ? "text-carvao/50" : "text-creme/65"
-                      }`}
-                    >
-                      IBAN irlandês (SumUp) — transferência SEPA, sem custos adicionais na maioria
-                      dos bancos portugueses.
-                    </p>
-
-                    <a
-                      href={linkWhatsAppPagamento("transferencia")}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-7 inline-flex w-full items-center justify-center gap-3 rounded-full bg-whatsapp px-7 py-4 text-[0.9375rem] font-medium text-white transition-all duration-300 hover:brightness-105"
-                    >
-                      <WhatsAppIcon className="h-4.5 w-4.5" />
-                      Combinar confirmação por WhatsApp
-                    </a>
-
-                    <button
-                      type="button"
-                      onClick={declararPagamento}
-                      className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full border px-7 py-4 text-[0.9375rem] font-medium transition-colors duration-300 ${
-                        claro
-                          ? "border-vinho/25 text-vinho hover:border-vinho/45"
-                          : "border-creme/25 text-creme/80 hover:border-creme/50 hover:bg-creme/5"
-                      }`}
-                    >
-                      Já fiz a transferência
-                      <ChevronRight className="h-4 w-4" aria-hidden />
-                    </button>
-                  </div>
+                  <EcranTransferencia
+                    claro={claro}
+                    valorText={VALOR_INSCRICAO_TEXT}
+                    valorCopiar={String(VALOR_INSCRICAO)}
+                    whatsappHref={linkWhatsAppPagamento("transferencia")}
+                    aoDeclararPagamento={declararPagamento}
+                    textoBotaoDeclarar="Já fiz a transferência"
+                    referencia={`${primeiroNome} · Além do Espelho 2026`}
+                  />
                 )}
 
                 {/* ── PASSO: comprovativo (cabeçalho e voltar estão na zona fixa) ── */}

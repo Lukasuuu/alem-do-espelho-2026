@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Calendar, ChevronRight, Clock, MapPin } from "lucide-react";
+import { Calendar, Clock, MapPin } from "lucide-react";
 import { useState } from "react";
 import { InstagramIcon, MailIcon, WhatsAppIcon } from "./icons";
 import TermosModal from "./TermosModal";
@@ -67,10 +67,12 @@ export default function Footer({ abrirModal, navegacao = NAVEGACAO_EVENTO }: Pro
             </p>
             <button
               onClick={abrirModal}
-              className="mt-4 inline-flex items-center gap-2.5 rounded-full border border-creme/20 px-6 py-3 text-[0.8125rem] font-medium text-creme/80 transition-all duration-300 hover:border-creme/40 hover:bg-creme/5"
+              className="group mt-4 inline-flex items-center gap-2.5 rounded-full border border-creme/20 px-6 py-3 text-[0.8125rem] font-medium text-creme/80 transition-all duration-300 hover:border-creme/40 hover:bg-creme/5"
             >
-              Quero fazer parte
-              <ChevronRight className="h-3.5 w-3.5" />
+              Fazer parte
+              <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">
+                →
+              </span>
             </button>
           </div>
 

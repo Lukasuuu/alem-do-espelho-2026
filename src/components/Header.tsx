@@ -56,9 +56,12 @@ export default function Header({ abrirModal }: Props) {
           </div>
           <button
             onClick={abrirModal}
-            className="rounded-full bg-rosa px-6 py-2.5 text-[0.8125rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro hover:shadow-[0_8px_28px_-8px_rgba(196,126,138,0.6)]"
+            className="group inline-flex items-center justify-center gap-2 rounded-full bg-rosa px-6 py-2.5 text-[0.8125rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro hover:shadow-[0_8px_28px_-8px_rgba(196,126,138,0.6)]"
           >
-            Quero fazer parte
+            Fazer parte
+            <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">
+              →
+            </span>
           </button>
         </div>
 
@@ -91,9 +94,12 @@ export default function Header({ abrirModal }: Props) {
                 abrirModal();
                 setMenuAberto(false);
               }}
-              className="w-full rounded-full bg-rosa px-6 py-3 text-[0.875rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro"
+              className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-rosa px-6 py-3 text-[0.875rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro"
             >
-              Quero fazer parte
+              Fazer parte
+              <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">
+                →
+              </span>
             </button>
           </div>
         </div>

@@ -16,10 +16,9 @@ type Resposta =
       status: "sponsor";
       id: string;
       nivel: number | null;
-      /** B1/0011: capability de posse — devolvida UMA vez, nunca em logs.
-          Ausente (e `jaExistente: true`) quando o email já tem pagamento
-          ativo/confirmado: anti-takeover, recuperação humana pela Vitória. */
-      posseToken?: string;
+      /** `jaExistente` quando o email já tem patrocínio com pagamento ativo/
+          confirmado: anti-takeover, recuperação humana pela Vitória — sem id
+          reutilizável nem token, quem só conhece o email não toma posse. */
       jaExistente?: boolean;
     }
   | { ok: false; mensagem: string; tipo: TipoErro; campos?: Record<string, string> };
@@ -39,12 +38,13 @@ function mascararEmail(email: string): string {
 }
 
 /**
- * Regista o interesse de patrocínio (CORREÇÃO nº3): no POST do formulário o
- * nível AINDA não foi escolhido — fica null e é marcado depois, no passo B
- * (PATCH /api/sponsor/nivel). A empresa/marca é opcional (CORREÇÃO nº6) e o
+ * Regista o interesse de patrocínio (fluxo simples de 3 passos): o nível vem
+ * ESCOLHIDO no formulário (rádio inline) e entra direto na RPC
+ * registar_sponsor (p_nivel). A empresa/marca é opcional (CORREÇÃO nº6) e o
  * consentimento RGPD é obrigatório, como na inscrição. O método de pagamento
- * é marcado por fim (PATCH /api/sponsor/metodo). Mesmo padrão do
- * waitlist/inscrição: RLS + função SECURITY DEFINER via RPC, sem service role.
+ * é marcado por fim (PATCH /api/sponsor/metodo → definir_metodo_sponsor).
+ * Mesmo padrão do waitlist/inscrição: RLS + função SECURITY DEFINER via RPC,
+ * sem service role.
  */
 export async function POST(request: Request): Promise<NextResponse<Resposta>> {
   // 1. Limite de tentativas por IP
@@ -72,6 +72,7 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
   }
 
   // 3. Validação do formato — o esquema do patrocínio exige o nível escolhido
+  //    INLINE no formulário (75/150/200, rádio obrigatório).
   let dados;
   try {
     dados = sponsorSchema.parse(corpo);
@@ -116,8 +117,7 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
         ok: true,
         status: "sponsor",
         id: "00000000-0000-0000-0000-000000000001",
-        nivel: null,
-        posseToken: "0".repeat(64),
+        nivel: dados.nivel,
       },
       { status: 201 }
     );
@@ -130,8 +130,8 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
       p_nome: dados.fullName,
       p_email: dados.email,
       p_telefone: telefone.e164,
-      // Nível escolhido só no passo B — aqui ainda null.
-      p_nivel: dados.nivel ?? null,
+      // Nível escolhido INLINE no formulário — vai direto no registo.
+      p_nivel: dados.nivel,
       p_empresa: dados.empresa || null,
       // RGPD (Lucas, 11/08): o valor REAL da checkbox — nunca hardcoded true.
       // O zod já exige literal(true) na fronteira; a função na DB lança
@@ -181,15 +181,14 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
       status: "criada" | "ja_existente";
       id: string;
       nivel: number | null;
-      posse_token: string | null;
     };
 
-    // ANTI-TAKEOVER (0011 r2): email já registado com pagamento ativo ou
-    // patrocínio confirmado → a RPC devolve 'ja_existente' SEM posse_token,
-    // SEM alterar nada. Não é erro: resposta 200 que o formulário mostra como
-    // alerta "já recebemos o teu pedido" com o CTA da Vitória — quem só
-    // conhece o email NÃO toma posse do registo de outra pessoa.
-    if (resultado.status === "ja_existente" && !resultado.posse_token) {
+    // ANTI-TAKEOVER: email já registado com pagamento ativo ou patrocínio
+    // confirmado → a RPC devolve 'ja_existente' SEM alterar nada. Não é erro:
+    // resposta 200 que o formulário mostra como alerta "já recebemos o teu
+    // pedido" com o CTA da Vitória — quem só conhece o email NÃO toma posse
+    // do registo de outra pessoa.
+    if (resultado.status === "ja_existente") {
       console.info(
         "[sponsor] ja_existente protegido (pagamento ativo/confirmado)",
         JSON.stringify({ email: mascararEmail(dados.email), id: resultado.id })
@@ -206,16 +205,8 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
       );
     }
 
-    if (!resultado.posse_token) {
-      // Sem token a RPC não é a 0011 (ou falhou a gerar) — a modal ficaria
-      // sem capability para os passos B/C. Tratar como falha de servidor.
-      console.error("[sponsor] RPC sem posse_token na resposta");
-      return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 502 });
-    }
-
     // 7. Observabilidade, sem PII em claro (RGPD) — email mascarado; a empresa
     //    é um nome de marca público, não dado pessoal, e ajuda a identificar.
-    //    O posse_token NUNCA entra em log.
     console.info(
       "[sponsor] novo interesse de patrocínio",
       JSON.stringify({
@@ -235,8 +226,6 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
         status: "sponsor",
         id: resultado.id,
         nivel: resultado.nivel,
-        // B1/0011: o token sai UMA vez aqui — nem log, nem storage, nem URL.
-        posseToken: resultado.posse_token,
       },
       { status: 201 }
     );

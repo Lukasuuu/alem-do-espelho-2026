@@ -4,12 +4,19 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { linkWhatsApp, paises, site } from "@/lib/site";
 import { FIM_CAMPANHA_ISO, MENSAGEM_LISTA, SALON_WHATSAPP } from "@/lib/campanha";
-import { MENSAGENS, normalizarNome, validarTelefone } from "@/lib/validation";
+import {
+  MENSAGENS,
+  NIVEIS_PARCERIA,
+  normalizarNome,
+  validarTelefone,
+  type NivelParceria,
+} from "@/lib/validation";
+import { NIVEIS_PARCERIA_COPY } from "@/lib/sponsor";
 import { WhatsAppIcon } from "./icons";
 import PrivacidadeModal from "./PrivacidadeModal";
 
 type Estado = "inativo" | "a-enviar" | "sucesso" | "erro";
-type Erros = Partial<Record<"fullName" | "email" | "phone" | "consent" | "form", string>>;
+type Erros = Partial<Record<"fullName" | "email" | "phone" | "nivel" | "consent" | "form", string>>;
 type Variante = "waitlist" | "sponsor";
 
 type Props = {
@@ -17,16 +24,16 @@ type Props = {
   variant?: Variante;
   /**
    * Chamado quando a submissão sponsor é aceite. Entrega o id do registo e o
-   * posseToken (B1/0011, capability devolvida UMA vez pela rota) para o pai
-   * abrir o passo B (escolha do nível) por cima. O waitlist não usa este
-   * callback.
+   * NÍVEL escolhido INLINE no formulário (rádio) — o pai abre o pagamento
+   * por cima. O waitlist não usa este callback.
    */
   onSucesso?: (dados?: {
     id: string;
     nome: string;
     /** Empresa/marca (opcional) — entra na mensagem do WhatsApp (Bloco J r2). */
     empresa?: string;
-    posseToken?: string;
+    /** Nível de parceria escolhido inline (75/150/200€). */
+    nivel: NivelParceria;
   }) => void;
   /**
    * r3 — progresso do formulário (ronda anti-fecho acidental): true à 1.ª
@@ -78,7 +85,7 @@ export default function WaitlistForm({
       }
     : {
         endpoint: "/api/waitlist",
-        botao: "Quero fazer parte",
+        botao: "Fazer parte",
         consentimento: `Autorizo o ${anfitria} a contactar-me por email e telemóvel sobre o ${site.nome}.`,
         listaFechada: "As inscrições na lista de espera estão fechadas.",
       };
@@ -89,6 +96,7 @@ export default function WaitlistForm({
   const [phoneCountry, setPhoneCountry] = useState<string>("PT");
   const [consent, setConsent] = useState(false);
   const [empresa, setEmpresa] = useState(""); // só no patrocínio (opcional)
+  const [nivel, setNivel] = useState<NivelParceria | null>(null); // só no patrocínio (rádio inline)
   const [website, setWebsite] = useState(""); // honeypot
   const [privacidadeAberta, setPrivacidadeAberta] = useState(false);
 
@@ -121,9 +129,10 @@ export default function WaitlistForm({
         email.trim() !== "" ||
         phone.trim() !== "" ||
         empresa.trim() !== "" ||
+        nivel !== null ||
         consent
     );
-  }, [fullName, email, phone, empresa, consent, onSujoChange]);
+  }, [fullName, email, phone, empresa, nivel, consent, onSujoChange]);
 
   // Depois do mount, o servidor nunca decide se a lista está fechada.
   // O patrocínio não fecha com a lista de espera.
@@ -160,6 +169,11 @@ export default function WaitlistForm({
 
     if (!consent) novos.consent = "Precisamos da tua autorização para te contactar.";
 
+    // Patrocínio: o nível é escolhido INLINE no formulário — obrigatório.
+    if (ehSponsor && nivel === null) {
+      novos.nivel = "Escolhe um nível de parceria.";
+    }
+
     return novos;
   }
 
@@ -174,7 +188,7 @@ export default function WaitlistForm({
 
     const novos = validar();
     setErros(novos);
-    setTocados({ fullName: true, email: true, phone: true, consent: true });
+    setTocados({ fullName: true, email: true, phone: true, nivel: true, consent: true });
 
     if (Object.keys(novos).length > 0) {
       const primeiro = document.querySelector<HTMLElement>('[aria-invalid="true"]');
@@ -201,9 +215,10 @@ export default function WaitlistForm({
           elapsedMs: Date.now() - montadoEm.current,
           locale: typeof navigator !== "undefined" ? navigator.language : undefined,
           utm: lerUtm(),
-          // Só no patrocínio: nome da empresa/marca (opcional). O nível NÃO
-          // entra aqui — é escolhido no passo B (PATCH /api/sponsor/nivel).
+          // Só no patrocínio: empresa/marca (opcional) e o nível escolhido
+          // INLINE (rádio) — o POST guarda logo o nível via p_nivel.
           empresa: ehSponsor ? empresa.trim() : undefined,
+          nivel: ehSponsor ? nivel : undefined,
         }),
       });
 
@@ -254,9 +269,9 @@ export default function WaitlistForm({
       if (ehSponsor) {
         // Bloco J r2 — ANTI-TAKEOVER: a rota responde 200 com jaExistente
         // quando o email já tem um patrocínio com pagamento ativo ou
-        // confirmado. NÃO há onSucesso (não abre o passo B — sem
-        // posseToken não há escrita possível) e o alerta na modal A dá o
-        // caminho humano (Vitória), que pode ver o registo do lado dela.
+        // confirmado. NÃO há onSucesso (não abre o pagamento — sem reescrever
+        // dados) e o alerta na modal A dá o caminho humano (Vitória), que
+        // pode ver o registo do lado dela.
         if (dados.jaExistente === true) {
           setEstado("erro");
           setFalhaServidor(false);
@@ -269,8 +284,8 @@ export default function WaitlistForm({
           return;
         }
 
-        // O fluxo de patrocínio mantém este modal aberto e abre o passo B
-        // (escolha do nível) por cima, entregando o id do registo ao pai.
+        // O fluxo de patrocínio mantém este modal aberto e abre o pagamento
+        // por cima, entregando o id do registo e o nível escolhido ao pai.
         setEstado("inativo");
         // r3 — registo guardado: o fecho da modal A deixa de pedir confirmação.
         onSujoChange?.(false);
@@ -279,8 +294,9 @@ export default function WaitlistForm({
           nome: normalizarNome(fullName),
           // Bloco J r2 — empresa entra na mensagem do WhatsApp da Vitória.
           empresa: empresa.trim() !== "" ? empresa.trim() : undefined,
-          // B1/0011: capability de posse, usada nos PATCHs seguintes.
-          posseToken: typeof dados.posseToken === "string" ? dados.posseToken : undefined,
+          // Nível escolhido inline — o valor do pagamento deriva daqui.
+          // (o validar() acima recusa submissão sem nível — nunca é null aqui)
+          nivel: nivel as NivelParceria,
         });
       } else {
         setPosicao(dados.posicao ?? null);
@@ -551,6 +567,97 @@ export default function WaitlistForm({
               onChange={(e) => setEmpresa(e.target.value)}
             />
           </div>
+        )}
+
+        {/* Nível de parceria — INLINE no formulário (rádio, fluxo simples
+            de 3 passos). A escolha vai no POST (p_nivel) e não há mais
+            passo separado de nível. Copy dos níveis: lib/sponsor. */}
+        {ehSponsor && (
+          <fieldset className="pt-2">
+            <legend className="eyebrow mb-2.5 block text-creme/55">
+              Nível de parceria
+            </legend>
+            <div className="space-y-3">
+              {NIVEIS_PARCERIA.map((valor) => {
+                const copy = NIVEIS_PARCERIA_COPY[valor];
+                const ativo = nivel === valor;
+                return (
+                  <label
+                    key={valor}
+                    className={`flex cursor-pointer items-start gap-3 rounded-sm border p-4 transition-all duration-300 ${
+                      ativo
+                        ? "border-rosa/60 bg-creme/[0.08]"
+                        : "border-creme/20 bg-creme/5 hover:border-creme/40"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="nivel"
+                      value={valor}
+                      checked={ativo}
+                      onChange={() => {
+                        setNivel(valor);
+                        // Escolher resolve o erro do campo à luz (padrão dos
+                        // outros campos: revalida só se já saiu com erro).
+                        if (tocados.nivel) {
+                          setErros((anterior) => {
+                            const resto = { ...anterior };
+                            delete resto.nivel;
+                            return resto;
+                          });
+                        }
+                      }}
+                      onBlur={() => aoSair("nivel")}
+                      aria-invalid={campoInvalido("nivel")}
+                      aria-describedby={campoInvalido("nivel") ? "erro-nivel" : undefined}
+                      className="mt-1 h-[18px] w-[18px] shrink-0 cursor-pointer accent-rosa"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <span className="display text-2xl text-blush tabular-nums">
+                          {valor}€
+                        </span>
+                        <span className="text-[0.9375rem] font-medium text-creme">
+                          {copy.titulo}
+                        </span>
+                        {copy.maisProcurado && (
+                          <span className="rounded-full border border-dourado/50 bg-dourado/10 px-2 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wider text-dourado-claro">
+                            Mais procurado
+                          </span>
+                        )}
+                      </span>
+                      <span className="mt-1 block text-[0.8125rem] leading-relaxed text-creme/60">
+                        {copy.descricao}
+                      </span>
+                      {copy.beneficios.length > 0 && (
+                        <span className="mt-2 block space-y-1">
+                          {copy.beneficios.map((beneficio) => (
+                            <span
+                              key={beneficio}
+                              className="flex items-start gap-2 text-[0.8125rem] leading-relaxed text-creme/65"
+                            >
+                              <span
+                                aria-hidden
+                                className="mt-0.5 shrink-0 text-blush"
+                              >
+                                ✓
+                              </span>
+                              {beneficio}
+                            </span>
+                          ))}
+                        </span>
+                      )}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+            {campoInvalido("nivel") && (
+              <p id="erro-nivel" className="mt-2 text-[0.8125rem] text-[#f3c0c0]">
+                {erros.nivel}
+              </p>
+            )}
+          </fieldset>
         )}
 
         {/* Honeypot: invisível para pessoas, irresistível para robôs */}
