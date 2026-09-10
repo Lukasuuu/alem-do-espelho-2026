@@ -179,17 +179,19 @@ export default function SponsorFlow() {
             </div>
           </div>
 
-          {/* DIREITA — instrução + formulário com o NÍVEL INLINE (rádio
-              75/150/200€). ≥768 tem cap dvh + scroll PRÓPRIO (globals.css
-              [data-coluna-formulario]) — o formulário nunca rola dentro do
-              scroll dos cards. <768 rola com o corpo. */}
-          <div className="min-w-0" data-coluna-formulario>
+          {/* DIREITA — instrução + wizard de 2 sub-passos (r4: dados →
+              nível+RGPD, no MESMO painel WaitlistForm). ≥768 tem cap dvh +
+              scroll PRÓPRIO (globals.css [data-coluna-formulario]) — o
+              formulário nunca rola dentro do scroll dos cards. A coluna é
+              flex para o painel esticar e o CTA "Continuar" ancorar no fundo
+              (mesma posição nos dois sub-passos). <768 rola com o corpo. */}
+          <div className="min-w-0 md:flex md:flex-col" data-coluna-formulario>
             <p className="text-[0.9375rem] leading-relaxed text-creme/70">
               Deixa os teus dados, escolhe o nível de parceria e o método de
               pagamento — tudo aqui, em menos de dois minutos.
             </p>
 
-            <div className="mt-6">
+            <div className="mt-6 md:flex md:flex-1 md:flex-col">
               <WaitlistForm
                 variant="sponsor"
                 onSujoChange={setSujo}

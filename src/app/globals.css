@@ -718,8 +718,13 @@ body {
    .modal-content (o calc com dvh inválido deixaria max-height a none). */
 @media (min-width: 768px) {
   [data-modal-patrocinadores-grelha] {
-    max-height: calc(100vh - var(--topo-modal) - 9rem);
-    max-height: calc(100dvh - var(--topo-modal) - 9rem);
+    /* r4 — ALTURA FIXA (antes max-height): com max-height, a grelha crescia
+       com o conteúdo do formulário e o CTA "Continuar" mudava de posição
+       entre sub-passos. Com height fixo, a modal tem sempre o mesmo tamanho,
+       as duas colunas ficam iguais/definidas e o CTA sticky ancora no fundo
+       da coluna nos dois sub-passos do wizard. dvh com fallback vh. */
+    height: calc(100vh - var(--topo-modal) - 9rem);
+    height: calc(100dvh - var(--topo-modal) - 9rem);
     grid-template-rows: minmax(0, 1fr);
   }
   [data-coluna-patrocinadores],
@@ -749,6 +754,25 @@ body {
   [data-coluna-formulario]::-webkit-scrollbar-thumb {
     background: rgb(212 175 55 / 0.35);
     border-radius: 9999px;
+  }
+}
+
+/* ── r4 — faixa do CTA fixo no wizard do patrocínio ───────────────────────
+   O botão "Continuar" é sticky no fundo da coluna do formulário no ≥768
+   (exatamente a mesma posição nos dois sub-passos). A faixa de vidro
+   reutiliza o tom creme translúcido do .espelho + blur, para o conteúdo
+   rolar por baixo do botão sem colidir com ele. <768 quem rola é o corpo —
+   o botão fica em fluxo e a faixa não precisa de efeitos. */
+@media (min-width: 768px) {
+  .faixa-rodape-wizard {
+    background: linear-gradient(
+      to top,
+      rgb(255 247 233 / 0.16),
+      rgb(255 247 233 / 0.07) 55%,
+      transparent
+    );
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
   }
 }
 

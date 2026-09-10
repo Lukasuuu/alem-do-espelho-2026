@@ -9,7 +9,9 @@ import { type Patrocinador, TIER_TOKENS, type TierTokenKey } from "@/lib/patroci
  * 3 deltas da correção pós-r3, e só eles:
  *
  *   Delta 1 — Foto maior: largura clamp(96px, 22vw, 150px), aspect-ratio 4:5
- *             fixo, object-fit cover, fio do tier mantido.
+ *             fixo, object-fit cover, fio do tier mantido. r4: a moldura
+ *             creme do ouro (foto interior 85%) foi removida — todos os
+ *             tiers ficam com o mesmo fio fino, só varia a cor do metal.
  *   Delta 2 — Logo em caixa 16:9 (assets cards 1600×900): .caixa-logo-16x9
  *             (globals.css) com object-contain e SEM background/padding/
  *             radius/borda por cima do asset — fundo, cantos e borda já
@@ -91,9 +93,6 @@ export default function CartaoPatrocinadora({
   const tier = TIER_TOKENS[`tier-${destaque}` as TierTokenKey];
   const acento = claro ? tier.acento : tier.acentoEscuro;
 
-  // Grau de destaque — declarado cedo porque entra em vários cálculos abaixo.
-  const isGrau1 = destaque === 1;
-
   // Tamanho do nome: base * multiplicador por destaque (igual à produção).
   const multiplicadorNome = destaque === 1 ? (1.5 / 1.125) : destaque === 2 ? (1.25 / 1.125) : 1;
   const nomeSizeRem = NOME_BASE_REM * multiplicadorNome;
@@ -153,7 +152,7 @@ export default function CartaoPatrocinadora({
             ref={fotoRef}
             className={`relative mx-auto shrink-0 md:mx-0 md:self-start ${
               foto ? "overflow-hidden rounded-sm" : "flex items-center justify-center overflow-hidden"
-            } ${isGrau1 && foto ? "bg-creme-profundo" : ""}`}
+            }`}
             style={
               foto
                 ? {
@@ -176,37 +175,20 @@ export default function CartaoPatrocinadora({
             onMouseLeave={foto ? (e) => setHoverFoto(false) : undefined}
           >
             {foto ? (
-              isGrau1 ? (
-                // Grau 1 (ouro): foto interior centrada, deixa a "moldura"
-                // creme visível à volta (igual à produção, agora maior).
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                  <div className="relative" style={{ width: "85%", height: "85%" }}>
-                    <LocalImage
-                      src={foto.src}
-                      alt={foto.alt}
-                      width={foto.width}
-                      height={foto.height}
-                      className={`absolute inset-0 h-full w-full object-cover object-top ${
-                        claro ? "" : "opacity-90"
-                      }`}
-                      style={fotoStyle}
-                    />
-                  </div>
-                </div>
-              ) : (
-                // Graus 2 e 3 (prata/bronze): sem moldura — a foto preenche
-                // 100% da faixa, só o fio metálico visível (produção).
-                <LocalImage
-                  src={foto.src}
-                  alt={foto.alt}
-                  width={foto.width}
-                  height={foto.height}
-                  className={`absolute inset-0 h-full w-full object-cover object-top ${
-                    claro ? "" : "opacity-90"
-                  }`}
-                  style={fotoStyle}
-                />
-              )
+              // Todos os tiers (r4 — pedido do Lucas): a foto preenche 100%
+              // da faixa — só o fio fino do tier à volta (border-image com o
+              // gradiente do metal; ouro/prata partilham a espessura 2,
+              // bronze 1.5). Sem moldura/frame extra em nenhum grau.
+              <LocalImage
+                src={foto.src}
+                alt={foto.alt}
+                width={foto.width}
+                height={foto.height}
+                className={`absolute inset-0 h-full w-full object-cover object-top ${
+                  claro ? "" : "opacity-90"
+                }`}
+                style={fotoStyle}
+              />
             ) : (
               // Marca (Novex): logo-card inteiro no slot da foto.
               logoMedia && (

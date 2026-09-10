@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { linkWhatsApp, paises, site } from "@/lib/site";
 import { FIM_CAMPANHA_ISO, MENSAGEM_LISTA, SALON_WHATSAPP } from "@/lib/campanha";
 import {
@@ -113,12 +113,36 @@ export default function WaitlistForm({
    */
   const [jaExistenteSponsor, setJaExistenteSponsor] = useState(false);
 
+  /**
+   * r4 — wizard de 2 sub-passos (só na variante sponsor): "dados" (nome,
+   * telemóvel, email, empresa) → "nivel" (níveis de parceria + RGPD). O POST
+   * acontece só no fim do sub-passo 2; o waitlist continua num passo único.
+   */
+  const [passo, setPasso] = useState<"dados" | "nivel">("dados");
+  /** Slide curto + crossfade; com reduced-motion fica só no crossfade. */
+  const reduzMovimento = useReducedMotion();
+  /** Foco no 1.º campo do sub-passo a que a pessoa chegou (a11y do wizard). */
+  const refCampoDados = useRef<HTMLInputElement>(null);
+  const refCampoNivel = useRef<HTMLInputElement>(null);
+  const primeiroEfeito = useRef(true);
+
   const montadoEm = useRef<number>(Date.now());
   const regiaoEstado = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     montadoEm.current = Date.now();
   }, []);
+
+  // r4 — ao trocar de sub-passo, o foco vai para o 1.º campo do novo passo
+  // (teclado/leitor de ecrã). Na 1.ª montagem a Modal já trata o foco inicial.
+  useEffect(() => {
+    if (!ehSponsor) return;
+    if (primeiroEfeito.current) {
+      primeiroEfeito.current = false;
+      return;
+    }
+    (passo === "dados" ? refCampoDados : refCampoNivel).current?.focus();
+  }, [passo, ehSponsor]);
 
   // r3 — sujo: qualquer dado introduzido marca progresso a perder. O sucesso
   // repor via chamada direta (abaixo); os campos mantêm os valores, mas o
@@ -150,7 +174,8 @@ export default function WaitlistForm({
     [phoneCountry]
   );
 
-  function validar(): Erros {
+  /** r4 — validação dos campos do sub-passo 1 (dados). */
+  function validarDados(): Erros {
     const novos: Erros = {};
 
     const nome = normalizarNome(fullName);
@@ -167,9 +192,15 @@ export default function WaitlistForm({
       if (!resultado.ok) novos.phone = resultado.erro;
     }
 
+    return novos;
+  }
+
+  function validar(): Erros {
+    const novos = validarDados();
+
     if (!consent) novos.consent = "Precisamos da tua autorização para te contactar.";
 
-    // Patrocínio: o nível é escolhido INLINE no formulário — obrigatório.
+    // Patrocínio: o nível é obrigatório (sub-passo 2 do wizard r4).
     if (ehSponsor && nivel === null) {
       novos.nivel = "Escolhe um nível de parceria.";
     }
@@ -186,9 +217,32 @@ export default function WaitlistForm({
     evento.preventDefault();
     if (listaFechada) return;
 
+    // r4 — wizard: o 1.º "Continuar" só valida os dados e avança para a
+    // escolha do nível. O POST (registar_sponsor) acontece só no fim do
+    // sub-passo 2 — um único envio, como antes.
+    if (ehSponsor && passo === "dados") {
+      const dados = validarDados();
+      setErros(dados);
+      setTocados((anterior) => ({ ...anterior, fullName: true, email: true, phone: true }));
+      if (Object.keys(dados).length > 0) {
+        document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+        return;
+      }
+      setPasso("nivel");
+      return;
+    }
+
     const novos = validar();
     setErros(novos);
     setTocados({ fullName: true, email: true, phone: true, nivel: true, consent: true });
+
+    // r4 — segurança: se algum dado do sub-passo 1 ficar inválido (só por
+    // alteração externa de estado), volta a mostrá-lo em vez de assinalar
+    // campos que já não estão no ecrã.
+    if (ehSponsor && (novos.fullName || novos.email || novos.phone)) {
+      setPasso("dados");
+      return;
+    }
 
     if (Object.keys(novos).length > 0) {
       const primeiro = document.querySelector<HTMLElement>('[aria-invalid="true"]');
@@ -374,7 +428,15 @@ export default function WaitlistForm({
   const campoInvalido = (campo: keyof Erros) => Boolean(tocados[campo] && erros[campo]);
 
   return (
-    <form onSubmit={submeter} noValidate className="espelho rounded-sm p-6 sm:p-9">
+    <form
+      onSubmit={submeter}
+      noValidate
+      className={`espelho rounded-sm p-6 sm:p-9 ${
+        // r4 — sponsor: coluna flex para o CTA sticky ancorar no fundo do
+        // painel (o pai .data-coluna-formulario é flex no ≥768).
+        ehSponsor ? "flex flex-col md:flex-1" : ""
+      }`}
+    >
       {/* Lista fechada, aviso em vez de formulário ativo */}
       {listaFechada && (
         <div className="mb-6 rounded-sm border border-creme/25 bg-creme/5 px-4 py-3 text-[0.875rem] leading-relaxed text-creme/75">
@@ -434,8 +496,34 @@ export default function WaitlistForm({
         </AnimatePresence>
       </div>
 
-      <div className="space-y-5 max-w-[26rem]">
-        {/* Nome */}
+      {/* r4 — wizard: os blocos abaixo são os mesmos; o que muda é quais
+          estão visíveis por sub-passo (sponsor) ou todos de uma vez
+          (waitlist). key={passo} remonta o painel → AnimatePresence faz o
+          crossfade + slide curto; reduced-motion fica só no crossfade. */}
+      <div className="max-w-[26rem]">
+        <AnimatePresence mode="popLayout" initial={false}>
+          <motion.div
+            key={ehSponsor ? passo : "unico"}
+            initial={{ opacity: 0, x: reduzMovimento ? 0 : 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: reduzMovimento ? 0 : -20 }}
+            transition={{ duration: reduzMovimento ? 0.12 : 0.28, ease: [0.22, 1, 0.36, 1] }}
+            className="space-y-5"
+          >
+        {/* Voltar — só no sub-passo 2 (h-11: alvo de toque 44px). */}
+        {ehSponsor && passo === "nivel" && (
+          <button
+            type="button"
+            onClick={() => setPasso("dados")}
+            className="-ml-2 inline-flex h-11 items-center gap-1.5 rounded-sm px-2 text-[0.8125rem] font-medium text-creme/55 transition-colors hover:text-creme focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rosa/50"
+          >
+            <span aria-hidden>←</span>
+            Voltar aos dados
+          </button>
+        )}
+
+        {/* Nome — sub-passo 1 (waitlist mostra sempre) */}
+        {(!ehSponsor || passo === "dados") && (
         <div>
           <label htmlFor="fullName" className="eyebrow mb-2.5 block text-creme/55">
             Nome completo
@@ -443,6 +531,7 @@ export default function WaitlistForm({
           <input
             id="fullName"
             name="fullName"
+            ref={refCampoDados}
             type="text"
             autoComplete="name"
             enterKeyHint="next"
@@ -461,8 +550,11 @@ export default function WaitlistForm({
             </p>
           )}
         </div>
+        )}
 
-        {/* Telemóvel — indicativo + telefone na mesma linha (não quebrar) */}
+        {/* Telemóvel — indicativo + telefone na mesma linha (não quebrar) —
+            sub-passo 1 */}
+        {(!ehSponsor || passo === "dados") && (
         <div>
           <label htmlFor="phone" className="eyebrow mb-2.5 block text-creme/55">
             Telemóvel
@@ -516,8 +608,10 @@ export default function WaitlistForm({
             </p>
           )}
         </div>
+        )}
 
-        {/* Email */}
+        {/* Email — sub-passo 1 */}
+        {(!ehSponsor || passo === "dados") && (
         <div>
           <label htmlFor="email" className="eyebrow mb-2.5 block text-creme/55">
             Email
@@ -544,9 +638,11 @@ export default function WaitlistForm({
             </p>
           )}
         </div>
+        )}
 
-        {/* Empresa / marca — só no patrocínio, opcional (CORREÇÃO nº6) */}
-        {ehSponsor && (
+        {/* Empresa / marca — só no patrocínio (opcional, CORREÇÃO nº6) —
+            sub-passo 1 */}
+        {ehSponsor && passo === "dados" && (
           <div>
             <label htmlFor="empresa" className="eyebrow mb-2.5 block text-creme/55">
               Nome da empresa ou marca{" "}
@@ -569,16 +665,16 @@ export default function WaitlistForm({
           </div>
         )}
 
-        {/* Nível de parceria — INLINE no formulário (rádio, fluxo simples
-            de 3 passos). A escolha vai no POST (p_nivel) e não há mais
-            passo separado de nível. Copy dos níveis: lib/sponsor. */}
-        {ehSponsor && (
+        {/* Nível de parceria — sub-passo 2 do wizard r4 (cartões de rádio;
+            a escolha vai no POST p_nivel no fim deste passo). Copy dos
+            níveis: lib/sponsor. */}
+        {ehSponsor && passo === "nivel" && (
           <fieldset className="pt-2">
             <legend className="eyebrow mb-2.5 block text-creme/55">
               Nível de parceria
             </legend>
             <div className="space-y-3">
-              {NIVEIS_PARCERIA.map((valor) => {
+              {NIVEIS_PARCERIA.map((valor, indice) => {
                 const copy = NIVEIS_PARCERIA_COPY[valor];
                 const ativo = nivel === valor;
                 return (
@@ -593,6 +689,7 @@ export default function WaitlistForm({
                     <input
                       type="radio"
                       name="nivel"
+                      ref={indice === 0 ? refCampoNivel : undefined}
                       value={valor}
                       checked={ativo}
                       onChange={() => {
@@ -675,7 +772,9 @@ export default function WaitlistForm({
           />
         </div>
 
-        {/* Consentimento — ≤4 linhas à largura do formulário (max-w-[26rem]) */}
+        {/* Consentimento — ≤4 linhas à largura do formulário — sub-passo 2
+            (waitlist mostra sempre) */}
+        {(!ehSponsor || passo === "nivel") && (
         <div className="pt-1 max-w-[26rem]">
           <label htmlFor="consent" className="flex cursor-pointer items-start gap-3">
             <input
@@ -708,15 +807,32 @@ export default function WaitlistForm({
             Política de Privacidade
           </button>
         </div>
+        )}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
+      {/* r4 — sponsor: o CTA vive numa faixa sticky no fundo do painel —
+          exatamente a mesma posição nos dois sub-passos (≥768, onde a coluna
+          do formulário é o scroll próprio; o conteúdo rola por baixo da
+          faixa de vidro .faixa-rodape-wizard). <768 o corpo é quem rola —
+          o sticky ficaria inerte dentro do painel — e o botão fica em fluxo,
+          ancorado ao fundo do formulário. O waitlist mantém o botão simples. */}
+      <div
+        className={
+          ehSponsor
+            ? "faixa-rodape-wizard mt-8 md:sticky md:bottom-0 md:z-10 md:-mx-9 md:-mb-9 md:mt-auto md:px-9 md:pb-9 md:pt-3"
+            : "mt-8"
+        }
+      >
       <button
         type="submit"
-        disabled={estado === "a-enviar" || listaFechada || !consent}
-        className="group relative overflow-hidden mt-8 flex w-full items-center justify-center gap-3 rounded-full bg-rosa px-8 py-4 text-[0.9375rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro hover:shadow-[0_12px_40px_-12px_rgba(186,121,132,0.7)] active:scale-[0.985] motion-reduce:active:scale-100 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:shadow-none"
+        disabled={estado === "a-enviar" || listaFechada || (ehSponsor ? passo === "nivel" && !consent : !consent)}
+        className="group relative overflow-hidden flex w-full items-center justify-center gap-3 rounded-full bg-rosa px-8 py-4 text-[0.9375rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro hover:shadow-[0_12px_40px_-12px_rgba(186,121,132,0.7)] active:scale-[0.985] motion-reduce:active:scale-100 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:shadow-none"
       >
-        {/* Shimmer diagonal — ativo quando NÃO disabled e NÃO reduced-motion */}
-        {estado !== "a-enviar" && !listaFechada && consent && (
+        {/* Shimmer diagonal — ativo quando NÃO disabled e NÃO reduced-motion.
+            r4: no sponsor, o passo 1 não exige consentimento — shimmer ativo. */}
+        {estado !== "a-enviar" && !listaFechada && (ehSponsor ? passo === "dados" || consent : consent) && (
           <span
             aria-hidden
             className="pointer-events-none absolute inset-0 -translate-x-full animate-shimmer-diagonal"
@@ -759,6 +875,7 @@ export default function WaitlistForm({
           </>
         )}
       </button>
+      </div>
 
       {/* Modal usa createPortal ao <body>: aqui dentro do form no JSX é
           seguro — no DOM real o painel sai do form e o "Fechar" nunca submete.
