@@ -22,6 +22,13 @@ type Props = {
   empresa?: string | null;
   /** Nível de parceria escolhido INLINE no formulário (75 / 150 / 200€). */
   nivel: NivelParceria;
+  /**
+   * r5 — MESMA largura da modal do formulário (84/76/68rem por breakpoint,
+   * "64rem" no mobile, onde o painel já ocupa a largura toda): a transição
+   * formulário → pagamento fica contínua, sem salto. Só esta modal usa —
+   * a inscrição (PagamentoModal) mantém a largura própria.
+   */
+  larguraMax?: string;
   /** Tema da modal: vinho (escuro) ou claro. */
   tom?: "vinho" | "claro";
   /**
@@ -67,6 +74,7 @@ export default function PatrocinioPagamentoModal({
   nome,
   empresa,
   nivel,
+  larguraMax = "36rem",
   tom = "vinho",
   onDeclararPagamento,
 }: Props) {
@@ -270,7 +278,7 @@ export default function PatrocinioPagamentoModal({
           <motion.div
             ref={painelRef}
             className="modal-content"
-            style={{ maxWidth: "36rem" }}
+            style={{ maxWidth: larguraMax }}
             initial={animacaoEntrada}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={reduzido ? undefined : { opacity: 0, scale: 0.95, y: 10 }}
@@ -302,10 +310,20 @@ export default function PatrocinioPagamentoModal({
                 <X className="h-4 w-4" />
               </button>
 
-              <div className="relative px-6 py-12 sm:px-9">
+              {/* r5 — corpo da modal: flex-col; ≥768 tem a MESMA fórmula de
+                  altura da grelha do formulário (globals.css
+                  [data-modal-pagamento-corpo]) — a transição formulário →
+                  pagamento não salta de tamanho. Cada passo cresce dentro
+                  dele; no passo de instruções o botão "Já fiz…" assenta no
+                  fundo (prop ancorarBotaoFundo dos ecrãs partilhados). <768
+                  sem altura fixa — o corpo da modal é quem rola. */}
+              <div
+                data-modal-pagamento-corpo
+                className="relative flex min-h-0 flex-col px-6 py-12 sm:px-9"
+              >
                 {/* ── PASSO: métodos ── */}
                 {passo === "metodos" && (
-                  <div>
+                  <div className="flex min-h-0 grow flex-col overflow-y-auto overscroll-contain">
                     <div className="flex items-center justify-between gap-4">
                       <span
                         className={`eyebrow ${
@@ -360,8 +378,11 @@ export default function PatrocinioPagamentoModal({
                       </p>
                     )}
 
+                    {/* r5 — nota ancorada ao fundo do corpo (mt-auto): o
+                        passo dos métodos ocupa o painel inteiro, na mesma
+                        proporção do formulário. Só alinhamento — copy intacta. */}
                     <p
-                      className={`mt-8 text-center text-[0.75rem] leading-relaxed ${
+                      className={`mt-auto pt-8 text-center text-[0.75rem] leading-relaxed ${
                         claro ? "text-carvao/45" : "text-creme/45"
                       }`}
                     >
@@ -375,7 +396,7 @@ export default function PatrocinioPagamentoModal({
                        nível e a copy de patrocínio. Sem upload: o
                        comprovativo vai à Vitória por WhatsApp. ── */}
                 {passo === "dados" && metodoEscolhido !== null && (
-                  <div>
+                  <div className="flex min-h-0 grow flex-col overflow-y-auto overscroll-contain">
                     <button
                       type="button"
                       onClick={() => setPasso("metodos")}
@@ -420,6 +441,7 @@ export default function PatrocinioPagamentoModal({
                         aoDeclararPagamento={() => onDeclararPagamento?.(metodoEscolhido)}
                         textoBotaoDeclarar="Já fiz o pagamento"
                         textoPassoFinal="Volta aqui e marca “Já fiz o pagamento”."
+                        ancorarBotaoFundo
                       />
                     ) : (
                       <EcranTransferencia
@@ -430,6 +452,7 @@ export default function PatrocinioPagamentoModal({
                         aoDeclararPagamento={() => onDeclararPagamento?.(metodoEscolhido)}
                         textoBotaoDeclarar="Já fiz a transferência"
                         referencia={`${primeiroNome} · Patrocínio Além do Espelho 2026`}
+                        ancorarBotaoFundo
                       />
                     )}
                   </div>

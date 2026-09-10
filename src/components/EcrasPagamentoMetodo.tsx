@@ -33,6 +33,13 @@ export type EcranMetodoProps = {
   aoDeclararPagamento: () => void;
   /** Etiqueta do botão declarar ("Já fiz o pagamento" / "Já fiz a transferência"). */
   textoBotaoDeclarar: string;
+  /**
+   * r5 — só o fluxo de patrocínio passa true: ancora o botão declarar no
+   * FUNDO do painel (raiz em flex-col que cresce + mt-auto no botão), na
+   * mesma linha visual do CTA do formulário. A inscrição não passa (default
+   * false) — botão em fluxo com mt-3, paridade visual intacta.
+   */
+  ancorarBotaoFundo?: boolean;
 };
 
 /** Classes dos cartões de dados — idênticas em qualquer fluxo. */
@@ -61,9 +68,16 @@ export function EcranMbWay({
   textoBotaoDeclarar,
   /** Copy do 3.º passo: inscrição fala do lugar, patrocínio da confirmação. */
   textoPassoFinal,
+  ancorarBotaoFundo = false,
 }: EcranMetodoProps & { textoPassoFinal: string }) {
   return (
-    <div>
+    <div
+      className={
+        // r5 — patrocínio: a raiz cresce dentro do corpo flex da modal para o
+        // botão declarar (mt-auto) assentar no fundo do painel.
+        ancorarBotaoFundo ? "flex grow flex-col" : undefined
+      }
+    >
       <ol
         className={`mt-4 space-y-4 text-[0.9375rem] leading-relaxed ${
           claro ? "text-carvao/75" : "text-creme/75"
@@ -116,27 +130,40 @@ export function EcranMbWay({
         Combinar confirmação por WhatsApp
       </a>
 
-      <button
-        type="button"
-        onClick={aoDeclararPagamento}
-        className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full border px-7 py-4 text-[0.9375rem] font-medium transition-colors duration-300 ${
-          claro
-            ? "border-vinho/25 text-vinho hover:border-vinho/45"
-            : "border-creme/25 text-creme/80 hover:border-creme/50 hover:bg-creme/5"
-        }`}
+      {/* r5 — patrocínio (ancorarBotaoFundo): o botão fica STICKY no fundo
+          da área de conteúdo — visível mesmo quando as instruções ultrapassam
+          o painel (ecrãs baixos). O wrapper tem o fundo do painel para o
+          conteúdo não aparecer por baixo ao rolar. A inscrição mantém o botão
+          em fluxo com mt-3 (paridade visual intacta). */}
+      <div
+        className={
+          ancorarBotaoFundo
+            ? `sticky bottom-0 mt-auto pt-3 ${claro ? "bg-creme" : "bg-vinho"}`
+            : "mt-3"
+        }
       >
-        {textoBotaoDeclarar}
-        <svg
-          className="h-4 w-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          aria-hidden
+        <button
+          type="button"
+          onClick={aoDeclararPagamento}
+          className={`flex w-full items-center justify-center gap-2 rounded-full border px-7 py-4 text-[0.9375rem] font-medium transition-colors duration-300 ${
+            claro
+              ? "border-vinho/25 text-vinho hover:border-vinho/45"
+              : "border-creme/25 text-creme/80 hover:border-creme/50 hover:bg-creme/5"
+          }`}
         >
-          <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
+          {textoBotaoDeclarar}
+          <svg
+            className="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            aria-hidden
+          >
+            <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      </div>
     </div>
   );
 }
@@ -154,9 +181,15 @@ export function EcranTransferencia({
   aoDeclararPagamento,
   textoBotaoDeclarar,
   referencia,
+  ancorarBotaoFundo = false,
 }: EcranMetodoProps & { referencia: string }) {
   return (
-    <div>
+    <div
+      className={
+        // r5 — patrocínio: mesma mecânica do MB Way (raiz cresce, botão ao fundo).
+        ancorarBotaoFundo ? "flex grow flex-col" : undefined
+      }
+    >
       <dl className="mt-4 space-y-3">
         <div className={cartaoDado(claro)}>
           <dt className={etiquetaDado(claro)}>IBAN</dt>
@@ -221,27 +254,37 @@ export function EcranTransferencia({
         Combinar confirmação por WhatsApp
       </a>
 
-      <button
-        type="button"
-        onClick={aoDeclararPagamento}
-        className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full border px-7 py-4 text-[0.9375rem] font-medium transition-colors duration-300 ${
-          claro
-            ? "border-vinho/25 text-vinho hover:border-vinho/45"
-            : "border-creme/25 text-creme/80 hover:border-creme/50 hover:bg-creme/5"
-        }`}
+      {/* r5 — mesma mecânica do MB Way (sticky + wrapper opaco no patrocínio;
+          em fluxo com mt-3 na inscrição). */}
+      <div
+        className={
+          ancorarBotaoFundo
+            ? `sticky bottom-0 mt-auto pt-3 ${claro ? "bg-creme" : "bg-vinho"}`
+            : "mt-3"
+        }
       >
-        {textoBotaoDeclarar}
-        <svg
-          className="h-4 w-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          aria-hidden
+        <button
+          type="button"
+          onClick={aoDeclararPagamento}
+          className={`flex w-full items-center justify-center gap-2 rounded-full border px-7 py-4 text-[0.9375rem] font-medium transition-colors duration-300 ${
+            claro
+              ? "border-vinho/25 text-vinho hover:border-vinho/45"
+              : "border-creme/25 text-creme/80 hover:border-creme/50 hover:bg-creme/5"
+          }`}
         >
-          <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
+          {textoBotaoDeclarar}
+          <svg
+            className="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            aria-hidden
+          >
+            <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+      </div>
     </div>
   );
 }

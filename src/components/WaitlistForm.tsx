@@ -114,9 +114,11 @@ export default function WaitlistForm({
   const [jaExistenteSponsor, setJaExistenteSponsor] = useState(false);
 
   /**
-   * r4 — wizard de 2 sub-passos (só na variante sponsor): "dados" (nome,
-   * telemóvel, email, empresa) → "nivel" (níveis de parceria + RGPD). O POST
-   * acontece só no fim do sub-passo 2; o waitlist continua num passo único.
+   * r5 — wizard de 2 sub-passos (só na variante sponsor): "dados" (nome,
+   * telemóvel, email, empresa + consentimento RGPD — Lucas: a autorização
+   * vive no passo do formulário, a preencher o espaço abaixo da empresa)
+   * → "nivel" (só os 3 cartões de parceria). O POST acontece só no fim do
+   * sub-passo 2; o waitlist continua num passo único.
    */
   const [passo, setPasso] = useState<"dados" | "nivel">("dados");
   /** Slide curto + crossfade; com reduced-motion fica só no crossfade. */
@@ -192,13 +194,17 @@ export default function WaitlistForm({
       if (!resultado.ok) novos.phone = resultado.erro;
     }
 
+    // r5 — o consentimento RGPD pertence ao sub-passo 1: o passo não avança
+    // sem os dados obrigatórios E a autorização marcada (pedido do Lucas).
+    if (!consent) novos.consent = "Precisamos da tua autorização para te contactar.";
+
     return novos;
   }
 
   function validar(): Erros {
+    // r5 — validarDados já valida o consentimento (passo 1 do wizard); aqui
+    // só falta o que é próprio do sub-passo 2.
     const novos = validarDados();
-
-    if (!consent) novos.consent = "Precisamos da tua autorização para te contactar.";
 
     // Patrocínio: o nível é obrigatório (sub-passo 2 do wizard r4).
     if (ehSponsor && nivel === null) {
@@ -217,13 +223,20 @@ export default function WaitlistForm({
     evento.preventDefault();
     if (listaFechada) return;
 
-    // r4 — wizard: o 1.º "Continuar" só valida os dados e avança para a
-    // escolha do nível. O POST (registar_sponsor) acontece só no fim do
-    // sub-passo 2 — um único envio, como antes.
+    // r4 — wizard: o 1.º "Continuar" valida os dados + o consentimento
+    // (r5: a autorização vive neste passo) e avança para a escolha do nível.
+    // O POST (registar_sponsor) acontece só no fim do sub-passo 2 — um único
+    // envio, como antes.
     if (ehSponsor && passo === "dados") {
       const dados = validarDados();
       setErros(dados);
-      setTocados((anterior) => ({ ...anterior, fullName: true, email: true, phone: true }));
+      setTocados((anterior) => ({
+        ...anterior,
+        fullName: true,
+        email: true,
+        phone: true,
+        consent: true,
+      }));
       if (Object.keys(dados).length > 0) {
         document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
         return;
@@ -239,7 +252,7 @@ export default function WaitlistForm({
     // r4 — segurança: se algum dado do sub-passo 1 ficar inválido (só por
     // alteração externa de estado), volta a mostrá-lo em vez de assinalar
     // campos que já não estão no ecrã.
-    if (ehSponsor && (novos.fullName || novos.email || novos.phone)) {
+    if (ehSponsor && (novos.fullName || novos.email || novos.phone || novos.consent)) {
       setPasso("dados");
       return;
     }
@@ -772,9 +785,10 @@ export default function WaitlistForm({
           />
         </div>
 
-        {/* Consentimento — ≤4 linhas à largura do formulário — sub-passo 2
-            (waitlist mostra sempre) */}
-        {(!ehSponsor || passo === "nivel") && (
+        {/* Consentimento — ≤4 linhas à largura do formulário — r5: passou
+            para o sub-passo 1 (abaixo do campo empresa; o passo 2 fica só
+            com os níveis). O waitlist mostra sempre. */}
+        {(!ehSponsor || passo === "dados") && (
         <div className="pt-1 max-w-[26rem]">
           <label htmlFor="consent" className="flex cursor-pointer items-start gap-3">
             <input
@@ -827,12 +841,16 @@ export default function WaitlistForm({
       >
       <button
         type="submit"
-        disabled={estado === "a-enviar" || listaFechada || (ehSponsor ? passo === "nivel" && !consent : !consent)}
+        // r5 — o consentimento é agora exigido no sub-passo 1, pelo que a
+        // condição volta à forma simples (idêntica ao waitlist): sem
+        // autorização, o botão não avança em nenhum passo.
+        disabled={estado === "a-enviar" || listaFechada || !consent}
         className="group relative overflow-hidden flex w-full items-center justify-center gap-3 rounded-full bg-rosa px-8 py-4 text-[0.9375rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro hover:shadow-[0_12px_40px_-12px_rgba(186,121,132,0.7)] active:scale-[0.985] motion-reduce:active:scale-100 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:shadow-none"
       >
         {/* Shimmer diagonal — ativo quando NÃO disabled e NÃO reduced-motion.
-            r4: no sponsor, o passo 1 não exige consentimento — shimmer ativo. */}
-        {estado !== "a-enviar" && !listaFechada && (ehSponsor ? passo === "dados" || consent : consent) && (
+            r5: com o consentimento no passo 1, a condição é a mesma nos dois
+            sub-passos (autorização dada). */}
+        {estado !== "a-enviar" && !listaFechada && consent && (
           <span
             aria-hidden
             className="pointer-events-none absolute inset-0 -translate-x-full animate-shimmer-diagonal"

@@ -757,6 +757,23 @@ body {
   }
 }
 
+/* ── r5 — modal de pagamento do patrocínio na MESMA proporção ─────────────
+   A modal que abre a seguir ao formulário tem o MESMO tamanho do painel do
+   formulário no ≥768: o painel A termina em 100vh − 1rem (a folga inferior
+   do .modal-overlay) — medido no QA em 1280×860, 1024×768 e 768×1024. Como
+   o corpo daqui já inclui o próprio padding py-12, a fórmula dá o painel
+   com a MESMA altura, e o corpo flex-col faz o botão "Já fiz…" (prop
+   ancorarBotaoFundo dos ecrãs partilhados) assentar no fundo — transição
+   formulário → pagamento sem salto de tamanho nem do botão. A largura já é
+   igual via prop (larguraMax do SponsorFlow). <768 sem altura fixa — rola o
+   corpo da modal. */
+@media (min-width: 768px) {
+  [data-modal-pagamento-corpo] {
+    height: calc(100vh - var(--topo-modal) - 1rem);
+    height: calc(100dvh - var(--topo-modal) - 1rem);
+  }
+}
+
 /* ── r4 — faixa do CTA fixo no wizard do patrocínio ───────────────────────
    O botão "Continuar" é sticky no fundo da coluna do formulário no ≥768
    (exatamente a mesma posição nos dois sub-passos). A faixa de vidro

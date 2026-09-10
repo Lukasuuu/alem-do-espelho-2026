@@ -227,6 +227,9 @@ export default function SponsorFlow() {
           nome={nome}
           empresa={empresa}
           nivel={nivel}
+          // r5 — MESMA largura da modal do formulário (84/76/68rem): a
+          // transição formulário → pagamento fica contínua, sem salto.
+          larguraMax={larguraModalAtual}
           onDeclararPagamento={(metodoEscolhido) => {
             setMetodo(metodoEscolhido);
             fecharTudo(); // a cadeia A/pagamento fecha — o Agradecimento fica sozinho no topo
