@@ -570,4 +570,34 @@ export const patrocinadores: Patrocinador[] = [
     destaque: 3,
     visivel: true,
   },
+  {
+    // BRONZE — texto (cargo + missão) fornecido verbatim e aprovado pelo
+    // Lucas (10/09/2026); historia/citação vazias — não foram pedidas.
+    // Foto 900×1082 (≈4:5, o slot corta com object-cover como os outros
+    // retratos); logo card 1600×900 (16:9) com fundo/fio/cantos embutidos.
+    id: "monia-stuart",
+    nome: "Monia Stuart",
+    titulo: "Massoterapeuta",
+    tipo: "pessoa",
+    descricao:
+      "Transformando cuidado em bem-estar. Corpo • mente • autoestima. 📍 Braga, Portugal",
+    foto: {
+      src: "/patrocinadores/monia-stuart-foto.webp",
+      alt: "Retrato de Monia Stuart, massoterapeuta",
+      width: 900,
+      height: 1082,
+    },
+    logo: {
+      src: "/patrocinadores/logo-monia-stuart.webp",
+      alt: "Logótipo Monia Stuart, Massoterapeuta",
+      // Card pré-renderizado 1600×900 (16:9) (fundo creme + fio embutidos)
+      width: 1600,
+      height: 900,
+      estilo: "card",
+    },
+    historia: "",
+    citacao: "",
+    destaque: 3,
+    visivel: true,
+  },
 ];
