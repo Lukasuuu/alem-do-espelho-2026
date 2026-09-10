@@ -85,7 +85,7 @@ export default function WaitlistForm({
       }
     : {
         endpoint: "/api/waitlist",
-        botao: "Fazer parte",
+        botao: "Quero fazer parte",
         consentimento: `Autorizo o ${anfitria} a contactar-me por email e telemóvel sobre o ${site.nome}.`,
         listaFechada: "As inscrições na lista de espera estão fechadas.",
       };

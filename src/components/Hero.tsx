@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { ChevronRight } from "lucide-react";
 import { site } from "@/lib/site";
 import Countdown from "./Countdown";
 
@@ -86,10 +87,8 @@ export default function Hero({ abrirModal }: Props) {
               onClick={abrirModal}
               className="group inline-flex items-center gap-3 rounded-full bg-rosa px-8 py-4 text-[0.9375rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro hover:shadow-[0_12px_40px_-12px_rgba(196,126,138,0.7)]"
             >
-              Fazer parte
-              <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">
-                →
-              </span>
+              Quero fazer parte
+              <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
             </button>
           </motion.div>
         </div>
