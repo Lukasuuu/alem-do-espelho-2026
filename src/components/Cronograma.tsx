@@ -11,7 +11,7 @@ import { horarioEvento, site } from "@/lib/site";
  *
  * Os valores vêm SEMPRE de lib/site.ts (fonte única): data.extenso,
  * local.nome/cidade e o horário derivado por horarioEvento() dos ISO
- * data.iso/data.fim (09:00–18:00, confirmado pelo Lucas a 11/08).
+ * data.iso/data.fim (09:30–18:00, início atualizado pelo Lucas a 09/09/2026).
  *
  * Só leitura — sem interacção. id="o-evento" é a âncora da Navegação
  * do footer (existe só nesta página, pelo que o footer do evento a usa

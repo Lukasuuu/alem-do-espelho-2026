@@ -17,7 +17,12 @@ function larguraModal() {
   if (w >= 1440) return "84rem";      // 1344px
   if (w >= 1280) return "76rem";      // 1216px
   if (w >= 1024) return "68rem";      // 1088px
-  if (w >= 768) return "44rem";       // 704px — 1 coluna
+  // 768–1023 (tablet, muitas vezes portrait): aqui JÁ há 2 colunas (duasColunasModal
+  // é true desde 768), portanto o painel não pode ser o 44rem antigo (704px esmagava
+  // o formulário em ~300px) — preenche o viewport até 64rem. O overlay já dá 1rem
+  // de respiro de cada lado (padding horizontal de .modal-overlay), por isso
+  // calc(100vw - 2rem) é exatamente o máximo disponível.
+  if (w >= 768) return "min(64rem, calc(100vw - 2rem))";
   return "64rem";                      // mobile: não tocar, mantém atual
 }
 
@@ -145,7 +150,7 @@ export default function SponsorFlow() {
           data-modal-patrocinadores-grelha
           className={`flex flex-col gap-6 ${
             duasColunas
-              ? "md:grid md:grid-cols-[minmax(0,58fr)_minmax(0,42fr)] md:gap-10"
+              ? "md:grid md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-10"
               : ""
           }`}
         >
