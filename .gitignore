@@ -58,3 +58,6 @@ public/patrocinadores/*.png
 public/patrocinadores/daniella-galiani-4x5 (1).webp
 # Asset órfão: não referenciado em src/ (a Lígia usa logo-ligia-santos.webp). Entra no commit que o usar.
 public/patrocinadores/logo-ligia-mark.webp
+
+# Backup local de assets (nunca no repo)
+_backup-logos/
