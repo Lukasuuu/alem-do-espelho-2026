@@ -734,10 +734,70 @@ body {
   [data-coluna-patrocinadores] {
     display: flex;
     flex-direction: column;
+    /* r6 — referência das pistas visuais (fade + hint) ancoradas ao fundo
+       da coluna, por cima da lista. */
+    position: relative;
   }
   [data-lista-patrocinadores-scroll] {
     flex: 1 1 0;
     min-height: 0;
+    /* r6 — scroll "tipo feed" SEM barra visível (a pista de que há mais
+       abaixo passa a ser o fade + hint, não a barra). Sobrepõe o thin/4px
+       do .scroll-ouro (este bloco vem depois no ficheiro). Sem listeners
+       JS nem preventDefault — o gesto continua 100% nativo (pan-y +
+       momentum iOS já no .scroll-ouro). */
+    scrollbar-width: none;
+    scroll-behavior: smooth;
+  }
+  [data-lista-patrocinadores-scroll]::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+  /* r6 — pista "há mais patrocinadores": fade para o vinho REAL da modal
+     (--color-vinho #5c323e) + etiqueta centrada. Decorativos (aria-hidden
+     no JSX); pointer-events none para nunca roubar o gesto ao scroll. */
+  .pista-lista-fade {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+    height: 56px;
+    pointer-events: none;
+    background: linear-gradient(to top, rgb(92 50 62 / 0.92), rgb(92 50 62 / 0));
+    opacity: 1;
+    transition: opacity 0.2s ease;
+  }
+  .pista-lista-hint {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 8px;
+    z-index: 1;
+    text-align: center;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgb(255 247 233 / 0.75);
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.2s ease;
+  }
+  /* No fim da lista as pistas saem (o TSX marca data-atbottom no scroll). */
+  [data-coluna-patrocinadores][data-atbottom="true"] .pista-lista-fade,
+  [data-coluna-patrocinadores][data-atbottom="true"] .pista-lista-hint {
+    opacity: 0;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    /* Só o fade é decorativo — simplifica a transição. O SCROLL nunca
+       se desliga (scroll-behavior smooth também sai). */
+    .pista-lista-fade,
+    .pista-lista-hint {
+      transition: none;
+    }
+    [data-lista-patrocinadores-scroll] {
+      scroll-behavior: auto;
+    }
   }
   [data-coluna-formulario] {
     overflow-y: auto;
@@ -754,6 +814,15 @@ body {
   [data-coluna-formulario]::-webkit-scrollbar-thumb {
     background: rgb(212 175 55 / 0.35);
     border-radius: 9999px;
+  }
+}
+
+/* r6 — <768 as colunas empilham e quem rola é o corpo da modal: a lista
+   não tem scroll próprio, logo as pistas (fade + hint) não fazem sentido. */
+@media (max-width: 767.98px) {
+  .pista-lista-fade,
+  .pista-lista-hint {
+    display: none;
   }
 }
 

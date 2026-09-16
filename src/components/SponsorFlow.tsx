@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Modal from "./Modal";
 import WaitlistForm from "./WaitlistForm";
 import PatrocinioPagamentoModal from "./PatrocinioPagamentoModal";
@@ -123,6 +123,31 @@ export default function SponsorFlow() {
     return false;
   }
 
+  // r6 — pistas da lista (fade + "mais patrocinadores"): marcadas no fim.
+  // Só escreve um atributo — o scroll continua 100% nativo, sem listeners
+  // de wheel/touch nem preventDefault.
+  const listaRef = useRef<HTMLDivElement>(null);
+  const marcarFimDaLista = useCallback(() => {
+    const el = listaRef.current;
+    const col = el?.closest("[data-coluna-patrocinadores]");
+    if (!el || !col) return;
+    const noFim = el.scrollHeight - el.scrollTop - el.clientHeight < 8;
+    col.setAttribute("data-atbottom", String(noFim));
+  }, []);
+  // Estado inicial (lista no topo) e re-verificação no resize: a lista
+  // transborda ou não conforme o viewport — sem isto, uma lista que caiba
+  // inteira mostrava pistas de "há mais" falsas.
+  useEffect(() => {
+    if (apresentacaoAberto) marcarFimDaLista();
+  }, [apresentacaoAberto, duasColunas, marcarFimDaLista]);
+  useEffect(() => {
+    function aoRedimensionar() {
+      marcarFimDaLista();
+    }
+    window.addEventListener("resize", aoRedimensionar);
+    return () => window.removeEventListener("resize", aoRedimensionar);
+  }, [marcarFimDaLista]);
+
   return (
     <>
       <button
@@ -167,10 +192,13 @@ export default function SponsorFlow() {
             </p>
 
             <div
+              ref={listaRef}
               data-lista-patrocinadores-scroll
               // Scroll NATIVO (sem JS): touch-action pan-y + momentum iOS vêm
               // do .scroll-ouro em globals.css; o cap dvh (≥768) também lá
               // está — aqui não há max-height para não brigar com o CSS.
+              // r6: onScroll só marca as pistas (fade/hint) no fim da lista.
+              onScroll={marcarFimDaLista}
               tabIndex={0}
               role="region"
               aria-label="Lista de patrocinadores (rolável)"
@@ -182,6 +210,14 @@ export default function SponsorFlow() {
                   <CartaoPatrocinadora key={p.id} patrocinador={p} tom="escuro" />
                 ))}
             </div>
+
+            {/* r6 — pistas visuais de "há mais patrocinadores" (decorativas;
+                o fade usa o vinho real da modal, ver .pista-lista-fade em
+                globals.css; saem quando a lista chega ao fim). */}
+            <div className="pista-lista-fade" aria-hidden="true" />
+            <p className="pista-lista-hint" aria-hidden="true">
+              ↓ Mais patrocinadores
+            </p>
           </div>
 
           {/* DIREITA — instrução + wizard de 2 sub-passos (r4: dados →
