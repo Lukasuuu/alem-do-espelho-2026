@@ -716,61 +716,115 @@ body {
    quando o conteúdo transborda. O formulário nunca rola dentro do scroll
    dos cartões (spec ajuste modal). dvh com fallback vh — mesmo padrão de
    .modal-content (o calc com dvh inválido deixaria max-height a none). */
-@media (min-width: 768px) {
-  [data-modal-patrocinadores-grelha] {
-    /* r4 — ALTURA FIXA (antes max-height): com max-height, a grelha crescia
-       com o conteúdo do formulário e o CTA "Continuar" mudava de posição
-       entre sub-passos. Com height fixo, a modal tem sempre o mesmo tamanho,
-       as duas colunas ficam iguais/definidas e o CTA sticky ancora no fundo
-       da coluna nos dois sub-passos do wizard. dvh com fallback vh. */
-    height: calc(100vh - var(--topo-modal) - 9rem);
-    height: calc(100dvh - var(--topo-modal) - 9rem);
-    grid-template-rows: minmax(0, 1fr);
-  }
-  [data-coluna-patrocinadores],
-  [data-coluna-formulario] {
-    min-height: 0;
-  }
-  [data-coluna-patrocinadores] {
-    display: flex;
-    flex-direction: column;
+
+/* ── r6 — lista de patrocinadores: scroll "feed" em TODAS as larguras ──────
+   Sem barra visível (a pista de que há mais abaixo é o fade + hint, não a
+   barra) e com pistas visuais. Sobrepõe o thin/4px do .scroll-ouro (este
+   bloco vem depois no ficheiro). Sem listeners JS nem preventDefault — o
+   gesto continua 100% nativo (pan-y + momentum iOS já no .scroll-ouro).
+   Pistas: fade para o vinho REAL da modal (--color-vinho #5c323e) +
+   etiqueta centrada. Decorativos (aria-hidden no JSX); pointer-events
+   none para nunca roubar o gesto ao scroll. No fim da lista as pistas
+   saem (o TSX marca data-atbottom no scroll). */
+[data-lista-patrocinadores-scroll] {
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+}
+[data-lista-patrocinadores-scroll]::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+.pista-lista-fade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  height: 56px;
+  pointer-events: none;
+  background: linear-gradient(to top, rgb(92 50 62 / 0.92), rgb(92 50 62 / 0));
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+.pista-lista-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8px;
+  z-index: 1;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgb(255 247 233 / 0.75);
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+[data-coluna-patrocinadores][data-atbottom="true"] .pista-lista-fade,
+[data-coluna-patrocinadores][data-atbottom="true"] .pista-lista-hint {
+  opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Só o fade é decorativo — simplifica a transição. O SCROLL nunca
+     se desliga (scroll-behavior smooth também sai). */
+  .pista-lista-fade,
+  .pista-lista-hint {
+    transition: none;
   }
   [data-lista-patrocinadores-scroll] {
-    flex: 1 1 0;
-    min-height: 0;
-  }
-  [data-coluna-formulario] {
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: #ba7984 transparent;
-    overscroll-behavior: contain;
-    touch-action: pan-y;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-gutter: stable;
-  }
-  [data-coluna-formulario]::-webkit-scrollbar {
-    width: 4px;
-  }
-  [data-coluna-formulario]::-webkit-scrollbar-thumb {
-    background: rgb(212 175 55 / 0.35);
-    border-radius: 9999px;
+    scroll-behavior: auto;
   }
 }
-
-/* ── r5 — modal de pagamento do patrocínio na MESMA proporção ─────────────
-   A modal que abre a seguir ao formulário tem o MESMO tamanho do painel do
-   formulário no ≥768: o painel A termina em 100vh − 1rem (a folga inferior
-   do .modal-overlay) — medido no QA em 1280×860, 1024×768 e 768×1024. Como
-   o corpo daqui já inclui o próprio padding py-12, a fórmula dá o painel
-   com a MESMA altura, e o corpo flex-col faz o botão "Já fiz…" (prop
-   ancorarBotaoFundo dos ecrãs partilhados) assentar no fundo — transição
-   formulário → pagamento sem salto de tamanho nem do botão. A largura já é
-   igual via prop (larguraMax do SponsorFlow). <768 sem altura fixa — rola o
-   corpo da modal. */
+/* ── r7 — painéis de altura igual: 3 cards ⇄ formulário/pagamento ────────
+   A janela da lista e o painel do formulário/etapa de pagamento partilham a
+   MESMA altura externa, em TODAS as larguras: a var --tres-cards-h é medida
+   em runtime pelo SponsorFlow (topo do 4.º cartão = 3 cartões recolhidos +
+   os 2 intervalos) e escrita na grelha de painéis. Fallback 42rem antes da
+   medição. NADA de slice/paginação — a lista inteira está no DOM; a janela
+   mostra 3 e o resto chega rolando DENTRO dela. Quando o conjunto (header +
+   apresentações + painéis) não cabe no viewport, a modal inteira
+   (.modal-content) rola — mobile incluído; o gesto nunca fica preso (sem
+   overscroll-contain: no limite da lista/painel, o scroll continua pela
+   modal). */
+[data-coluna-patrocinadores],
+[data-coluna-formulario] {
+  min-width: 0;
+  min-height: 0;
+  height: var(--tres-cards-h, 42rem);
+}
+/* Referência das pistas visuais (fade + hint) ancoradas ao fundo da janela. */
+[data-coluna-patrocinadores] {
+  position: relative;
+}
+[data-lista-patrocinadores-scroll] {
+  height: 100%;
+}
+/* O painel do formulário/etapa de pagamento é o scroll próprio do conteúdo
+   (nos dois passos e em todas as larguras): o CTA sticky (.faixa-rodape-wizard,
+   ≥768) ancora no fundo do painel e o conteúdo rola por baixo da faixa. */
+[data-coluna-formulario] {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #ba7984 transparent;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+[data-coluna-formulario]::-webkit-scrollbar {
+  width: 4px;
+}
+[data-coluna-formulario]::-webkit-scrollbar-thumb {
+  background: rgb(212 175 55 / 0.35);
+  border-radius: 9999px;
+}
 @media (min-width: 768px) {
-  [data-modal-pagamento-corpo] {
-    height: calc(100vh - var(--topo-modal) - 1rem);
-    height: calc(100dvh - var(--topo-modal) - 1rem);
+  [data-grelha-paineis] {
+    /* Duas colunas, uma linha: os dois painéis esticam para a mesma altura
+       (a height explícita dos painéis já os iguala; minmax(0,1fr) evita que
+       o conteúdo estique a linha para além da medição). */
+    grid-template-rows: minmax(0, 1fr);
+    min-height: 0;
   }
 }
 

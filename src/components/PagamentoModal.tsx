@@ -12,7 +12,7 @@ import PaymentProofUpload from "./PaymentProofUpload";
 import ConfirmacaoSaidaModal from "./ConfirmacaoSaidaModal";
 // Ecrãs de instrução MB Way/Transferência EXTRAÍDOS para componente
 // partilhado (EcrasPagamentoMetodo.tsx, que já usa BotaoCopiar.tsx) —
-// usados AQUI (inscrição) e no patrocínio (PatrocinioPagamentoModal):
+// usados AQUI (inscrição) e no patrocínio (PatrocinioPagamentoPasso):
 // paridade visual real, um só componente, nenhum risco de divergir.
 import { EcranMbWay, EcranTransferencia } from "./EcrasPagamentoMetodo";
 import { travarScroll, destravarScroll } from "@/lib/scroll-lock";
