@@ -192,14 +192,15 @@ export default function EventoPage({ faseInscricaoAtiva }: Props) {
 
   return (
     <>
-      <Header abrirModal={abrirFluxo} />
+      {/* faseInscricaoAtiva controla também o link PATROCINADORES da navbar. */}
+      <Header abrirModal={abrirFluxo} faseInscricaoAtiva={faseInscricaoAtiva} />
       <main>
         <Hero abrirModal={abrirFluxo} />
         <Cronograma />
         <Experience />
         <Anfitria />
         <Gallery />
-        <Realizacao faseInscricaoAtiva={faseInscricaoAtiva} />
+        <Realizacao faseInscricaoAtiva={faseInscricaoAtiva} abrirModal={abrirFluxo} />
       </main>
       <Footer abrirModal={abrirFluxo} />
       {/* H — bolha flutuante só nesta página (decisão do Lucas, 03/09). */}

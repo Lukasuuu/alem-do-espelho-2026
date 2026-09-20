@@ -102,6 +102,15 @@
   --color-creme-neon: #fff7e9;
   --color-whatsapp: #25d366;
 
+  /* Banner dos 3 pilares + Cronograma do Dia (set 2026) — valores medidos a
+     pixel na arte aprovada; SÓ estes 5 entram como tokens novos. Tudo o resto
+     reutiliza a paleta da marca (rosa/sage/creme-neon/blush). */
+  --color-vinho-profundo: #411618;   /* faixa "O que vais viver" (r2) */
+  --color-vinho-halo: #6b2925;       /* vinheta radial da faixa */
+  --color-rosa-suave: #d5a9a6;       /* eyebrow da faixa, detalhes */
+  --color-rosa-manuscrito: #c88b86;  /* "Além de mim" + fecho manuscrito */
+  --color-blush-banner: #ba938c;     /* blush suave dos cantos da faixa (r2) */
+
   --font-display: "Recline", "Cormorant Garamond", Georgia, serif;
   --font-sans: "Jost", "Helvetica Neue", Arial, sans-serif;
 
@@ -142,6 +151,19 @@ body {
 ::selection {
   background-color: var(--color-rosa);
   color: var(--color-creme);
+}
+
+/* Navbar direcional: offset das âncoras. A header é fixed e encolhe ao
+   descolar (py-5 → py-3); 4.5rem cobre a altura descolada (~60px) + folga
+   em qualquer breakpoint — as secções ficam a 12px abaixo da barra.
+   #topo fica de fora (voltar ao topo é exato, sem offset). As âncoras que
+   são <div> (patrocinadores, missão) levam scroll-mt equivalente por classe. */
+:root {
+  --navbar-h: 4.5rem;
+}
+
+section[id]:not([id="topo"]) {
+  scroll-margin-top: calc(var(--navbar-h) + 12px);
 }
 
 :focus-visible {
@@ -310,6 +332,39 @@ body {
     transparent
   );
   opacity: 0.28;
+}
+
+/* ───────────────────────────────────────────────
+   FAIXA "O QUE VAIS VIVER" (Experience) — r2: a secção INTEIRA em
+   vinho-profundo, com vinheta central-topo (como no banner) e blush suave
+   nos cantos. Os recortes do banner (rosto/folhagem) assentam sem emenda
+   sobre este fundo.
+   ─────────────────────────────────────────────── */
+.faixa-pilares {
+  background:
+    radial-gradient(
+      ellipse 75% 95% at 50% 30%,
+      var(--color-vinho-halo) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      circle at 2% 2%,
+      color-mix(in srgb, var(--color-blush-banner) 30%, transparent),
+      transparent 46%
+    ),
+    radial-gradient(
+      circle at 100% 102%,
+      color-mix(in srgb, var(--color-blush-banner) 18%, transparent),
+      transparent 34%
+    ),
+    var(--color-vinho-profundo);
+}
+
+/* Cartão do cronograma (r3): superfície creme 6% sobre o verde floresta
+   (musgo do hero/rodapé), contorno ténue creme. */
+.cartao-mapa {
+  background: color-mix(in srgb, var(--color-creme) 6%, var(--color-musgo));
+  border: 1px solid rgb(245 240 232 / 0.16);
 }
 
 /* Campos do formulário */

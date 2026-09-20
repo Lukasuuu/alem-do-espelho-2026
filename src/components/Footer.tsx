@@ -69,7 +69,7 @@ export default function Footer({ abrirModal, navegacao = NAVEGACAO_EVENTO }: Pro
               onClick={abrirModal}
               className="mt-4 inline-flex items-center gap-2.5 rounded-full border border-creme/20 px-6 py-3 text-[0.8125rem] font-medium text-creme/80 transition-all duration-300 hover:border-creme/40 hover:bg-creme/5"
             >
-              Quero fazer parte
+              Quero garantir o meu lugar
               <ChevronRight className="h-3.5 w-3.5" />
             </button>
           </div>

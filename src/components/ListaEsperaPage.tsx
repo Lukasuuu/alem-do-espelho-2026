@@ -30,13 +30,21 @@ export default function ListaEsperaPage({ faseInscricaoAtiva }: Props) {
 
   return (
     <>
-      <Header abrirModal={abrirModal} />
+      <Header
+        abrirModal={abrirModal}
+        faseInscricaoAtiva={faseInscricaoAtiva}
+        links={[
+          { href: "#o-que-te-espera", rotulo: "O que vais viver" },
+          { href: "#alem-de-mim", rotulo: "Causa social" },
+          { href: "#missao", rotulo: "Missão" },
+        ]}
+      />
       <main>
         <ListaEsperaHero irParaInscricao={abrirModal} />
         <Experience />
         <Anfitria />
         <Gallery />
-        <Realizacao faseInscricaoAtiva={faseInscricaoAtiva} />
+        <Realizacao faseInscricaoAtiva={faseInscricaoAtiva} abrirModal={abrirModal} />
       </main>
       {/* Navegação própria: #o-evento (cronograma) só existe na página do evento. */}
       <Footer

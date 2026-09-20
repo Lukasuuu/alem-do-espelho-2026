@@ -246,7 +246,13 @@ export default function CausaSocial({ faseInscricaoAtiva }: Props) {
               aplicadas na Supabase antes de qualquer deploy (ver lib/sponsors.ts). ═══ */}
           {faseInscricaoAtiva && SPONSORS_ATIVOS && (
             <Reveal delay={0.08}>
-              <div className="mx-auto mt-20 max-w-2xl text-center">
+              {/* Âncora PATROCINADORES da navbar — vive DENTRO do gate a
+                  propósito: com a fase fechada o bloco inteiro sai do DOM e o
+                  link também sai da navbar (faseInscricaoAtiva no Header). */}
+              <div
+                id="patrocinadores"
+                className="mx-auto mt-20 max-w-2xl scroll-mt-[calc(var(--navbar-h)+12px)] text-center"
+              >
                 <h3 className="display text-[2rem] text-vinho">
                   Junte-se à nossa missão.
                 </h3>
