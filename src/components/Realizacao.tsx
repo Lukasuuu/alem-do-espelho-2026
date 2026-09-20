@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Reveal from "./Reveal";
 import CausaSocial from "./CausaSocial";
+import MapaDia from "./MapaDia";
 
 type Entidade = {
   rotulo: string;
@@ -56,14 +57,16 @@ const entidades: Entidade[] = [
   },
 ];
 
-type Props = { faseInscricaoAtiva: boolean };
+type Props = { faseInscricaoAtiva: boolean; abrirModal: () => void };
 
 /**
  * Gate da secção de patrocinadores decidido no SERVIDOR (page.tsx):
  * faseInscricaoAtiva=true só a partir de FIM_CAMPANHA_ISO (10/08 10:00 Lisboa,
  * override NEXT_PUBLIC_FASE_OVERRIDE incluído). Apenas encadeado até CausaSocial.
+ * abrirModal encadeia o fluxo de inscrição (abrirFluxo do EventoPage) até ao
+ * CTA do Cronograma do Dia — mesmo gate, nada de link novo.
  */
-export default function Realizacao({ faseInscricaoAtiva }: Props) {
+export default function Realizacao({ faseInscricaoAtiva, abrirModal }: Props) {
   return (
     <section className="grao relative overflow-hidden bg-creme py-24 sm:py-32">
       {/* fio de abertura em sage, destaca a secção das vizinhas sem mudar de tom */}
@@ -111,9 +114,9 @@ export default function Realizacao({ faseInscricaoAtiva }: Props) {
               </figure>
             </Reveal>
 
-            {/* A nossa missão */}
+            {/* A nossa missão — âncora MISSÃO da navbar (div: scroll-mt = offset da barra) */}
             <Reveal delay={0.08}>
-              <div className="mt-[clamp(48px,7vw,96px)]">
+              <div id="missao" className="mt-[clamp(48px,7vw,96px)] scroll-mt-[calc(var(--navbar-h)+12px)]">
                 <span className="eyebrow text-rosa">A nossa missão</span>
                 <p className="display mt-[clamp(14px,2vw,20px)] text-[clamp(1.5rem,3vw,1.875rem)] leading-[1.08] text-vinho">
                   Transformar vidas em dois continentes.
@@ -169,6 +172,11 @@ export default function Realizacao({ faseInscricaoAtiva }: Props) {
 
         {/* ── Causa social "Além de Mim": missão → causa → patrocínio ── */}
         <CausaSocial faseInscricaoAtiva={faseInscricaoAtiva} />
+
+        {/* ── Cronograma do Dia (Mapa do Dia público) — entre o fecho da causa
+            social e a faixa das entidades (anexo 7). SEM gate de fase: é
+            informação do evento, não conversão — aparece em todas as fases. ── */}
+        <MapaDia abrirModal={abrirModal} />
 
         {/* ── Zona B: faixa das entidades, largura total, separada por um fio ── */}
         <div className="mt-[clamp(32px,4vw,56px)] border-t border-vinho/10 pt-[clamp(40px,5vw,64px)]">
