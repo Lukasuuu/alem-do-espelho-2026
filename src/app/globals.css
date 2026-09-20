@@ -103,12 +103,13 @@
   --color-whatsapp: #25d366;
 
   /* Banner dos 3 pilares + Cronograma do Dia (set 2026) — valores medidos a
-     pixel na arte aprovada; SÓ estes 4 entram como tokens novos. Tudo o resto
-     reutiliza a paleta da marca (rosa/sage/creme-neon). */
-  --color-vinho-profundo: #411618;   /* fundo das duas faixas */
-  --color-vinho-halo: #6b2925;       /* vinheta radial nos cantos */
-  --color-rosa-suave: #d5a9a6;       /* números do cronograma, detalhes */
-  --color-rosa-manuscrito: #c88b86;  /* fecho manuscrito do banner */
+     pixel na arte aprovada; SÓ estes 5 entram como tokens novos. Tudo o resto
+     reutiliza a paleta da marca (rosa/sage/creme-neon/blush). */
+  --color-vinho-profundo: #411618;   /* faixa "O que vais viver" (r2) */
+  --color-vinho-halo: #6b2925;       /* vinheta radial da faixa */
+  --color-rosa-suave: #d5a9a6;       /* eyebrow da faixa, detalhes */
+  --color-rosa-manuscrito: #c88b86;  /* "Além de mim" + fecho manuscrito */
+  --color-blush-banner: #ba938c;     /* blush suave dos cantos da faixa (r2) */
 
   --font-display: "Recline", "Cormorant Garamond", Georgia, serif;
   --font-sans: "Jost", "Helvetica Neue", Arial, sans-serif;
@@ -350,6 +351,25 @@ section[id]:not([id="topo"]) {
       55rem 36rem at 92% 100%,
       color-mix(in srgb, var(--color-vinho-halo) 55%, transparent) 0%,
       transparent 62%
+    ),
+    var(--color-vinho-profundo);
+}
+.faixa-pilares {
+  background:
+    radial-gradient(
+      ellipse 75% 95% at 50% 30%,
+      var(--color-vinho-halo) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      circle at 2% 2%,
+      color-mix(in srgb, var(--color-blush-banner) 30%, transparent),
+      transparent 46%
+    ),
+    radial-gradient(
+      circle at 100% 102%,
+      color-mix(in srgb, var(--color-blush-banner) 18%, transparent),
+      transparent 34%
     ),
     var(--color-vinho-profundo);
 }
