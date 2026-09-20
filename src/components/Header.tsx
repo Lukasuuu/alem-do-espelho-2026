@@ -57,8 +57,8 @@ export default function Header({ abrirModal, faseInscricaoAtiva = false, links: 
   const links = useMemo<Link[]>(() => {
     if (linksProp) return linksProp;
     const base: Link[] = [
-      { href: "#o-evento", rotulo: "O evento" },
-      { href: "#o-que-te-espera", rotulo: "O que vais viver" },
+      { href: "#o-evento", rotulo: "Evento" },
+      { href: "#o-que-te-espera", rotulo: "Experiência" },
       { href: "#cronograma", rotulo: "Cronograma" },
     ];
     if (faseInscricaoAtiva) {
@@ -188,7 +188,7 @@ export default function Header({ abrirModal, faseInscricaoAtiva = false, links: 
                   key={link.href}
                   href={link.href}
                   aria-current={ativo === link.href ? "true" : undefined}
-                  className={`inline-flex min-h-[44px] flex-col items-center justify-center px-2.5 text-[0.75rem] font-medium uppercase tracking-[0.14em] transition-colors duration-300 xl:px-3 ${
+                  className={`inline-flex min-h-[44px] flex-col items-center justify-center whitespace-nowrap px-2.5 text-[0.75rem] font-medium uppercase tracking-[0.14em] transition-colors duration-300 xl:px-3 ${
                     ativo === link.href ? "text-creme-neon" : "text-creme/65 hover:text-creme"
                   }`}
                 >
@@ -270,7 +270,7 @@ export default function Header({ abrirModal, faseInscricaoAtiva = false, links: 
                   href={link.href}
                   onClick={(e) => irParaSecao(e, link.href)}
                   aria-current={ativo === link.href ? "true" : undefined}
-                  className={`flex min-h-[44px] items-center gap-3 rounded-sm px-4 text-[0.875rem] font-medium uppercase tracking-[0.14em] transition-colors duration-300 ${
+                  className={`flex min-h-[44px] items-center gap-3 whitespace-nowrap rounded-sm px-4 text-[0.875rem] font-medium uppercase tracking-[0.14em] transition-colors duration-300 ${
                     ativo === link.href
                       ? "text-creme-neon"
                       : "text-creme/70 hover:bg-creme/5 hover:text-creme"
