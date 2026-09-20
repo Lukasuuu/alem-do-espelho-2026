@@ -4,49 +4,46 @@ import { capitulos } from "@/lib/cronograma";
 import { horarioEvento, site } from "@/lib/site";
 
 /**
- * H.2 — Cronograma do Dia (Mapa do Dia público).
+ * H.2 — Cronograma do Dia (Mapa do Dia público) — r3 (set 2026).
  *
  * Posição: entre o fecho da causa social ("Transformando mulheres em Portugal /
  * Impactando vidas em Angola") e a faixa REALIZAÇÃO · ORGANIZAÇÃO · APOIO.
  * NUNCA atrás de gate de fase — é informação do evento, não conversão: aparece
  * em todas as fases (ao contrário da vitrine de patrocinadores, gated).
  *
+ * r3: faixa VERDE FLORESTA full-bleed (o musgo do hero/rodapé, #3D4A40) em
+ * vez do vinho — fecha o ritmo de cor creme → vinho → verde → creme → verde.
+ * O section vive DENTRO do contentor max-w-6xl da Realização; para sangrar
+ * até às margens da viewport usa o truque left-1/2 + w-screen (o body tem
+ * overflow-x:hidden, que engole os ~7px da scrollbar). Coluna ÚNICA em todas
+ * as larguras — as 2 colunas partiam a ordem temporal do dia.
+ *
  * Conteúdo: SÓ o Mapa do Dia público (hora · experiência · foco) de
  * lib/cronograma.ts — nada do PDF interno (condução, pontes, "a confirmar").
- * Fundo = o mesmo vinho profundo do banner dos 3 pilares (.faixa-vinho),
- * para os dois blocos lerem como uma só narrativa. Dados do cabeçalho vêm
- * SEMPRE de lib/site.ts (fonte única), como no Cronograma G.1.
- *
- * Cartões: número grande à esquerda (rosa-suave, tabular-nums), separador
- * vertical, hora + título (Recline) + foco. 1 coluna em mobile; ≥lg em 2
- * colunas mantendo a ordem de leitura. CTA final reutiliza abrirModal
- * (o mesmo abrirFluxo gated da navbar/hero — nada de link novo).
+ * Dados do cabeçalho vêm SEMPRE de lib/site.ts (fonte única). Cartões:
+ * número Recline blush à esquerda (alinhado ao fio vertical contínuo),
+ * separador ténue ≥sm, hora + título (Recline creme) + foco. CTA final
+ * reutiliza abrirModal (o mesmo abrirFluxo gated da navbar/hero).
  */
 
 type Props = {
   abrirModal: () => void;
 };
 
-/** Cor do capítulo → token da marca (rosa nos pilares 1/3, verde no pilar 2). */
-const COR_CAPITULO = {
-  rosa: "text-rosa",
-  verde: "text-sage",
-} as const;
-
 export default function MapaDia({ abrirModal }: Props) {
   return (
     <section
       id="cronograma"
       aria-label="Cronograma do dia do evento"
-      className="faixa-vinho relative overflow-hidden py-20 sm:py-28"
+      className="relative left-1/2 w-screen -translate-x-1/2 bg-musgo py-20 md:py-28"
     >
-      <div className="mx-auto max-w-6xl px-5 sm:px-8">
+      <div className="mx-auto max-w-[58rem] px-4 sm:px-6">
         {/* Cabeçalho */}
         <Reveal>
           <div className="text-center">
-            <span className="eyebrow text-rosa-suave">Além do Espelho 2026</span>
-            <span className="eyebrow mt-2 block text-creme/45">O que vais viver no dia</span>
-            <h2 className="display mt-5 text-[2.25rem] leading-[1.06] text-creme-neon sm:text-5xl">
+            <span className="eyebrow block text-creme/55">Além do Espelho 2026</span>
+            <span className="eyebrow mt-2 block text-blush">O que vais viver no dia</span>
+            <h2 className="display mt-5 text-[clamp(1.875rem,4.2vw,3.25rem)] leading-[1.06] text-creme">
               Cronograma do Dia
             </h2>
             <p className="mt-5 text-[0.9375rem] leading-relaxed text-creme/65 sm:text-[1rem]">
@@ -55,48 +52,50 @@ export default function MapaDia({ abrirModal }: Props) {
           </div>
         </Reveal>
 
-        {/* Capítulos — o fio condutor do banner dos 3 pilares */}
+        {/* Capítulos — cabeçalho com fio à esquerda + fio até ao fim da linha */}
         {capitulos.map((capitulo, ci) => (
-          <div key={capitulo.pergunta} className={ci === 0 ? "mt-14" : "mt-14 sm:mt-16"}>
+          <div key={capitulo.pergunta} className="mt-12">
             <Reveal>
-              <h3
-                className={`eyebrow flex items-center gap-3 ${COR_CAPITULO[capitulo.cor]}`}
-              >
-                <span aria-hidden className="h-px w-8 shrink-0 bg-current opacity-50" />
+              <h3 className="mb-4 flex items-center gap-3 text-[0.6875rem] font-medium uppercase tracking-[0.22em] text-blush">
+                <span aria-hidden className="h-px w-6 shrink-0 bg-creme/20" />
                 {`Capítulo ${ci + 1} · ${capitulo.pergunta}`}
+                <span aria-hidden className="h-px min-w-6 flex-1 bg-creme/20" />
               </h3>
             </Reveal>
 
-            <ul
-              className={`grid gap-3 sm:gap-4 ${
-                capitulo.cor === "verde" ? "mt-6 lg:grid-cols-2" : "mt-6"
-              }`}
-            >
+            {/* Coluna única — o dia lê-se por ordem temporal. O fio contínuo
+                atrás dos números atravessa os espaços entre cartões (z-1 nos
+                cartões para o fio não cruzar a superfície deles). */}
+            <ul className="relative grid gap-3">
+              <span
+                aria-hidden
+                className="absolute bottom-7 left-[2.25rem] top-7 w-px bg-creme/14 sm:bottom-8 sm:left-10 sm:top-8"
+              />
               {capitulo.momentos.map((momento, mi) => (
                 <Reveal
                   as="li"
                   key={momento.n}
                   delay={Math.min(mi * 0.05, 0.3)}
-                  className="cartao-mapa flex items-stretch gap-4 rounded-2xl px-5 py-4 sm:gap-5 sm:px-6 sm:py-5"
+                  className="cartao-mapa relative z-[1] grid grid-cols-[auto_1fr] gap-3 rounded-2xl px-5 py-4 sm:grid-cols-[auto_1px_1fr] sm:px-6 sm:py-5"
                 >
-                  {/* Número do dia — tabular para alinhar a coluna */}
+                  {/* Número do dia — Recline blush, centrado sobre o fio */}
                   <span
                     aria-hidden
-                    className="mt-0.5 w-8 shrink-0 text-[1.375rem] font-medium leading-none text-rosa-suave tabular-nums sm:w-10 sm:text-[1.625rem]"
+                    className="w-8 shrink-0 text-center text-[1.5rem] leading-none text-blush tabular-nums"
                   >
                     {String(momento.n).padStart(2, "0")}
                   </span>
 
-                  <span aria-hidden className="w-px shrink-0 bg-creme-neon/12" />
+                  <span aria-hidden className="hidden w-px bg-creme/16 sm:block" />
 
                   <div className="min-w-0">
-                    <span className="text-[0.8125rem] font-medium tracking-wide text-creme/70 tabular-nums">
+                    <span className="text-[0.75rem] font-medium tracking-wide text-creme/60 tabular-nums">
                       {momento.hora}
                     </span>
-                    <span className="display mt-1 block text-[1.25rem] leading-snug text-creme-neon sm:text-[1.375rem]">
+                    <span className="display mt-1 block text-[1.0625rem] leading-snug text-creme">
                       {momento.titulo}
                     </span>
-                    <span className="mt-1.5 block text-[0.875rem] leading-relaxed text-creme/60">
+                    <span className="mt-1.5 block text-[0.8125rem] leading-relaxed text-creme/60">
                       {momento.foco}
                     </span>
                   </div>

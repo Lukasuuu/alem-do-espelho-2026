@@ -335,25 +335,11 @@ section[id]:not([id="topo"]) {
 }
 
 /* ───────────────────────────────────────────────
-   FAIXAS VINHO — banner dos 3 pilares (Experience) e Cronograma do Dia
-   (MapaDia). Fundo vinho-profundo com vinheta radial subtil para
-   vinho-halo nos cantos (arte aprovada, set 2026) — os dois blocos partilham
-   o mesmo fundo para lerem como uma só narrativa.
+   FAIXA "O QUE VAIS VIVER" (Experience) — r2: a secção INTEIRA em
+   vinho-profundo, com vinheta central-topo (como no banner) e blush suave
+   nos cantos. Os recortes do banner (rosto/folhagem) assentam sem emenda
+   sobre este fundo.
    ─────────────────────────────────────────────── */
-.faixa-vinho {
-  background:
-    radial-gradient(
-      55rem 36rem at 8% 0%,
-      color-mix(in srgb, var(--color-vinho-halo) 55%, transparent) 0%,
-      transparent 62%
-    ),
-    radial-gradient(
-      55rem 36rem at 92% 100%,
-      color-mix(in srgb, var(--color-vinho-halo) 55%, transparent) 0%,
-      transparent 62%
-    ),
-    var(--color-vinho-profundo);
-}
 .faixa-pilares {
   background:
     radial-gradient(
@@ -374,10 +360,11 @@ section[id]:not([id="topo"]) {
     var(--color-vinho-profundo);
 }
 
-/* Cartão do cronograma: superfície creme 5% sobre o vinho, contorno ténue. */
+/* Cartão do cronograma (r3): superfície creme 6% sobre o verde floresta
+   (musgo do hero/rodapé), contorno ténue creme. */
 .cartao-mapa {
-  background: color-mix(in srgb, var(--color-creme-neon) 5%, var(--color-vinho-profundo));
-  border: 1px solid rgb(255 247 233 / 0.12);
+  background: color-mix(in srgb, var(--color-creme) 6%, var(--color-musgo));
+  border: 1px solid rgb(245 240 232 / 0.16);
 }
 
 /* Campos do formulário */
