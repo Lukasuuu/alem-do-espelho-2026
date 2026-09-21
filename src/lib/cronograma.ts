@@ -62,7 +62,7 @@ export const capitulos: CapituloCronograma[] = [
     momentos: [
       { n: 3, hora: "11h00–11h30", titulo: "Renata Parreira", foco: "Eu sou a minha própria marca" },
       { n: 4, hora: "11h30–11h40", titulo: "Priscila", foco: "O que é a Conexão Woman?" },
-      { n: 5, hora: "11h40–11h55", titulo: "Lígia Santos", foco: "Beleza na Clareza" },
+      { n: 5, hora: "11h40–11h55", titulo: "Lígia Santos", foco: "O espelho que ninguém te ensinou a olhar!" },
       { n: 6, hora: "11h55–12h25", titulo: "Janaína Camilo", foco: "Você nasceu para ser linda e graciosa" },
       { n: 7, hora: "12h25–14h00", titulo: "Almoço", foco: "Pausa e conexões" },
       { n: 8, hora: "14h00–14h15", titulo: "Patrícia Ribeiro", foco: "Momento de Leveza" },
@@ -77,7 +77,7 @@ export const capitulos: CapituloCronograma[] = [
     cor: "rosa",
     momentos: [
       { n: 13, hora: "16h10–16h40", titulo: "Nathy Ribeiro", foco: "Beleza na Espiritualidade" },
-      { n: 14, hora: "16h40–16h50", titulo: "Ana Pinho", foco: "História de Superação" },
+      { n: 14, hora: "16h40–16h50", titulo: "Ana Pinho Bastos", foco: "Quando a dor nos obriga a olhar para o espelho" },
       { n: 15, hora: "16h50–17h00", titulo: "Vitória Gomes", foco: "A Verdadeira Beleza" },
       { n: 16, hora: "17h00–18h00", titulo: "Agradecimentos e Encerramento", foco: "Brindes, revelação da obra com a Vicky e celebração final" },
     ],
