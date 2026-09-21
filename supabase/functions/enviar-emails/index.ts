@@ -252,7 +252,11 @@ Deno.serve(async (req) => {
 
   const secreto = req.headers.get("x-worker-secret");
   if (!(await segredoValido(secreto, workerSecret))) {
-    return json({ ok: false, erro: "nao_autorizado" }, 401);
+    // R16 — corpo distinto do 401 do gateway: `segredo_invalido` significa que
+    // esta função correu mas o WORKER_SECRET a montante não coincide; um 401
+    // do gateway (ex.: {"message":"Missing authorization header"}) significa
+    // Authorization ausente ou verify_jwt a rejeitar — sem chegar aqui.
+    return json({ ok: false, erro: "segredo_invalido" }, 401);
   }
 
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");

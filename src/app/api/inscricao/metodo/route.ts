@@ -148,7 +148,7 @@ export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
     // cron da FASE 5 drena a fila minuto a minuto.
     await enfileirarEmail(supabase, resultado.id, dados.posseToken, "instrucoes", DADOS_FINANCEIROS);
     await enfileirarEmail(supabase, resultado.id, dados.posseToken, "org_nova_inscricao");
-    acordarWorkerServer();
+    void acordarWorkerServer(); // fire-and-forget: só a sonda /api/emails/worker espera (R16)
 
     return NextResponse.json({
       ok: true,

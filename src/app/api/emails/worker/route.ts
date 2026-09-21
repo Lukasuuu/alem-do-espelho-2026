@@ -14,15 +14,18 @@ export const dynamic = "force-dynamic";
  * índice único), pelo que acordos repetidos são inofensivos; o cron da
  * FASE 5 é a garantia de drenagem se este caminho falhar.
  *
- * Resposta: 204 sempre (o browser não deve aprender nada da fila).
+ * Resposta (R16): 200 com `{ ok: true, upstream: <status da Edge Function ou
+ * null> }`. Esta rota existe para ser sondada — o único dado devolvido é o
+ * número do estado a montante (nunca o segredo, a chave ou a fila). Só AQUI
+ * se espera o disparo; nas rotas de negócio ele continua fire-and-forget.
  */
 export async function POST(request: Request): Promise<NextResponse> {
   const ip = obterIp(request.headers);
   const limite = rateLimit(`emails-worker:${ip}`);
   if (!limite.permitido) return new NextResponse(null, { status: 204 });
 
-  acordarWorkerServer();
-  return new NextResponse(null, { status: 204 });
+  const r = await acordarWorkerServer();
+  return NextResponse.json({ ok: true, upstream: r?.status ?? null }, { status: 200 });
 }
 
 export async function GET(): Promise<NextResponse> {

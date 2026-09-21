@@ -197,7 +197,7 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
   // confirmamos por email". A base calcula nome/referência/valor/método;
   // falha NUNCA falha o upload (o cron drena).
   await enfileirarEmail(supabase, ids.data.inscricaoId, ids.data.posseToken, "comprovativo_recebido");
-  acordarWorkerServer();
+  void acordarWorkerServer(); // fire-and-forget: só a sonda /api/emails/worker espera (R16)
 
   return NextResponse.json(
     {

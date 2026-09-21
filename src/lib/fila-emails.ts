@@ -60,17 +60,40 @@ export async function enfileirarEmail(
 /**
  * Server-side: acorda o worker da Edge Function para drenar já (caminho
  * rápido). O WORKER_SECRET vive nas env vars do servidor — nunca no bundle.
- * Fire-and-forget: se esta chamada não partir, o cron apanha em ≤1 min.
+ *
+ * R16 — devolve o Response a montante (ou null se a chamada nem saiu: falta
+ * env var ou houve erro de rede) para a rota sonda /api/emails/worker poder
+ * reportar o estado; nas rotas de negócio o chamador ignora o resultado
+ * (fire-and-forget — o cron da FASE 5 é a garantia). Nunca lança.
+ *
+ * R16 — envia TAMBÉM `Authorization: Bearer <anon>`: o gateway das Edge
+ * Functions verifica JWT por omissão (verify_jwt) e rejeita com 401 ANTES de
+ * o código da função correr — o x-worker-secret nem chegava a ser lido, e o
+ * cron bateria no mesmo 401 de minuto a minuto. A chave anónima é pública e
+ * não autentica nada aqui (mesma resolução de chave do supabase.ts); quem
+ * autoriza de verdade é o x-worker-secret — se ele não bater certo, a função
+ * devolve 401 com corpo `segredo_invalido` (distingue-se do 401 do gateway).
+ * Funciona quer o verify_jwt fique ligado ou desligado no painel.
  */
-export function acordarWorkerServer(): void {
+export async function acordarWorkerServer(): Promise<Response | null> {
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const segredo = process.env.WORKER_SECRET;
-  if (!base || !segredo) return;
-  void fetch(`${base.replace(/\/$/, "")}/functions/v1/enviar-emails`, {
-    method: "POST",
-    headers: { "x-worker-secret": segredo, "Content-Type": "application/json" },
-    body: "{}",
-  }).catch(() => {
-    /* o cron garante a drenagem */
-  });
+  const anon =
+    process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!base || !segredo) return null;
+  try {
+    return await fetch(`${base.replace(/\/$/, "")}/functions/v1/enviar-emails`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        // Passa o gateway do Supabase (verify_jwt). A chave anónima é pública e
+        // não autentica nada aqui — quem autoriza é o x-worker-secret abaixo.
+        ...(anon ? { Authorization: `Bearer ${anon}` } : {}),
+        "x-worker-secret": segredo,
+      },
+      body: JSON.stringify({ modo: "drenar" }),
+    });
+  } catch {
+    return null; // o cron garante a drenagem — nunca rebentar o pedido
+  }
 }

@@ -61,7 +61,7 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
 
   // Enfileiramento (nunca lança; a base valida a posse e decide destinatário).
   await enfileirarEmail(getSupabase(), dados.inscricaoId, dados.posseToken, "comprovativo_recebido");
-  acordarWorkerServer();
+  void acordarWorkerServer(); // fire-and-forget: só a sonda /api/emails/worker espera (R16)
 
   return NextResponse.json({ ok: true });
 }
