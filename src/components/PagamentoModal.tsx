@@ -359,13 +359,35 @@ export default function PagamentoModal({
   /**
    * "Já fiz o pagamento" (MB Way, transferência e passo de recuperação): leva
    * ao comprovativo. O PATCH /api/inscricao/metodo já respondeu OK antes de
-   * este botão ser clicável (metodo !== null ⟺ gravado). O email "recebemos a
-   * tua inscrição" NÃO dispara aqui — dispara no momento do PARABÉNS, depois
-   * de o upload do comprovativo responder OK (directiva §3). No passo do link
-   * SumUp o botão NÃO passa por aqui: é uma declaração direta ao sucesso.
+   * este botão ser clicável (metodo !== null ⟺ gravado). Os emails vivem na
+   * fila da base (R15): o de instruções já foi enfileirado server-side pelo
+   * PATCH; o de "comprovativo recebido" é enfileirado pela rota de upload —
+   * NENHUM dispara daqui. No passo do link SumUp o botão NÃO passa por aqui:
+   * é uma declaração direta ao sucesso.
    */
   function declararPagamento() {
     setPasso("comprovativo");
+  }
+
+  /**
+   * "Já fiz o pagamento" no passo do LINK SUMUP (R15, adenda 2 §1.1): pede ao
+   * SERVIDOR que enfileire o email "recebemos a tua declaração" (rota
+   * /api/inscricao/declarar-pagamento — id + posse_token; o browser nunca
+   * decide destinatários nem envia emails) e depois mostra o Parabéns.
+   * Falha de rede → Parabéns na mesma: a confirmação real chega quando o
+   * pagamento for confirmado no painel SumUp (trigger da base).
+   */
+  async function declararSumup() {
+    try {
+      await fetch("/api/inscricao/declarar-pagamento", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inscricaoId, posseToken }),
+      });
+    } catch (erro) {
+      console.error("[pagamento] falha ao declarar pagamento por link:", erro);
+    }
+    onComprovativoSucesso();
   }
 
   /** Upload OK → o pai fecha esta modal e mostra o PARABÉNS (inscrição). */
@@ -693,12 +715,17 @@ export default function PagamentoModal({
 
                     {/* Decisão E (06/09): para o link SumUp o comprovativo é
                         redundante — a SumUp tem registo próprio da transação.
-                        A declaração vai DIRETO ao sucesso (Parabéns + email),
-                        sem upload; a reconciliação da organização é o painel
-                        SumUp. Guard anti-duplo-email vive no pai (EventoPage). */}
+                        A declaração vai DIRETO ao sucesso (Parabéns), sem
+                        upload; a reconciliação da organização é o painel SumUp.
+                        R15, adenda 2 §1.1: antes do Parabéns, POST server-side
+                        a /api/inscricao/declarar-pagamento enfileira o email
+                        "recebemos a tua declaração" (id + posse_token; o browser
+                        não decide nada). Falha → Parabéns na mesma; a
+                        confirmação real chega quando o pagamento for
+                        confirmado no painel (trigger 0012). */}
                     <button
                       type="button"
-                      onClick={onComprovativoSucesso}
+                      onClick={declararSumup}
                       className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full border px-7 py-4 text-[0.9375rem] font-medium transition-colors duration-300 ${
                         claro
                           ? "border-vinho/25 text-vinho hover:border-vinho/45"

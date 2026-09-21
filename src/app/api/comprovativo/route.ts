@@ -4,6 +4,7 @@ import { z } from "zod";
 import { getSupabase } from "@/lib/supabase";
 import { obterIp, rateLimit } from "@/lib/rate-limit";
 import { MENSAGENS, posseTokenSchema, type TipoErro } from "@/lib/validation";
+import { acordarWorkerServer, enfileirarEmail } from "@/lib/fila-emails";
 import {
   BUCKET_COMPROVATIVOS,
   FORMATOS_COMPROVATIVO,
@@ -189,6 +190,14 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
   }
 
   const resultado = registo as { comprovativo_id: string; pagamento_estado: string };
+
+  // R15 F4 — comprovativo_recebido (adenda §1): o email de "confirmado" era
+  // prematuro aqui — a confirmação real é o estado confirmed (trigger 0012).
+  // Este email é o honesto: "recebemos o teu comprovativo, vamos validar e
+  // confirmamos por email". A base calcula nome/referência/valor/método;
+  // falha NUNCA falha o upload (o cron drena).
+  await enfileirarEmail(supabase, ids.data.inscricaoId, ids.data.posseToken, "comprovativo_recebido");
+  acordarWorkerServer();
 
   return NextResponse.json(
     {

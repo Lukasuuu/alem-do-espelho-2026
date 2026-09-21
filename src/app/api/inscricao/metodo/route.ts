@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 import { getSupabase } from "@/lib/supabase";
 import { obterIp, rateLimit } from "@/lib/rate-limit";
 import { MENSAGENS, metodoInscricaoSchema, type MetodoPagamento, type TipoErro } from "@/lib/validation";
+import { DADOS_FINANCEIROS, acordarWorkerServer, enfileirarEmail } from "@/lib/fila-emails";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -138,6 +139,16 @@ export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
     }
 
     const pagamentoData = pagamento as { status: string; pagamento_id: string; estado: string };
+
+    // R15 F4 — emails server-side (o browser nunca envia emails nem decide
+    // destinatários): instruções de pagamento à pessoa + notificação mínima à
+    // organização (sem dados pessoais, RGPD 06/09). A base lê o email de
+    // inscricoes.email e o valor da linha REAL de pagamentos; aqui só passam
+    // os dados financeiros de pagamento.ts. Falha NUNCA falha o PATCH — o
+    // cron da FASE 5 drena a fila minuto a minuto.
+    await enfileirarEmail(supabase, resultado.id, dados.posseToken, "instrucoes", DADOS_FINANCEIROS);
+    await enfileirarEmail(supabase, resultado.id, dados.posseToken, "org_nova_inscricao");
+    acordarWorkerServer();
 
     return NextResponse.json({
       ok: true,
