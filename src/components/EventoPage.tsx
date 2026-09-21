@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
-import Cronograma from "@/components/Cronograma";
+import BannerOficial from "@/components/BannerOficial";
 import BotaoWhatsApp from "@/components/BotaoWhatsApp";
 import Experience from "@/components/Experience";
 import Anfitria from "@/components/Anfitria";
@@ -196,7 +196,9 @@ export default function EventoPage({ faseInscricaoAtiva }: Props) {
       <Header abrirModal={abrirFluxo} faseInscricaoAtiva={faseInscricaoAtiva} />
       <main>
         <Hero abrirModal={abrirFluxo} />
-        <Cronograma />
+        {/* R6 — banner oficial + barra de horário no verde (herda id="o-evento"
+            da faixa de chips que substituiu; destino do link EVENTO da navbar). */}
+        <BannerOficial />
         <Experience />
         <Anfitria />
         <Gallery />
