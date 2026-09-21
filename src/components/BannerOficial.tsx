@@ -13,8 +13,11 @@ import Reveal from "./Reveal";
  * nem deformada: width/height reais + h-auto w-full, sem fill e sem
  * object-cover; o rounded-[18px] vive no contentor com overflow-hidden.
  *
- * A data e o local vivem DENTRO da arte; o horário passa para a barra nova
- * (Clock + 09h30 – 18h00 + "Um dia para se conectar, aprender e transformar").
+ * A data e o local vivem DENTRO da arte; o horário é o rodapé do MESMO cartão
+ * (r9, maquete v3): sem gap nem borda própria — separado da imagem por uma
+ * linha fina (border-t); o rounded-[18px] e a sombra envolvem imagem + barra
+ * como uma peça só. A arte v2 recomposta afasta a moldura interior do cabelo
+ * da Vitória Gomes (nome novo -v2 evita cache do optimizer/CDN).
  * Substitui a faixa dos três chips (G.1, componente Cronograma) — e herda o
  * id="o-evento" dela, para o link EVENTO da navbar e a navegação do rodapé
  * continuarem a ter destino. Sem entrada nova na navbar: é peça visual, não
@@ -38,7 +41,7 @@ export default function BannerOficial() {
           <div className="overflow-hidden rounded-[18px] border border-blush/20 shadow-[0_26px_64px_-28px_rgba(0,0,0,0.60)]">
             {/* desktop + tablet */}
             <Image
-              src="/palestrantes/banner-oficial-wide.webp"
+              src="/palestrantes/banner-oficial-wide-v2.webp"
               alt="Além do Espelho 2026 — 2ª edição · 17 de outubro de 2026 · INNSIDE by Meliá, Braga"
               width={2400}
               height={700}
@@ -57,18 +60,19 @@ export default function BannerOficial() {
               sizes="(max-width: 767px) 92vw, 1px"
               className="block h-auto w-full md:hidden"
             />
-          </div>
 
-          {/* Barra de horário — ainda na faixa verde */}
-          <div className="mt-6 flex flex-col items-center gap-3 rounded-2xl border border-blush/20 bg-creme/5 px-6 py-5 text-center md:mt-7 md:flex-row md:gap-6 md:px-7 md:text-left">
-            <span className="grid h-[42px] w-[42px] shrink-0 place-items-center rounded-full border border-blush/20 bg-blush/14">
-              <Clock className="h-[19px] w-[19px] text-blush" strokeWidth={1.5} aria-hidden />
-            </span>
-            <span className="whitespace-nowrap text-[21px] text-creme">09h30 – 18h00</span>
-            <span aria-hidden className="hidden h-[30px] w-px bg-blush/20 md:block" />
-            <span className="text-[12.5px] uppercase tracking-[0.2em] text-creme/70">
-              Um dia para se conectar, aprender e transformar
-            </span>
+            {/* Barra de horário — rodapé do mesmo cartão (r9, maquete v3):
+                sem gap, sem borda própria, separada da imagem por border-t. */}
+            <div className="flex flex-col items-center gap-3 border-t border-blush/20 bg-creme/5 px-6 py-5 text-center md:flex-row md:gap-[22px] md:px-7 md:py-[17px] md:text-left">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-blush/20 bg-blush/14">
+                <Clock className="h-[17px] w-[17px] text-blush" strokeWidth={1.6} aria-hidden />
+              </span>
+              <span className="whitespace-nowrap text-[20px] text-creme">09h30 – 18h00</span>
+              <span aria-hidden className="hidden h-7 w-px bg-blush/20 md:block" />
+              <span className="text-[12.5px] uppercase tracking-[0.2em] text-creme/70">
+                Um dia para se conectar, aprender e transformar
+              </span>
+            </div>
           </div>
         </Reveal>
       </div>
