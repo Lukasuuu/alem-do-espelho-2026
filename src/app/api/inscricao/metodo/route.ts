@@ -139,6 +139,13 @@ export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
 
     const pagamentoData = pagamento as { status: string; pagamento_id: string; estado: string };
 
+    // R19 — este PATCH deixou de enfileirar emails: o Modelo 1 (instruções,
+    // já com os 3 métodos) e o Modelo 3 (aviso à org) disparam no POST
+    // /api/inscricao (Adenda 1, fluxo 04.1). A escolha do método continua a
+    // criar a row de pagamento para a reconciliação manual — só deixa de
+    // duplicar emails quando a pessoa reescolhe o método (a idempotência
+    // (inscricao_id, tipo) já protegia, mas o gatilho certo é o formulário).
+
     return NextResponse.json({
       ok: true,
       inscricaoId: resultado.id,

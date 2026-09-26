@@ -118,6 +118,23 @@ export function linkWhatsAppPagamento(metodo: MetodoPagamento): string {
 }
 
 /**
+ * Mensagem pré-preenchida do comprovativo por WhatsApp (R19, Adenda 1 §3 —
+ * Correcção B). CANÓNICA: a Edge Function replica este texto como fallback
+ * (supabase/functions/_shared/templates.ts → waUrlFallback) — alterar EM PAR.
+ * O texto diz o passo manual em voz alta: nenhum link anexa ficheiros — a
+ * pessoa toca no ícone de anexo e escolhe o ficheiro. Nunca afirmar que o
+ * comprovativo «foi enviado» ou «será anexado automaticamente».
+ */
+export function mensagemComprovativoWhatsApp(nome: string, referencia: string): string {
+  return `Olá, Vitória! Sou ${nome || "participante"} e a minha referência é ${referencia}.\nVou anexar o comprovativo do pagamento da minha inscrição no Além do Espelho 2026.`;
+}
+
+/** Link wa.me do comprovativo — botão «Anexar comprovativo» (email e site). */
+export function linkWhatsAppComprovativo(nome: string, referencia: string): string {
+  return linkWhatsApp(SALON_WHATSAPP, mensagemComprovativoWhatsApp(nome, referencia));
+}
+
+/**
  * Mensagem de recuperação do pagamento por link (Bloco C): a pagante não
  * conseguiu concluir o checkout SumUp. Leva o primeiro nome e a referência
  * (8 primeiros caracteres do id da inscrição) para a organização localizar

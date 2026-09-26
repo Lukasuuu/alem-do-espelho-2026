@@ -4,6 +4,11 @@ import { getSupabase } from "@/lib/supabase";
 import { hashIp, obterIp, rateLimit } from "@/lib/rate-limit";
 import { MENSAGENS, inscricaoSchema, validarTelefone, type TipoErro } from "@/lib/validation";
 import { inscricaoAtiva } from "@/lib/cutover";
+// R19 — Modelo 1 (instruções com os 3 métodos) + Modelo 3 (aviso à org)
+// disparam no formulário (Adenda 1, fluxo 04.1: «Enviar cada tipo uma única
+// vez após gravar a inscrição»). O PATCH /metodo deixou de enfileirar.
+import { DADOS_FINANCEIROS, acordarWorkerServer, enfileirarEmail } from "@/lib/fila-emails";
+import { linkWhatsAppComprovativo } from "@/lib/pagamento";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -175,6 +180,21 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
       console.error("[inscricao] posse_token ausente na resposta da RPC");
       return NextResponse.json({ ok: false, mensagem: MENSAGENS.servidor, tipo: "servidor" }, { status: 502 });
     }
+
+    // R19 — emails server-side (o browser nunca envia emails nem decide
+    // destinatários): instruções de pagamento à pessoa + notificação mínima à
+    // organização (RGPD 06/09 — o ramo `org` da RPC ignora p_dados). O email
+    // de instruções leva wa_url (link wa.me do comprovativo, texto canónico
+    // de pagamento.ts). Idempotência (inscricao_id, tipo) da 0012: re-submeter
+    // o formulário (ja_inscrita) é no-op na fila. enfileirarEmail NUNCA lança
+    // — falha vai ao console e o cron drena minuto a minuto (R15).
+    const ref8 = resultado.id.slice(0, 8);
+    await enfileirarEmail(supabase, resultado.id, resultado.posse_token, "instrucoes", {
+      ...DADOS_FINANCEIROS,
+      wa_url: linkWhatsAppComprovativo(dados.nome, ref8),
+    });
+    await enfileirarEmail(supabase, resultado.id, resultado.posse_token, "org_nova_inscricao");
+    void acordarWorkerServer(); // fire-and-forget: só a sonda /api/emails/worker espera (R16)
 
     return NextResponse.json(
       { ok: true, status: resultado.status, id: resultado.id, posseToken: resultado.posse_token },

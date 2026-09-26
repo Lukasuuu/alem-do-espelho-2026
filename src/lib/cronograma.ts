@@ -61,7 +61,7 @@ export const capitulos: CapituloCronograma[] = [
     cor: "verde",
     momentos: [
       { n: 3, hora: "11h00–11h30", titulo: "Renata Parreira", foco: "Eu sou a minha própria marca" },
-      { n: 4, hora: "11h30–11h40", titulo: "Priscila", foco: "O que é a Conexão Woman?" },
+      { n: 4, hora: "11h30–11h40", titulo: "Priscila de Jesus", foco: "O que é a Conexão Woman?" },
       { n: 5, hora: "11h40–11h55", titulo: "Lígia Santos", foco: "O espelho que ninguém te ensinou a olhar!" },
       { n: 6, hora: "11h55–12h25", titulo: "Janaína Camilo", foco: "Você nasceu para ser linda e graciosa" },
       { n: 7, hora: "12h25–14h00", titulo: "Almoço", foco: "Pausa e conexões" },
