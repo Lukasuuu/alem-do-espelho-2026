@@ -22,7 +22,7 @@ import {
   SUMUP_URL,
   VALOR_INSCRICAO,
   VALOR_INSCRICAO_TEXT,
-  linkWhatsAppPagamento,
+  linkWhatsAppComprovativo,
   mensagemRecuperacaoPagamento,
 } from "@/lib/pagamento";
 import { SALON_WHATSAPP } from "@/lib/campanha";
@@ -829,7 +829,12 @@ export default function PagamentoModal({
                     claro={claro}
                     valorText={VALOR_INSCRICAO_TEXT}
                     valorCopiar={String(VALOR_INSCRICAO)}
-                    whatsappHref={linkWhatsAppPagamento("mbway")}
+                    // R19 (Adenda 1 §3): o botão fala da acção — anexar o
+                    // ficheiro — e abre a conversa com nome + referência
+                    // já escritos. Não anexa sozinho; o upload do site
+                    // continua em paralelo (decisão 1.4).
+                    whatsappHref={linkWhatsAppComprovativo(nome, inscricaoId.slice(0, 8))}
+                    rotuloWhatsapp="Anexar comprovativo"
                     aoDeclararPagamento={declararPagamento}
                     textoBotaoDeclarar="Já fiz o pagamento"
                     textoPassoFinal="Depois de pagar, envia o comprovativo para garantirmos o teu lugar."
@@ -842,7 +847,8 @@ export default function PagamentoModal({
                     claro={claro}
                     valorText={VALOR_INSCRICAO_TEXT}
                     valorCopiar={String(VALOR_INSCRICAO)}
-                    whatsappHref={linkWhatsAppPagamento("transferencia")}
+                    whatsappHref={linkWhatsAppComprovativo(nome, inscricaoId.slice(0, 8))}
+                    rotuloWhatsapp="Anexar comprovativo"
                     aoDeclararPagamento={declararPagamento}
                     textoBotaoDeclarar="Já fiz a transferência"
                     referencia={`${primeiroNome} · Além do Espelho 2026`}

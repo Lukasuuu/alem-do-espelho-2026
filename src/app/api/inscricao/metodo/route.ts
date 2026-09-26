@@ -3,7 +3,6 @@ import { ZodError } from "zod";
 import { getSupabase } from "@/lib/supabase";
 import { obterIp, rateLimit } from "@/lib/rate-limit";
 import { MENSAGENS, metodoInscricaoSchema, type MetodoPagamento, type TipoErro } from "@/lib/validation";
-import { DADOS_FINANCEIROS, acordarWorkerServer, enfileirarEmail } from "@/lib/fila-emails";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -140,15 +139,12 @@ export async function PATCH(request: Request): Promise<NextResponse<Resposta>> {
 
     const pagamentoData = pagamento as { status: string; pagamento_id: string; estado: string };
 
-    // R15 F4 — emails server-side (o browser nunca envia emails nem decide
-    // destinatários): instruções de pagamento à pessoa + notificação mínima à
-    // organização (sem dados pessoais, RGPD 06/09). A base lê o email de
-    // inscricoes.email e o valor da linha REAL de pagamentos; aqui só passam
-    // os dados financeiros de pagamento.ts. Falha NUNCA falha o PATCH — o
-    // cron da FASE 5 drena a fila minuto a minuto.
-    await enfileirarEmail(supabase, resultado.id, dados.posseToken, "instrucoes", DADOS_FINANCEIROS);
-    await enfileirarEmail(supabase, resultado.id, dados.posseToken, "org_nova_inscricao");
-    void acordarWorkerServer(); // fire-and-forget: só a sonda /api/emails/worker espera (R16)
+    // R19 — este PATCH deixou de enfileirar emails: o Modelo 1 (instruções,
+    // já com os 3 métodos) e o Modelo 3 (aviso à org) disparam no POST
+    // /api/inscricao (Adenda 1, fluxo 04.1). A escolha do método continua a
+    // criar a row de pagamento para a reconciliação manual — só deixa de
+    // duplicar emails quando a pessoa reescolhe o método (a idempotência
+    // (inscricao_id, tipo) já protegia, mas o gatilho certo é o formulário).
 
     return NextResponse.json({
       ok: true,

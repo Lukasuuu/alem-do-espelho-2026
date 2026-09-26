@@ -4,6 +4,8 @@ out
 dev-server.log
 .env
 .env*.local
+# Pulls de env vars da Vercel (contêm WORKER_SECRET real — nunca no histórico)
+.env.vercel*
 .vercel
 *.tsbuildinfo
 next-env.d.ts

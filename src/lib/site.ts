@@ -4,6 +4,10 @@
  */
 
 import { FIM_CAMPANHA_ISO, SALON_WHATSAPP } from "@/lib/campanha";
+// R19 — fonte única do horário: o MESMO par ISO alimenta os emails (Modelo 2)
+// via supabase/functions/_shared/config.ts. Ficheiro puro (sem APIs Deno) — o
+// tsconfig exclui supabase/functions, mas este import puxa-o para o programa.
+import { EVENTO_ISO } from "../../supabase/functions/_shared/config";
 
 /**
  * Corte histórico da landing (release manager): 3 de agosto de 2026.
@@ -24,11 +28,13 @@ export const site = {
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://essenceofbeautysalon.com",
   data: {
     // 17 de outubro de 2026, hora local de Braga (WEST, UTC+1).
-    // Início 09:30 confirmado pelo Lucas (09/09/2026) — o fim continua às 18:00.
-    iso: "2026-10-17T09:30:00+01:00",
-    // Hora de fim (09:30–18:00) — confirmada por Lucas a 11/08;
-    // usada no endDate do JSON-LD (o Google descarta eventos sem data de fim).
-    fim: "2026-10-17T18:00:00+01:00",
+    // FONTE ÚNICA (R19): supabase/functions/_shared/config.ts (EVENTO_ISO) —
+    // horário 09h30–18h00 confirmado pelo Lucas (09/09/2026; Adenda 1 §1.1
+    // de 25/09: «Não uses 09h00»). O fim continua às 18:00 (11/08).
+    iso: EVENTO_ISO.inicio,
+    // Fim (09:30–18:00) — usado no endDate do JSON-LD (o Google descarta
+    // eventos sem data de fim).
+    fim: EVENTO_ISO.fim,
     extenso: "17 de outubro de 2026",
     curta: "17 OUT 2026",
     dia: "17",

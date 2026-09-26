@@ -29,6 +29,12 @@ export type EcranMetodoProps = {
   valorCopiar: string;
   /** Link wa.me pré-preenchido do fluxo (inscrição vs patrocínio). */
   whatsappHref: string;
+  /**
+   * R19 (Adenda 1 §3) — rótulo do botão WhatsApp. A inscrição passa
+   * «Anexar comprovativo» (o botão fala da acção, não do canal); o patrocínio
+   * não passa e mantém «Combinar confirmação por WhatsApp».
+   */
+  rotuloWhatsapp?: string;
   /** Ação do botão declarar (comprovativo na inscrição; Agradecimento no patrocínio). */
   aoDeclararPagamento: () => void;
   /** Etiqueta do botão declarar ("Já fiz o pagamento" / "Já fiz a transferência"). */
@@ -64,6 +70,7 @@ export function EcranMbWay({
   valorText,
   valorCopiar,
   whatsappHref,
+  rotuloWhatsapp,
   aoDeclararPagamento,
   textoBotaoDeclarar,
   /** Copy do 3.º passo: inscrição fala do lugar, patrocínio da confirmação. */
@@ -127,7 +134,7 @@ export function EcranMbWay({
         className="mt-7 inline-flex w-full items-center justify-center gap-3 rounded-full bg-whatsapp px-7 py-4 text-[0.9375rem] font-medium text-white transition-all duration-300 hover:brightness-105"
       >
         <WhatsAppIcon className="h-4.5 w-4.5" />
-        Combinar confirmação por WhatsApp
+        {rotuloWhatsapp ?? "Combinar confirmação por WhatsApp"}
       </a>
 
       {/* r5 — patrocínio (ancorarBotaoFundo): o botão fica STICKY no fundo
@@ -178,6 +185,7 @@ export function EcranTransferencia({
   valorText,
   valorCopiar,
   whatsappHref,
+  rotuloWhatsapp,
   aoDeclararPagamento,
   textoBotaoDeclarar,
   referencia,
@@ -251,7 +259,7 @@ export function EcranTransferencia({
         className="mt-7 inline-flex w-full items-center justify-center gap-3 rounded-full bg-whatsapp px-7 py-4 text-[0.9375rem] font-medium text-white transition-all duration-300 hover:brightness-105"
       >
         <WhatsAppIcon className="h-4.5 w-4.5" />
-        Combinar confirmação por WhatsApp
+        {rotuloWhatsapp ?? "Combinar confirmação por WhatsApp"}
       </a>
 
       {/* r5 — mesma mecânica do MB Way (sticky + wrapper opaco no patrocínio;
