@@ -63,3 +63,13 @@ public/patrocinadores/logo-ligia-mark.webp
 
 # Backup local de assets (nunca no repo)
 _backup-logos/
+
+# Artefactos de desenvolvimento movidos da raiz (screenshots, logs, scripts QA) — nunca vão para o repo
+_artefactos/
+check-*.png
+prod-*.png
+*.patch
+*.jsonl
+
+# Estado local do Supabase CLI (contém ref do projeto, não é segredo, mas é local)
+supabase/.temp/
