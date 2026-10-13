@@ -411,7 +411,7 @@ export default function PagamentoModal({
       {aberto && (
         <motion.div
           ref={overlayRef}
-          className="modal-overlay modal-overlay-top"
+          className="modal-overlay modal-overlay-top modal-pagamento-overlay"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
