@@ -97,12 +97,13 @@ Para ver a vaquinha no preview antes de 17/10: `NEXT_PUBLIC_VAQUINHA_OVERRIDE=ab
 | **D2** | Frase de transparência: «Os valores são recebidos por Vitória Gomes, organizadora do Além do Espelho, e entregues na totalidade à ONG Atos.» | `VAQUINHA_TRANSPARENCIA` em `src/lib/vaquinha.ts` |
 | **D4** | MB Way: o mesmo número da inscrição (importado de `lib/pagamento.ts` — 9 dígitos a copiar, não o número formatado). Transferência: conta própria da vaquinha, beneficiário «Vitória Gomes», IBAN `PT50…1386` (mostrado com `formatarIban`, copiado sem espaços, com o tripwire `validarIban`). Sem BIC no ecrã: dentro da zona SEPA basta o IBAN. | `VAQUINHA_PAGAMENTO` em `src/lib/vaquinha.ts` |
 
+| **D6** | A vaquinha fica aberta **até 18 de novembro** (antes da viagem a Angola): `fim = 2026-11-19T00:00:00+00:00`, ou seja, aberta durante todo o dia 18/11 em Lisboa. O prazo é **lido do `fim`** e mostrado no cartão («Até 18 de novembro», `fim − 1 ms` em Europe/Lisbon) — se a data mudar por SQL, o cartão acompanha sem deploy. Passou de um dia para um mês, e daí o estado «encerrada» no cartão. | `vaquinha_config.fim` |
+
 **Ainda em aberto — com a Vitória:**
 
 | | Bloqueia |
 |---|---|
-| **D5** — quem confirma as doações no dia (voluntário) | V5 (acesso à página) |
-| **D6** — hora de fecho da vaquinha, ou aberta | nada: fica `null` e muda-se por SQL, sem deploy |
+| **D5** — quem confirma as doações **até 18/11** (já não é só no dia do evento) | V5 (acesso à página) |
 
-Enquanto o D5 e o D6 não fecharem, o checklist de pré-go-live acusa-os. Nunca mostrar placeholders em produção.
+Enquanto o D5 não fechar, o checklist de pré-go-live acusa-o. Nunca mostrar placeholders em produção.
 

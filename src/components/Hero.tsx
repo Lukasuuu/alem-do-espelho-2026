@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { site } from "@/lib/site";
-import type { TotaisVaquinha } from "@/lib/vaquinha";
+import type { TotaisComEstado } from "@/lib/vaquinha";
 import CartaoVaquinha from "./CartaoVaquinha";
 import Countdown from "./Countdown";
 
@@ -14,7 +14,7 @@ type Props = {
   /** Decidido no servidor: o evento já começou (ou o override de teste forçou). */
   vaquinhaAberta: boolean;
   /** Totais do primeiro render do cartão, lidos no servidor. */
-  totaisVaquinha: TotaisVaquinha | null;
+  totaisVaquinha: TotaisComEstado | null;
   /** Abre a folha da vaquinha com o valor escolhido no cartão (V4). */
   onContribuir: (valorCents: number, elapsedMs: number) => void;
 };

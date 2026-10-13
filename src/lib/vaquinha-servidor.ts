@@ -12,9 +12,9 @@
  * página do evento NUNCA cai por causa da vaquinha.
  */
 import { getSupabase } from "@/lib/supabase";
-import type { TotaisVaquinha } from "@/lib/vaquinha";
+import { estaEncerrada, type TotaisComEstado, type TotaisVaquinha } from "@/lib/vaquinha";
 
-export async function lerTotaisVaquinha(): Promise<TotaisVaquinha | null> {
+export async function lerTotaisVaquinha(): Promise<TotaisComEstado | null> {
   try {
     const { data, error } = await getSupabase()
       .rpc("vaquinha_totais")
@@ -27,7 +27,9 @@ export async function lerTotaisVaquinha(): Promise<TotaisVaquinha | null> {
       console.error("[vaquinha] vaquinha_totais falhou:", error.message);
       return null;
     }
-    return data as TotaisVaquinha;
+    const totais = data as TotaisVaquinha;
+    // O estado de fecho decide-se AQUI, com o relógio do servidor.
+    return { ...totais, encerrada: estaEncerrada(totais, new Date()) };
   } catch (erro) {
     console.error("[vaquinha] leitura dos totais indisponível:", erro);
     return null;

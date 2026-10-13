@@ -10,12 +10,13 @@ import {
   VALOR_MAX_CENTS,
   VALOR_MIN_CENTS,
   formatarEuros,
-  type TotaisVaquinha,
+  prazoDoFim,
+  type TotaisComEstado,
 } from "@/lib/vaquinha";
 
 type Props = {
   /** Totais do primeiro render, lidos no servidor (page.tsx). null = sem base. */
-  totaisIniciais: TotaisVaquinha | null;
+  totaisIniciais: TotaisComEstado | null;
   /**
    * Abre a folha de doação. O `elapsedMs` é o tempo desde que ESTE cartão montou
    * (ou seja, desde que a página carregou) e vai no corpo do /iniciar para a
@@ -46,7 +47,7 @@ const INTERVALO_POLL_MS = 15_000;
  * nesse caso devolve a_confirmar_cents = 0.
  */
 export default function CartaoVaquinha({ totaisIniciais, onContribuir }: Props) {
-  const [totais, setTotais] = useState<TotaisVaquinha | null>(totaisIniciais);
+  const [totais, setTotais] = useState<TotaisComEstado | null>(totaisIniciais);
   const [valorCents, setValorCents] = useState<number>(1000); // 10 € como na prévia
   const [outro, setOutro] = useState(false);
   const [outroTxt, setOutroTxt] = useState("");
@@ -66,7 +67,7 @@ export default function CartaoVaquinha({ totaisIniciais, onContribuir }: Props) 
       try {
         const r = await fetch("/api/vaquinha/totais", { cache: "no-store" });
         if (!r.ok) return;
-        const dados = (await r.json()) as { ok: boolean; totais?: TotaisVaquinha };
+        const dados = (await r.json()) as { ok: boolean; totais?: TotaisComEstado };
         if (vivo.current && dados.ok && dados.totais) setTotais(dados.totais);
       } catch {
         /* rede em baixo: fica o último valor conhecido; a próxima volta tenta */
@@ -99,10 +100,12 @@ export default function CartaoVaquinha({ totaisIniciais, onContribuir }: Props) 
   }, []);
 
   // ── Kill switch (vaquinha_config.ativa): linha simples, nunca bloco vazio ──
+  // Antes dizia «O Além do Espelho está a acontecer hoje», que só era verdade em
+  // 17/10 — a vaquinha passou a durar até 18/11, portanto usa a mensagem do mapa.
   if (totais && totais.ativa === false) {
     return (
       <p id="vaquinha" className="text-[0.9375rem] font-medium leading-relaxed text-creme">
-        O Além do Espelho está a acontecer hoje.
+        {MENSAGENS_VAQUINHA.inativa}
       </p>
     );
   }
@@ -117,6 +120,10 @@ export default function CartaoVaquinha({ totaisIniciais, onContribuir }: Props) 
   const pctConfirmadoInt = Math.round(pctConfirmado * 100);
 
   const carregando = totais === null;
+  /** Decidido no servidor (fim != null && agora >= fim), nunca com o relógio do
+      browser. O polling traz o valor novo, portanto a troca acontece sozinha. */
+  const encerrada = totais?.encerrada === true;
+  const prazo = prazoDoFim(totais?.fim ?? null);
   /** Valores conhecidos (chips, CTA) — formatados sempre. */
   const euros = (c: number) => formatarEuros(c);
   /**
@@ -230,11 +237,26 @@ export default function CartaoVaquinha({ totaisIniciais, onContribuir }: Props) 
         <span>
           Arrecadado: <strong className="font-semibold text-vinho">{eurosTotais(confirmado)}</strong>
         </span>
-        <span>
+        <span className="text-right">
           Meta: <strong className="font-semibold text-vinho">{eurosTotais(meta)}</strong>
+          {/* Prazo junto à Meta, e não no sobrescrito: com tracking de 0,2em
+              «CAUSA SOCIAL · ONG ATOS · ATÉ 18 DE NOVEMBRO» passa a duas linhas a
+              390 px (medido), e o sobrescrito é uma linha só na prévia aprovada.
+              Só aparece enquanto a vaquinha está aberta. */}
+          {prazo && !encerrada && (
+            <span className="mt-0.5 block text-[0.6875rem] text-tinta-suave">Até {prazo}</span>
+          )}
         </span>
       </div>
 
+      {encerrada ? (
+        /* Acabou: fica o número (só o confirmado) e a barra, e no lugar dos
+           chips e do CTA uma linha. A folha deixa de se poder abrir. */
+        <p className="mt-5 text-[0.90625rem] font-medium leading-relaxed text-vinho md:mt-[22px]">
+          A vaquinha terminou a {prazo ?? "18 de novembro"}. Obrigada a quem contribuiu!
+        </p>
+      ) : (
+      <>
       {/* ── Escolha do valor ── */}
       <fieldset className="mt-5 min-w-0 border-0 p-0 md:mt-[22px]">
         <legend className="p-0 text-[0.71875rem] font-semibold uppercase tracking-[0.08em] text-tinta-suave md:text-[0.75rem]">
@@ -323,6 +345,12 @@ export default function CartaoVaquinha({ totaisIniciais, onContribuir }: Props) 
         <ArrowRight className="h-4 w-4" aria-hidden />
       </button>
 
+      </>
+      )}
+
+      {/* A frase de transparência NÃO sai no estado encerrado: a linha substitui
+          os chips e o CTA, e quem recebeu o dinheiro continua a ser informação
+          da causa. Fica sempre — é o D2. */}
       <p className="mt-3 text-center text-[0.75rem] italic leading-[1.45] text-tinta-suave">
         {VAQUINHA_TRANSPARENCIA}
       </p>

@@ -167,17 +167,7 @@ export const ERRO_VAQUINHA: Record<string, { status: number; mensagem: string }>
   declaracao_demasiado_rapida: { status: 409, mensagem: MENSAGENS_VAQUINHA.demasiadoRapida },
 };
 
-/**
- * Totais como a RPC os devolve (vaquinha_totais — 0014 e 0014b).
- *
- * Sem n_contribuicoes: a decisão de 13/10 é NUNCA mostrar quantas contribuições
- * houve, e a 0014b tira-o da RESPOSTA — a função é chamável por anon em
- * /rest/v1/rpc, portanto escondê-lo no ecrã não chegava.
- *
- * O número grande e "Arrecadado" são só `confirmado_cents`. `a_confirmar_cents`
- * serve exclusivamente para o segmento às riscas da barra, sem legenda nem
- * texto: não existe nenhuma linha sobre valores "a confirmar".
- */
+/** Totais como a RPC os devolve (vaquinha_totais — 0014 e 0014b). */
 export type TotaisVaquinha = {
   confirmado_cents: number;
   a_confirmar_cents: number;
@@ -187,6 +177,39 @@ export type TotaisVaquinha = {
   fim: string | null;
   contar_pendentes: boolean;
 };
+
+/**
+ * Totais + o estado que o SERVIDOR deriva deles.
+ *
+ * `encerrada` não vem da base: é calculado com o relógio de quem serve (page.tsx
+ * e /api/vaquinha/totais), nunca com o do browser. A vaquinha vai até 18/11 e
+ * quem tiver a página aberta à meia-noite tem de ver a troca sem recarregar —
+ * com o polling dos 15 s, o próximo /totais já traz encerrada = true.
+ */
+export type TotaisComEstado = TotaisVaquinha & { encerrada: boolean };
+
+/** O fecho já passou? `fim` nulo = sem fecho (fica aberta). */
+export function estaEncerrada(totais: Pick<TotaisVaquinha, "fim">, agora: Date): boolean {
+  return totais.fim !== null && agora.getTime() >= new Date(totais.fim).getTime();
+}
+
+/**
+ * O último dia da vaquinha, para mostrar no cartão: «Até 18 de novembro».
+ *
+ * O `fim` é o INSTANTE de fecho (19/11 às 00:00), portanto o último dia é o
+ * milissegundo anterior, formatado em Europe/Lisbon. Ler isto do `fim` (e não
+ * escrever a data no código) é o que faz o cartão acompanhar sozinho se a data
+ * mudar por SQL, sem deploy.
+ */
+export function prazoDoFim(fim: string | null): string | null {
+  if (!fim) return null;
+  const ultimoDia = new Date(new Date(fim).getTime() - 1);
+  return new Intl.DateTimeFormat("pt-PT", {
+    day: "numeric",
+    month: "long",
+    timeZone: "Europe/Lisbon",
+  }).format(ultimoDia);
+}
 
 /* ── Validação da fronteira (zod), com as MESMAS regras da RPC ───────────────
    A RPC é a autoridade; isto é a primeira barreira, para a resposta ser

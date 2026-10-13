@@ -19,7 +19,7 @@ import { definirAberturaModal } from "@/lib/modal";
 import { faseForcada } from "@/lib/fase";
 import { FIM_CAMPANHA_ISO, MENSAGEM_INSCRICAO, SALON_WHATSAPP } from "@/lib/campanha";
 import { linkWhatsApp } from "@/lib/site";
-import type { TotaisVaquinha } from "@/lib/vaquinha";
+import type { TotaisComEstado } from "@/lib/vaquinha";
 
 const fimCampanhaMs = new Date(FIM_CAMPANHA_ISO).getTime();
 
@@ -42,7 +42,7 @@ type Props = {
   /** Decidido no servidor (relógio + NEXT_PUBLIC_VAQUINHA_OVERRIDE). */
   vaquinhaAberta: boolean;
   /** Totais do primeiro render do cartão, também lidos no servidor. */
-  totaisVaquinha: TotaisVaquinha | null;
+  totaisVaquinha: TotaisComEstado | null;
 };
 
 export default function EventoPage({

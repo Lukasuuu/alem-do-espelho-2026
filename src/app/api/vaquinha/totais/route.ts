@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabase } from "@/lib/supabase";
-import { MENSAGENS_VAQUINHA, type TotaisVaquinha } from "@/lib/vaquinha";
+import { MENSAGENS_VAQUINHA, estaEncerrada, type TotaisVaquinha } from "@/lib/vaquinha";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,8 +33,13 @@ export async function GET(): Promise<NextResponse> {
       );
     }
 
+    const totais = data as TotaisVaquinha;
+
     return NextResponse.json(
-      { ok: true, totais: data as TotaisVaquinha },
+      // `encerrada` no SERVIDOR: a vaquinha vai até 18/11 e quem tiver a página
+      // aberta à meia-noite tem de ver a troca no cartão sem recarregar — é o
+      // polling deste endpoint que a traz.
+      { ok: true, totais: { ...totais, encerrada: estaEncerrada(totais, new Date()) } },
       {
         status: 200,
         headers: {
