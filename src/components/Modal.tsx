@@ -29,8 +29,9 @@ type Props = {
   fecharAoClicarFora?: boolean;
 };
 
-/** Elementos focáveis dentro do painel, para o foco circular (trap). */
-function focaveis(raiz: HTMLElement): HTMLElement[] {
+/** Elementos focáveis dentro do painel, para o foco circular (trap).
+    Exportado para a folha da vaquinha o reutilizar em vez de o duplicar. */
+export function focaveis(raiz: HTMLElement): HTMLElement[] {
   return Array.from(
     raiz.querySelectorAll<HTMLElement>(
       'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'

@@ -15,9 +15,11 @@ type Props = {
   vaquinhaAberta: boolean;
   /** Totais do primeiro render do cartão, lidos no servidor. */
   totaisVaquinha: TotaisVaquinha | null;
+  /** Abre a folha da vaquinha com o valor escolhido no cartão (V4). */
+  onContribuir: (valorCents: number) => void;
 };
 
-export default function Hero({ abrirModal, vaquinhaAberta, totaisVaquinha }: Props) {
+export default function Hero({ abrirModal, vaquinhaAberta, totaisVaquinha, onContribuir }: Props) {
   // Estado inicial vindo do SERVIDOR (sem mismatch de hidratação); depois da
   // montagem pode virar por conta própria quando o cronómetro chega a zero.
   const [vaquinha, setVaquinha] = useState(vaquinhaAberta);
@@ -100,7 +102,7 @@ export default function Hero({ abrirModal, vaquinhaAberta, totaisVaquinha }: Pro
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                 >
-                  <CartaoVaquinha totaisIniciais={totaisVaquinha} />
+                  <CartaoVaquinha totaisIniciais={totaisVaquinha} onContribuir={onContribuir} />
                 </motion.div>
               ) : (
                 <motion.div

@@ -14,6 +14,7 @@ import WaitlistModal from "@/components/WaitlistModal";
 import InscricaoModal from "@/components/InscricaoModal";
 import PagamentoModal from "@/components/PagamentoModal";
 import ParabensModal from "@/components/ParabensModal";
+import FolhaVaquinha from "@/components/FolhaVaquinha";
 import { definirAberturaModal } from "@/lib/modal";
 import { faseForcada } from "@/lib/fase";
 import { FIM_CAMPANHA_ISO, MENSAGEM_INSCRICAO, SALON_WHATSAPP } from "@/lib/campanha";
@@ -63,6 +64,8 @@ export default function EventoPage({
     posseToken: string;
   } | null>(null);
   const [parabensDados, setParabensDados] = useState<{ comprovativoOk: boolean } | null>(null);
+  // Vaquinha: o valor escolhido no cartão abre a folha (null = fechada).
+  const [vaquinhaValorCents, setVaquinhaValorCents] = useState<number | null>(null);
 
   // Override de teste (lista|inscricao) — constante por build, lido no client.
   const fase = faseForcada();
@@ -151,7 +154,12 @@ export default function EventoPage({
       {/* faseInscricaoAtiva controla também o link PATROCINADORES da navbar. */}
       <Header abrirModal={abrirFluxo} faseInscricaoAtiva={faseInscricaoAtiva} />
       <main>
-        <Hero abrirModal={abrirFluxo} vaquinhaAberta={vaquinhaAberta} totaisVaquinha={totaisVaquinha} />
+        <Hero
+          abrirModal={abrirFluxo}
+          vaquinhaAberta={vaquinhaAberta}
+          totaisVaquinha={totaisVaquinha}
+          onContribuir={setVaquinhaValorCents}
+        />
         {/* R6 — banner oficial + barra de horário no verde (herda id="o-evento"
             da faixa de chips que substituiu; destino do link EVENTO da navbar). */}
         <BannerOficial />
@@ -187,6 +195,13 @@ export default function EventoPage({
         comprovativoOk={parabensDados?.comprovativoOk ?? true}
         ctaWhatsApp={linkWhatsApp(SALON_WHATSAPP, MENSAGEM_INSCRICAO)}
       />
+      {vaquinhaValorCents !== null && (
+        <FolhaVaquinha
+          aberto
+          fechar={() => setVaquinhaValorCents(null)}
+          valorCents={vaquinhaValorCents}
+        />
+      )}
     </>
   );
 }

@@ -79,6 +79,23 @@ export function textoContribuicoes(n: number): string {
 }
 
 /**
+ * Como `formatarEuros`, mas com os cêntimos à mostra ("10,00 €"). As folhas da
+ * vaquinha (03–05) escrevem o valor assim no cabeçalho; o cartão e a frase do
+ * agradecimento escrevem sem cêntimos ("1240 €", "10 €"). São os dois formatos
+ * da referência aprovada, por isso existem as duas funções.
+ */
+export function formatarEurosComCentimos(centimos: number): string {
+  return new Intl.NumberFormat("pt-PT", {
+    style: "currency",
+    currency: "EUR",
+  }).format(centimos / 100);
+}
+
+/** Mensagem do WhatsApp da vaquinha — número único do projeto (SALON_WHATSAPP). */
+export const MENSAGEM_VAQUINHA_WHATSAPP =
+  "Olá! Estou a contribuir para a vaquinha da ONG Atos, no Além do Espelho 2026, e preciso de ajuda.";
+
+/**
  * Mensagens de erro da vaquinha — uma por código de RAISE, para a resposta ser
  * específica em vez do genérico da inscrição (lição do B0). O código vem da RPC
  * (0014) no campo `message`; a frase vive aqui, no servidor que a devolve.
