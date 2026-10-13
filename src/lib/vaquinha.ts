@@ -33,35 +33,30 @@ export const VALOR_MIN_CENTS = 500;
 export const VALOR_MAX_CENTS = 100000;
 
 /**
- * D3/D4 — dados de recebimento das doações. AINDA POR DECIDIR (Lucas/Vitória).
+ * D4 — dados de recebimento das doações. AINDA POR DECIDIR (Lucas/Vitória).
+ *
+ * A vaquinha só tem MB Way e transferência: não há link de pagamento (o D3
+ * desapareceu na revisão 2 de 13/10), por isso não existe aqui nenhum URL de
+ * SumUp — e nunca se reutilizaria o da inscrição, que é de 40 € fixos.
  *
  * Ficam a null de propósito, em vez de herdarem os da inscrição: o dinheiro da
  * vaquinha pode ir para outra conta (D2), e uma instrução de pagamento errada é
  * pior do que uma instrução ausente — alguém transfere para o sítio errado.
  * Enquanto algum estiver a null, pagamentoConfigurado() é false e o fluxo NÃO
- * pode mostrar instruções (o V6 falha de propósito neste ponto).
- *
- * D3: é um link SumUp de VALOR LIVRE — nunca o da inscrição, que é de 40 € fixos
- * (lib/pagamento.ts SUMUP_URL).
+ * pode mostrar instruções: o checklist de pré-go-live falha aqui de propósito.
  */
 export const VAQUINHA_PAGAMENTO: {
-  sumupUrl: string | null;
-  qrSumup: string | null;
   mbwayNumero: string | null;
   transferencia: { iban: string; beneficiario: string } | null;
 } = {
-  sumupUrl: null,
-  qrSumup: null,
   mbwayNumero: null,
   transferencia: null,
 };
 
-/** true só quando D3 e D4 estão preenchidos (porta do V6 e do V4). */
+/** true só quando o D4 está preenchido (porta do V6 e dos ecrãs do V4). */
 export function pagamentoConfigurado(): boolean {
   const p = VAQUINHA_PAGAMENTO;
-  return Boolean(
-    p.sumupUrl && p.qrSumup && p.mbwayNumero && p.transferencia?.iban && p.transferencia?.beneficiario
-  );
+  return Boolean(p.mbwayNumero && p.transferencia?.iban && p.transferencia?.beneficiario);
 }
 
 /**
@@ -100,7 +95,7 @@ export const MENSAGENS_VAQUINHA = {
   naoEncontrada: "Não encontrámos esta contribuição.",
   acessoNegado: "Não conseguimos confirmar esta contribuição.",
   anulada: "Esta contribuição foi anulada.",
-  demasiadoRapida: "Conclui primeiro o pagamento e depois carrega em «Já fiz a doação».",
+  demasiadoRapida: "Conclui primeiro o pagamento na tua app e depois carrega em «Já fiz a doação».",
   invalido: "Confere os dados e tenta novamente.",
   servidor: "Não conseguimos registar a tua contribuição agora. Tenta daqui a pouco.",
   bot: "Não conseguimos validar esta submissão.",
@@ -127,22 +122,26 @@ export const ERRO_VAQUINHA: Record<string, { status: number; mensagem: string }>
   declaracao_demasiado_rapida: { status: 409, mensagem: MENSAGENS_VAQUINHA.demasiadoRapida },
 };
 
-/** Totais como a RPC os devolve (vaquinha_totais na 0014). */
+/**
+ * Totais como a RPC os devolve (vaquinha_totais — 0014 e 0014b).
+ *
+ * Sem n_contribuicoes: a decisão de 13/10 é NUNCA mostrar quantas contribuições
+ * houve, e a 0014b tira-o da RESPOSTA — a função é chamável por anon em
+ * /rest/v1/rpc, portanto escondê-lo no ecrã não chegava.
+ *
+ * O número grande e "Arrecadado" são só `confirmado_cents`. `a_confirmar_cents`
+ * serve exclusivamente para o segmento às riscas da barra, sem legenda nem
+ * texto: não existe nenhuma linha sobre valores "a confirmar".
+ */
 export type TotaisVaquinha = {
   confirmado_cents: number;
   a_confirmar_cents: number;
-  n_contribuicoes: number;
   meta_cents: number | null;
   ativa: boolean;
   inicio: string | null;
   fim: string | null;
   contar_pendentes: boolean;
 };
-
-/** Total que a barra mostra: confirmado + (a confirmar, se o interruptor o permitir). */
-export function totalNaBarra(t: TotaisVaquinha): number {
-  return t.confirmado_cents + (t.contar_pendentes ? t.a_confirmar_cents : 0);
-}
 
 /* ── Validação da fronteira (zod), com as MESMAS regras da RPC ───────────────
    A RPC é a autoridade; isto é a primeira barreira, para a resposta ser
@@ -155,7 +154,7 @@ export const iniciarDoacaoSchema = z.object({
     .min(VALOR_MIN_CENTS, MENSAGENS_VAQUINHA.valorMinimo)
     .max(VALOR_MAX_CENTS, MENSAGENS_VAQUINHA.valorMaximo)
     .refine((v) => v % 100 === 0, { message: "Valor em euros inteiros." }),
-  metodo: z.enum(["link", "mbway", "transferencia"], {
+  metodo: z.enum(["mbway", "transferencia"], {
     errorMap: () => ({ message: MENSAGENS_VAQUINHA.metodo }),
   }),
   /** Gerado no cliente, um por tentativa: é a chave anti duplo clique. */
