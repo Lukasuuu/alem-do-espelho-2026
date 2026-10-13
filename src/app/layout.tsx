@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { site } from "@/lib/site";
 import MotionProvider from "@/components/MotionProvider";
 import SaltarParaInscricao from "@/components/SaltarParaInscricao";
+import { inscricoesEncerradas } from "@/lib/vaquinha-fase";
 import "./globals.css";
 
 const descricao = `A 2ª edição do Além do Espelho acontece a ${site.data.extenso}, no ${site.local.nome}, em ${site.local.cidade}. Um dia de desenvolvimento pessoal feminino, autoestima e networking para mulheres que querem voltar a encontrar-se. As inscrições estão abertas — 100 lugares, garantidos por ordem de pagamento.`;
@@ -98,7 +99,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(dadosEstruturados) }}
         />
-        <SaltarParaInscricao />
+        {/* D7: é o layout que decide — o skip-link aponta para onde há algo
+            para fazer. */}
+        <SaltarParaInscricao paraVaquinha={inscricoesEncerradas()} />
         <MotionProvider>{children}</MotionProvider>
       </body>
     </html>

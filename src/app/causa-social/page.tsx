@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { site } from "@/lib/site";
 import { inscricaoAtiva } from "@/lib/cutover";
+import { inscricoesEncerradas } from "@/lib/vaquinha-fase";
 import CausaSocialPage from "@/components/CausaSocialPage";
 
 /**
@@ -50,5 +51,10 @@ export const metadata: Metadata = {
 export default function Page() {
   // Gate de patrocinadores pelo relógio do servidor (override incluído).
   const faseInscricaoAtiva = inscricaoAtiva();
-  return <CausaSocialPage faseInscricaoAtiva={faseInscricaoAtiva} />;
+  return (
+    <CausaSocialPage
+      faseInscricaoAtiva={faseInscricaoAtiva}
+      inscricoesEncerradas={inscricoesEncerradas()}
+    />
+  );
 }

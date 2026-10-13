@@ -20,6 +20,7 @@ import { faseForcada } from "@/lib/fase";
 import { FIM_CAMPANHA_ISO, MENSAGEM_INSCRICAO, SALON_WHATSAPP } from "@/lib/campanha";
 import { linkWhatsApp } from "@/lib/site";
 import type { TotaisComEstado } from "@/lib/vaquinha";
+import type { EstadoEvento } from "@/lib/vaquinha-fase";
 
 const fimCampanhaMs = new Date(FIM_CAMPANHA_ISO).getTime();
 
@@ -43,12 +44,18 @@ type Props = {
   vaquinhaAberta: boolean;
   /** Totais do primeiro render do cartão, também lidos no servidor. */
   totaisVaquinha: TotaisComEstado | null;
+  /** D7: as inscrições pagas fecham no instante em que a vaquinha abre. */
+  inscricoesEncerradas: boolean;
+  /** Momento do evento — decide o texto do hero. Vem do servidor. */
+  estadoEvento: EstadoEvento;
 };
 
 export default function EventoPage({
   faseInscricaoAtiva,
   vaquinhaAberta,
   totaisVaquinha,
+  inscricoesEncerradas,
+  estadoEvento,
 }: Props) {
   const [waitlistAberto, setWaitlistAberto] = useState(false);
   const [inscricaoAberto, setInscricaoAberto] = useState(false);
@@ -79,6 +86,16 @@ export default function EventoPage({
 
   // ── Fluxo de entrada, com consciência de fase (override de teste incluído). ──
   const abrirFluxo = useCallback(() => {
+    // D7: com as inscrições fechadas, o fluxo de inscrição NÃO abre. Quem chamar
+    // isto (navbar, mapa do dia, rodapé, skip-link) é levado ao cartão da
+    // vaquinha — nesta página, é o que passou a haver para fazer. O 410 do
+    // POST /api/inscricao é a segunda linha de defesa.
+    if (inscricoesEncerradas) {
+      document
+        .getElementById("vaquinha")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
     if (fase === "inscricao") {
       // Override pago (teste pré-10/08): vai direto à inscrição paga.
       setInscricaoAberto(true);
@@ -96,7 +113,7 @@ export default function EventoPage({
     }
     // ≥ FIM_CAMPANHA → a inscrição paga é o fluxo ativo.
     setInscricaoAberto(true);
-  }, [fase, listaAberta]);
+  }, [fase, listaAberta, inscricoesEncerradas]);
 
   const fecharWaitlist = useCallback(() => setWaitlistAberto(false), []);
   const fecharInscricao = useCallback(() => setInscricaoAberto(false), []);
@@ -157,13 +174,19 @@ export default function EventoPage({
   return (
     <>
       {/* faseInscricaoAtiva controla também o link PATROCINADORES da navbar. */}
-      <Header abrirModal={abrirFluxo} faseInscricaoAtiva={faseInscricaoAtiva} />
+      <Header
+        abrirModal={abrirFluxo}
+        faseInscricaoAtiva={faseInscricaoAtiva}
+        inscricoesEncerradas={inscricoesEncerradas}
+      />
       <main>
         <Hero
           abrirModal={abrirFluxo}
           vaquinhaAberta={vaquinhaAberta}
           totaisVaquinha={totaisVaquinha}
           onContribuir={(valorCents, elapsedMs) => setVaquinhaPedido({ valorCents, elapsedMs })}
+          inscricoesEncerradas={inscricoesEncerradas}
+          estadoEvento={estadoEvento}
         />
         {/* R6 — banner oficial + barra de horário no verde (herda id="o-evento"
             da faixa de chips que substituiu; destino do link EVENTO da navbar). */}
@@ -171,9 +194,13 @@ export default function EventoPage({
         <Experience />
         <Anfitria />
         <Gallery />
-        <Realizacao faseInscricaoAtiva={faseInscricaoAtiva} abrirModal={abrirFluxo} />
+        <Realizacao
+          faseInscricaoAtiva={faseInscricaoAtiva}
+          abrirModal={abrirFluxo}
+          inscricoesEncerradas={inscricoesEncerradas}
+        />
       </main>
-      <Footer abrirModal={abrirFluxo} />
+      <Footer abrirModal={abrirFluxo} inscricoesEncerradas={inscricoesEncerradas} />
       {/* H — bolha flutuante só nesta página (decisão do Lucas, 03/09). */}
       <BotaoWhatsApp />
       <WaitlistModal aberto={waitlistAberto} fechar={fecharWaitlist} />

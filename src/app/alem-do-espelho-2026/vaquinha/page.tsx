@@ -3,7 +3,7 @@ import { permanentRedirect } from "next/navigation";
 import { site } from "@/lib/site";
 import { isDepoisDoCorte, inscricaoAtiva } from "@/lib/cutover";
 import { VAQUINHA_INICIO_ISO } from "@/lib/vaquinha";
-import { vaquinhaIniciada } from "@/lib/vaquinha-fase";
+import { estadoEvento, inscricoesEncerradas, vaquinhaIniciada } from "@/lib/vaquinha-fase";
 import { lerTotaisVaquinha } from "@/lib/vaquinha-servidor";
 import EventoPage from "@/components/EventoPage";
 import IrParaVaquinha from "@/components/IrParaVaquinha";
@@ -74,6 +74,8 @@ export default async function Page() {
         faseInscricaoAtiva={inscricaoAtiva()}
         vaquinhaAberta={vaquinhaAberta}
         totaisVaquinha={totaisVaquinha}
+        inscricoesEncerradas={inscricoesEncerradas()}
+        estadoEvento={estadoEvento()}
       />
     </>
   );

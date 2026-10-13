@@ -4,6 +4,7 @@ import { getSupabase } from "@/lib/supabase";
 import { hashIp, obterIp, rateLimit } from "@/lib/rate-limit";
 import { MENSAGENS, sponsorSchema, validarTelefone, type TipoErro } from "@/lib/validation";
 import { SPONSOR_MOCK_ATIVO } from "@/lib/sponsor-mock";
+import { inscricoesEncerradas } from "@/lib/vaquinha-fase";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -47,6 +48,20 @@ function mascararEmail(email: string): string {
  * sem service role.
  */
 export async function POST(request: Request): Promise<NextResponse<Resposta>> {
+  // 0. D7 (13/10): patrocínio NOVO fecha com as inscrições, no mesmo instante em
+  //    que a vaquinha abre — é a mesma porta (lib/vaquinha-fase). O
+  //    /api/sponsor/metodo fica aberto para as patrocinadoras já inscritas.
+  if (inscricoesEncerradas()) {
+    return NextResponse.json(
+      {
+        ok: false,
+        mensagem: "Os patrocínios já fecharam. Se precisares de ajuda, fala connosco no WhatsApp.",
+        tipo: "fase",
+      },
+      { status: 410 }
+    );
+  }
+
   // 1. Limite de tentativas por IP
   const ip = obterIp(request.headers);
   const limite = rateLimit(`sponsor:${ip}`);

@@ -4,6 +4,7 @@ import { getSupabase } from "@/lib/supabase";
 import { hashIp, obterIp, rateLimit } from "@/lib/rate-limit";
 import { MENSAGENS, inscricaoSchema, validarTelefone, type TipoErro } from "@/lib/validation";
 import { inscricaoAtiva } from "@/lib/cutover";
+import { inscricoesEncerradas } from "@/lib/vaquinha-fase";
 // R19 — Modelo 1 (instruções com os 3 métodos) + Modelo 3 (aviso à org)
 // disparam no formulário (Adenda 1, fluxo 04.1: «Enviar cada tipo uma única
 // vez após gravar a inscrição»). O PATCH /metodo deixou de enfileirar.
@@ -28,7 +29,24 @@ const TEMPO_MINIMO_MS = 2_500;
  * waitlist: RLS + função SECURITY DEFINER via RPC, sem service role.
  */
 export async function POST(request: Request): Promise<NextResponse<Resposta>> {
-  // 0. Fase ativa (server-first): a inscrição paga só abre em FIM_CAMPANHA_ISO
+  // 0. D7 (13/10) — porta NOVA por cima da fase: inscrições NOVAS fecham no
+  //    instante em que a vaquinha abre (17/10 09:30). Vem primeiro porque, a
+  //    partir daí, inscricaoAtiva() continua true (a campanha já abriu) e a
+  //    resposta certa é «já fecharam», não «ainda não abriram». O que fica
+  //    aberto é o PATCH /metodo, o /api/comprovativo e o /declarar-pagamento:
+  //    há inscrições pendentes que ainda podem pagar depois de sábado.
+  if (inscricoesEncerradas()) {
+    return NextResponse.json(
+      {
+        ok: false,
+        mensagem: "As inscrições já fecharam. Se precisares de ajuda, fala connosco no WhatsApp.",
+        tipo: "fase",
+      },
+      { status: 410 }
+    );
+  }
+
+  // 0-B. Fase ativa (server-first): a inscrição paga só abre em FIM_CAMPANHA_ISO
   //    (10/08, 10:00 Lisbon), ou antes com NEXT_PUBLIC_FASE_OVERRIDE=inscricao
   //    (teste). Enquanto a lista gratuita estiver aberta, 410 Gone.
   if (!inscricaoAtiva()) {

@@ -26,6 +26,8 @@ type ItemNavegacao = { rotulo: string; href: string };
 
 type Props = {
   abrirModal: () => void;
+  /** D7: com as inscrições fechadas o CTA de inscrição sai do rodapé. */
+  inscricoesEncerradas?: boolean;
   /** Âncoras da coluna Navegação — por omissão, as da página do evento. */
   navegacao?: ReadonlyArray<ItemNavegacao>;
 };
@@ -38,7 +40,11 @@ type Props = {
  * recebe a Essence of Beauty como 4.ª rede. Os links legais passam para a
  * barra final (mesmos modais TermosModal/PrivacidadeModal de sempre).
  */
-export default function Footer({ abrirModal, navegacao = NAVEGACAO_EVENTO }: Props) {
+export default function Footer({
+  abrirModal,
+  inscricoesEncerradas = false,
+  navegacao = NAVEGACAO_EVENTO,
+}: Props) {
   const [termosAberto, setTermosAberto] = useState(false);
   const [privacidadeAberto, setPrivacidadeAberto] = useState(false);
 
@@ -65,13 +71,15 @@ export default function Footer({ abrirModal, navegacao = NAVEGACAO_EVENTO }: Pro
             <p className="mt-3 max-w-xs text-[0.875rem] italic leading-relaxed text-creme/55">
               {site.tagline}
             </p>
-            <button
-              onClick={abrirModal}
-              className="mt-4 inline-flex items-center gap-2.5 rounded-full border border-creme/20 px-6 py-3 text-[0.8125rem] font-medium text-creme/80 transition-all duration-300 hover:border-creme/40 hover:bg-creme/5"
-            >
-              Quero garantir o meu lugar
-              <ChevronRight className="h-3.5 w-3.5" />
-            </button>
+            {!inscricoesEncerradas && (
+              <button
+                onClick={abrirModal}
+                className="mt-4 inline-flex items-center gap-2.5 rounded-full border border-creme/20 px-6 py-3 text-[0.8125rem] font-medium text-creme/80 transition-all duration-300 hover:border-creme/40 hover:bg-creme/5"
+              >
+                Quero garantir o meu lugar
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
 
           {/* Informações do evento — mesma fonte de verdade do Cronograma (lib/site) */}

@@ -30,7 +30,12 @@ const EASE = [0.22, 1, 0.36, 1] as const;
  * metálico. O verde fica reservado a acentos (título, texto do selo), nunca
  * ao fundo. Conteúdo e funcionalidade mantidos intactos.
  */
-type Props = { faseInscricaoAtiva: boolean };
+type Props = {
+  faseInscricaoAtiva: boolean;
+  /** D7: patrocínio NOVO fecha com as inscrições. A vitrine fica — as
+      patrocinadoras ganham um mês de exposição com o tráfego da vaquinha. */
+  inscricoesEncerradas?: boolean;
+};
 
 /**
  * Gate de patrocinadores: faseInscricaoAtiva chega do SERVIDOR (page.tsx →
@@ -39,7 +44,7 @@ type Props = { faseInscricaoAtiva: boolean };
  * false, o bloco de patrocínio (título, vitrine/marquee, "Quero Patrocinar")
  * não é renderizado — sem relógio no client, sem buracos de layout.
  */
-export default function CausaSocial({ faseInscricaoAtiva }: Props) {
+export default function CausaSocial({ faseInscricaoAtiva, inscricoesEncerradas = false }: Props) {
   const [pontosAberto, setPontosAberto] = useState(false);
 
   return (
@@ -263,8 +268,10 @@ export default function CausaSocial({ faseInscricaoAtiva }: Props) {
                   parceria ajuda-nos a chegar a mais mulheres.
                 </p>
                 <VitrinePatrocinadoras />
-                {/* CTA de patrocínio mantido abaixo da vitrine (fluxo de aquisição) */}
-                <SponsorFlow />
+                {/* CTA de patrocínio mantido abaixo da vitrine (fluxo de aquisição).
+                    D7: com as inscrições fechadas, o fluxo de patrocínio NOVO sai
+                    — mas a vitrine acima fica. */}
+                {!inscricoesEncerradas && <SponsorFlow />}
 
                 <p className="display mt-[clamp(24px,3.5vw,40px)] text-[clamp(1.75rem,3.5vw,2.5rem)] uppercase leading-[1.05] text-ouro-degrade-creme">
                   Além do Espelho 2026:

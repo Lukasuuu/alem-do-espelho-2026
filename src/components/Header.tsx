@@ -11,6 +11,8 @@ type Props = {
   /** Gate do servidor (page.tsx → cutover.inscricaoAtiva): false → a vitrine de
    *  patrocinadores não existe na página e o link PATROCINADORES sai da navbar. */
   faseInscricaoAtiva?: boolean;
+  /** D7: com as inscrições fechadas o CTA passa a levar à vaquinha. */
+  inscricoesEncerradas?: boolean;
   /** Links âncora da navbar (o mapa da página onde renderiza). Omissão →
    *  mapa do evento. A ListaEsperaPage passa a sua própria lista. */
   links?: Link[];
@@ -38,7 +40,12 @@ type Link = { href: string; rotulo: string };
  *
  * Data/local mantidos: ≥xl na barra; <lg dentro do painel. Nunca apagados.
  */
-export default function Header({ abrirModal, faseInscricaoAtiva = false, links: linksProp }: Props) {
+export default function Header({
+  abrirModal,
+  faseInscricaoAtiva = false,
+  inscricoesEncerradas = false,
+  links: linksProp,
+}: Props) {
   const [descolado, setDescolado] = useState(false);
   const [menuAberto, setMenuAberto] = useState(false);
   const [ativo, setAtivo] = useState<string | null>(null);
@@ -205,15 +212,29 @@ export default function Header({ abrirModal, faseInscricaoAtiva = false, links: 
 
             <div className="hidden xl:block">{informacoes}</div>
 
-            <button
-              onClick={abrirModal}
-              className="group ml-3 inline-flex items-center justify-center gap-2 rounded-full bg-rosa px-5 py-2.5 text-[0.8125rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro hover:shadow-[0_8px_28px_-8px_rgba(196,126,138,0.6)] xl:px-6"
-            >
-              Quero garantir o meu lugar
-              <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">
-                →
-              </span>
-            </button>
+            {inscricoesEncerradas ? (
+              /* D7: as inscrições fecharam e a página passou a ser a casa da
+                 vaquinha durante um mês — o CTA leva lá. */
+              <a
+                href="#vaquinha"
+                className="group ml-3 inline-flex items-center justify-center gap-2 rounded-full bg-rosa px-5 py-2.5 text-[0.8125rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro hover:shadow-[0_8px_28px_-8px_rgba(196,126,138,0.6)] xl:px-6"
+              >
+                Contribuir para a vaquinha
+                <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">
+                  →
+                </span>
+              </a>
+            ) : (
+              <button
+                onClick={abrirModal}
+                className="group ml-3 inline-flex items-center justify-center gap-2 rounded-full bg-rosa px-5 py-2.5 text-[0.8125rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro hover:shadow-[0_8px_28px_-8px_rgba(196,126,138,0.6)] xl:px-6"
+              >
+                Quero garantir o meu lugar
+                <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">
+                  →
+                </span>
+              </button>
+            )}
           </div>
 
           {/* Mobile <lg: hambúrguer (data/local vivem no painel) */}
@@ -288,6 +309,18 @@ export default function Header({ abrirModal, faseInscricaoAtiva = false, links: 
             </nav>
 
             <div className="mt-auto px-6 pb-8 pt-4">
+              {inscricoesEncerradas ? (
+                <a
+                  href="#vaquinha"
+                  onClick={() => setMenuAberto(false)}
+                  className="group inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full bg-rosa px-6 py-3 text-[0.875rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro"
+                >
+                  Contribuir para a vaquinha
+                  <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1">
+                    →
+                  </span>
+                </a>
+              ) : (
               <button
                 onClick={() => {
                   abrirModal();
@@ -300,6 +333,7 @@ export default function Header({ abrirModal, faseInscricaoAtiva = false, links: 
                   →
                 </span>
               </button>
+              )}
             </div>
           </div>
         </div>

@@ -107,3 +107,49 @@ Para ver a vaquinha no preview antes de 17/10: `NEXT_PUBLIC_VAQUINHA_OVERRIDE=ab
 
 Enquanto o D5 não fechar, o checklist de pré-go-live acusa-o. Nunca mostrar placeholders em produção.
 
+## 7. D7 — as inscrições fecham quando a vaquinha abre (13/10)
+
+As inscrições pagas fecham no **sábado 17/10 às 09:30**, no mesmo instante em que a vaquinha abre. Uma
+só fonte no servidor: `inscricoesEncerradas()` = `vaquinhaIniciada(VAQUINHA_INICIO_ISO)` em
+`src/lib/vaquinha-fase.ts` — mesmo instante e mesmo override (`NEXT_PUBLIC_VAQUINHA_OVERRIDE=aberta`, só
+no Preview, mostra a página pós-evento completa).
+
+**Não se toca em `lib/fase.ts` nem em `lib/cutover.ts`, nem em `inscricaoAtiva()`**: o fecho é uma porta
+NOVA, por cima.
+
+| Fecha | Fica aberto |
+|---|---|
+| `POST /api/inscricao` (inscrições NOVAS) → 410 | `PATCH /api/inscricao/metodo` |
+| `POST /api/sponsor` (patrocínio NOVO) → 410 | `/api/comprovativo` · `/api/inscricao/declarar-pagamento` · `/api/sponsor/metodo` |
+
+Os passos que ficam abertos são de propósito: há inscrições pendentes que ainda podem pagar e enviar
+comprovativo depois de sábado, e patrocinadoras já inscritas que ainda têm passos a dar.
+
+**Interface, com as inscrições fechadas:** o «Quero garantir o meu lugar» sai do hero, do mapa do dia e
+do rodapé; no cabeçalho (computador e telemóvel) passa a «Contribuir para a vaquinha», com scroll até
+`#vaquinha` (a página vai ser a casa da vaquinha durante um mês); o `abrirFluxo` não abre a inscrição; e o
+skip-link do layout passa a «Saltar para a vaquinha». Ao vivo, quando o cronómetro chega a zero (o mesmo
+`onEncerrado` da troca do cartão), o botão de inscrição do hero sai também — o cabeçalho e o rodapé mudam
+no carregamento seguinte, e até lá o 410 protege.
+
+**Texto do hero**, decidido no servidor (`estadoEvento()`, valores lidos de `site.*`): antes de 17/10
+09:30 é o de hoje; das 09:30 às 18:00 «O Além do Espelho está a acontecer hoje, no {local}, em
+{cidade}. As inscrições estão encerradas. Agora, juntos por Angola.»; depois das 18:00 «A segunda edição
+do Além do Espelho aconteceu a {data}, no {local}, em {cidade}. Obrigada a todas as que estiveram
+connosco. Agora, juntos por Angola.»
+
+**Patrocínios:** a `VitrinePatrocinadoras` **fica** visível — as patrocinadoras ganham um mês de
+exposição com o tráfego da vaquinha. Sai só o fluxo de patrocínio novo (`SponsorFlow`). As
+patrocinadoras ocultas (`visivel:false`) não se tocam.
+
+### Checklist do V6 — acrescento
+
+- [ ] `POST /api/inscricao` devolve **410** com «As inscrições já fecharam…», e `POST /api/sponsor`
+      também — no Preview, com o override ligado.
+- [ ] `PATCH /api/inscricao/metodo` **continua a responder** com as inscrições fechadas (erro de posse
+      ou validação, nunca 410) — é o que deixa as pendentes pagar.
+- [ ] O «Quero garantir o meu lugar» não aparece em lado nenhum (hero, mapa do dia, rodapé) e o
+      cabeçalho diz «Contribuir para a vaquinha» a apontar para `#vaquinha`.
+- [ ] A `VitrinePatrocinadoras` continua visível e o «Quero Patrocinar» não.
+- [ ] Os três textos do hero conferidos (o «durante» e o «depois» forçados por
+      `VAQUINHA_RELOGIO_ISO`, que é ignorado em produção).

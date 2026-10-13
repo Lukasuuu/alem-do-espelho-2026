@@ -6,6 +6,7 @@ import { ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { site } from "@/lib/site";
 import type { TotaisComEstado } from "@/lib/vaquinha";
+import type { EstadoEvento } from "@/lib/vaquinha-fase";
 import CartaoVaquinha from "./CartaoVaquinha";
 import Countdown from "./Countdown";
 
@@ -17,9 +18,20 @@ type Props = {
   totaisVaquinha: TotaisComEstado | null;
   /** Abre a folha da vaquinha com o valor escolhido no cartão (V4). */
   onContribuir: (valorCents: number, elapsedMs: number) => void;
+  /** D7: as inscrições pagas fecharam — o CTA de inscrição sai do hero. */
+  inscricoesEncerradas: boolean;
+  /** Momento do evento (servidor) — decide o texto por baixo do título. */
+  estadoEvento: EstadoEvento;
 };
 
-export default function Hero({ abrirModal, vaquinhaAberta, totaisVaquinha, onContribuir }: Props) {
+export default function Hero({
+  abrirModal,
+  vaquinhaAberta,
+  totaisVaquinha,
+  onContribuir,
+  inscricoesEncerradas,
+  estadoEvento,
+}: Props) {
   // Estado inicial vindo do SERVIDOR (sem mismatch de hidratação); depois da
   // montagem pode virar por conta própria quando o cronómetro chega a zero.
   const [vaquinha, setVaquinha] = useState(vaquinhaAberta);
@@ -78,10 +90,28 @@ export default function Hero({ abrirModal, vaquinhaAberta, totaisVaquinha, onCon
             {...surgir(0.28)}
             className="mt-8 max-w-md text-[1.0625rem] leading-relaxed text-creme/65"
           >
-            A segunda edição do Além do Espelho acontece a{" "}
-            <strong className="font-medium text-creme">{site.data.extenso}</strong>, no{" "}
-            {site.local.nome}, em {site.local.cidade}. As inscrições estão abertas — são 100
-            lugares, garantidos por ordem de pagamento.
+            {estadoEvento === "antes" && (
+              <>
+                A segunda edição do Além do Espelho acontece a{" "}
+                <strong className="font-medium text-creme">{site.data.extenso}</strong>, no{" "}
+                {site.local.nome}, em {site.local.cidade}. As inscrições estão abertas — são{" "}
+                {site.vagas} lugares, garantidos por ordem de pagamento.
+              </>
+            )}
+            {estadoEvento === "durante" && (
+              <>
+                O Além do Espelho está a acontecer hoje, no {site.local.nome}, em{" "}
+                {site.local.cidade}. As inscrições estão encerradas. Agora, juntos por Angola.
+              </>
+            )}
+            {estadoEvento === "depois" && (
+              <>
+                A segunda edição do Além do Espelho aconteceu a{" "}
+                <strong className="font-medium text-creme">{site.data.extenso}</strong>, no{" "}
+                {site.local.nome}, em {site.local.cidade}. Obrigada a todas as que estiveram
+                connosco. Agora, juntos por Angola.
+              </>
+            )}
           </motion.p>
 
           {/* Cronómetro → cartão da vaquinha. O estado inicial decide-se no
@@ -123,15 +153,21 @@ export default function Hero({ abrirModal, vaquinhaAberta, totaisVaquinha, onCon
             </AnimatePresence>
           </motion.div>
 
-          <motion.div {...surgir(0.5)} className="mt-11">
-            <button
-              onClick={abrirModal}
-              className="group inline-flex items-center gap-3 rounded-full bg-rosa px-8 py-4 text-[0.9375rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro hover:shadow-[0_12px_40px_-12px_rgba(196,126,138,0.7)]"
-            >
-              Quero garantir o meu lugar
-              <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-            </button>
-          </motion.div>
+          {/* D7: o CTA de inscrição sai quando as inscrições fecham. O `vaquinha`
+              aqui é o MESMO estado que troca o cronómetro pelo cartão — o fecho
+              das inscrições e a abertura da vaquinha são o mesmo instante,
+              portanto a troca ao vivo do cartão leva o botão atrás. */}
+          {!(inscricoesEncerradas || vaquinha) && (
+            <motion.div {...surgir(0.5)} className="mt-11">
+              <button
+                onClick={abrirModal}
+                className="group inline-flex items-center gap-3 rounded-full bg-rosa px-8 py-4 text-[0.9375rem] font-medium text-creme transition-all duration-300 hover:bg-rosa-escuro hover:shadow-[0_12px_40px_-12px_rgba(196,126,138,0.7)]"
+              >
+                Quero garantir o meu lugar
+                <ChevronRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+              </button>
+            </motion.div>
+          )}
         </div>
 
         {/* ── Coluna direita: fotoprincipal com moldura de vidro ── */}

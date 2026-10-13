@@ -28,9 +28,11 @@ import { horarioEvento, site } from "@/lib/site";
 
 type Props = {
   abrirModal: () => void;
+  /** D7: com as inscrições fechadas o CTA final do mapa do dia sai. */
+  inscricoesEncerradas?: boolean;
 };
 
-export default function MapaDia({ abrirModal }: Props) {
+export default function MapaDia({ abrirModal, inscricoesEncerradas = false }: Props) {
   return (
     <section
       id="cronograma"
@@ -105,7 +107,9 @@ export default function MapaDia({ abrirModal }: Props) {
           </div>
         ))}
 
-        {/* CTA final — mesmo fluxo de inscrição da navbar/hero (gate de fase intacto) */}
+        {/* CTA final — mesmo fluxo de inscrição da navbar/hero (gate de fase intacto).
+            D7: com as inscrições fechadas, não há CTA nenhum aqui. */}
+        {!inscricoesEncerradas && (
         <Reveal>
           <div className="mt-14 text-center sm:mt-16">
             <button
@@ -119,6 +123,7 @@ export default function MapaDia({ abrirModal }: Props) {
             </button>
           </div>
         </Reveal>
+        )}
       </div>
     </section>
   );

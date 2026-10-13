@@ -57,7 +57,12 @@ const entidades: Entidade[] = [
   },
 ];
 
-type Props = { faseInscricaoAtiva: boolean; abrirModal: () => void };
+type Props = {
+  faseInscricaoAtiva: boolean;
+  abrirModal: () => void;
+  /** D7: inscrições fechadas — o CTA do mapa do dia sai. */
+  inscricoesEncerradas?: boolean;
+};
 
 /**
  * Gate da secção de patrocinadores decidido no SERVIDOR (page.tsx):
@@ -66,7 +71,11 @@ type Props = { faseInscricaoAtiva: boolean; abrirModal: () => void };
  * abrirModal encadeia o fluxo de inscrição (abrirFluxo do EventoPage) até ao
  * CTA do Cronograma do Dia — mesmo gate, nada de link novo.
  */
-export default function Realizacao({ faseInscricaoAtiva, abrirModal }: Props) {
+export default function Realizacao({
+  faseInscricaoAtiva,
+  abrirModal,
+  inscricoesEncerradas = false,
+}: Props) {
   return (
     <section className="grao relative overflow-hidden bg-creme py-24 sm:py-32">
       {/* fio de abertura em sage, destaca a secção das vizinhas sem mudar de tom */}
@@ -176,7 +185,7 @@ export default function Realizacao({ faseInscricaoAtiva, abrirModal }: Props) {
         {/* ── Cronograma do Dia (Mapa do Dia público) — entre o fecho da causa
             social e a faixa das entidades (anexo 7). SEM gate de fase: é
             informação do evento, não conversão — aparece em todas as fases. ── */}
-        <MapaDia abrirModal={abrirModal} />
+        <MapaDia abrirModal={abrirModal} inscricoesEncerradas={inscricoesEncerradas} />
 
         {/* ── Zona B: faixa das entidades, largura total, separada por um fio ── */}
         <div className="mt-[clamp(32px,4vw,56px)] border-t border-vinho/10 pt-[clamp(40px,5vw,64px)]">

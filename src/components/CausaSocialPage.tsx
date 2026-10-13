@@ -9,9 +9,13 @@ import CausaSocial from "./CausaSocial";
  * Wrapper client-side da página /causa-social — adiciona Header e Footer
  * à secção CausaSocial, seguindo o padrão de EventoPage e ListaEsperaPage.
  */
-type Props = { faseInscricaoAtiva: boolean };
+type Props = {
+  faseInscricaoAtiva: boolean;
+  /** D7: patrocínio novo fecha com as inscrições. */
+  inscricoesEncerradas?: boolean;
+};
 
-export default function CausaSocialPage({ faseInscricaoAtiva }: Props) {
+export default function CausaSocialPage({ faseInscricaoAtiva, inscricoesEncerradas = false }: Props) {
   const [modalAberto, setModalAberto] = useState(false);
   const abrirModal = useCallback(() => setModalAberto(true), []);
 
@@ -19,7 +23,7 @@ export default function CausaSocialPage({ faseInscricaoAtiva }: Props) {
     <>
       <Header abrirModal={abrirModal} />
       <main>
-        <CausaSocial faseInscricaoAtiva={faseInscricaoAtiva} />
+        <CausaSocial faseInscricaoAtiva={faseInscricaoAtiva} inscricoesEncerradas={inscricoesEncerradas} />
       </main>
       {/* Navegação própria: esta página não tem Experience (#o-que-te-espera)
           nem cronograma (#o-evento) — só âncoras que aqui existem. */}
