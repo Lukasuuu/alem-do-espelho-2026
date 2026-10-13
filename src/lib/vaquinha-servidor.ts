@@ -16,7 +16,13 @@ import type { TotaisVaquinha } from "@/lib/vaquinha";
 
 export async function lerTotaisVaquinha(): Promise<TotaisVaquinha | null> {
   try {
-    const { data, error } = await getSupabase().rpc("vaquinha_totais");
+    const { data, error } = await getSupabase()
+      .rpc("vaquinha_totais")
+      // A página do evento NUNCA espera pela vaquinha: ao fim de 1,5 s a leitura
+      // desiste e o cartão mostra o estado de carregamento, que o polling do
+      // cliente resolve em 15 s. Sem isto, uma RPC lenta segurava o render da
+      // landing inteira — e a landing é o que as pessoas vieram ver.
+      .abortSignal(AbortSignal.timeout(1500));
     if (error) {
       console.error("[vaquinha] vaquinha_totais falhou:", error.message);
       return null;

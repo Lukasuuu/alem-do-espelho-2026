@@ -111,6 +111,18 @@
   --color-rosa-manuscrito: #c88b86;  /* "Além de mim" + fecho manuscrito */
   --color-blush-banner: #ba938c;     /* blush suave dos cantos da faixa (r2) */
 
+  /* Vaquinha ONG Atos (13/10) — hex medidos na referência aprovada 01/02, que
+     manda («tem de ficar exatamente assim»). Só estes 5 entram como tokens; o
+     resto da vaquinha reutiliza a paleta da marca (creme-neon, vinho, rosa,
+     blush). As folhas 03–06 do V4 usam os mesmos.
+     NOTA: a prévia escrevia a frase de transparência a #8a6f75 — corrigido para
+     #6e5359, porque aquele dá 4,28:1 sobre o creme e falha AA a 12 px. */
+  --color-tinta-suave: #6e5359;      /* frase, rótulos, legendas, transparência */
+  --color-malva: #8a5a64;            /* sobrescrito "CAUSA SOCIAL · ONG ATOS" */
+  --color-areia: #d8c2b4;            /* bordas dos chips e do input */
+  --color-selo-borda: #e6d6c6;       /* borda do disco do selo */
+  --color-risca: #dfa9b2;            /* risca clara do segmento "a confirmar" */
+
   --font-display: "Recline", "Cormorant Garamond", Georgia, serif;
   --font-sans: "Jost", "Helvetica Neue", Arial, sans-serif;
 
