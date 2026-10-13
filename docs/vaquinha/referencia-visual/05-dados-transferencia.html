@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<title>Vaquinha — pagar por transferência</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&amp;family=Jost:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#5c323e}a:hover{color:#3f2029}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background: #3d4a40; font-family: Jost, sans-serif; overflow: hidden">
+<div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(18, 22, 19, 0.62)"></div>
+
+<section aria-labelledby="titulo-transf" style="position: absolute; top: 8px; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; background: #fff7e9; border-radius: 16px 16px 0 0; color: #5c323e">
+
+<div style="position: relative; padding: 12px 76px 14px 20px; border-bottom: 1px solid #ecdccc">
+<a href="Metodos.dc.html" style="display: inline-flex; align-items: center; gap: 6px; min-height: 36px; font-size: 13px; color: #6e5359; text-decoration: none">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" style="stroke-width: 2px; stroke-linecap: round; stroke-linejoin: round"><path d="M15 6l-6 6 6 6"></path></svg>
+Escolher outro método</a>
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 2px">
+<h2 id="titulo-transf" style="margin: 0; display: flex; align-items: center; gap: 10px; font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 500; line-height: 1.1">
+<span style="display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 4px; background: #ffffff; border: 1px solid #eadccd"><img src="/_blob/12173aad8cb3be2d4c4a8c5b64a3b30a" alt="" style="width: 26px; height: 26px; object-fit: contain"></span>
+Transferência</h2>
+<span style="font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 600; white-space: nowrap">10,00 €</span>
+</div>
+<button type="button" aria-label="Fechar" style="position: absolute; top: 12px; right: 12px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid #d8c2b4; background: transparent; color: #5c323e; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" style="stroke-width: 2px; stroke-linecap: round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+</button>
+</div>
+
+<div style="flex: 1; display: flex; flex-direction: column; padding: 16px 20px 24px">
+<p style="margin: 0; font-size: 14.5px; line-height: 1.5">Faz a transferência no teu banco com estes dados e põe a <strong>referência no descritivo</strong>.</p>
+
+<div style="margin-top: 14px; border-radius: 12px; border: 1px solid #e6d6c6; background: #ffffff">
+<div style="display: flex; align-items: center; gap: 12px; padding: 11px 8px 11px 16px; border-bottom: 1px solid #f0e4d8">
+<div style="flex: 1; min-width: 0">
+<p style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; color: #6e5359">BENEFICIÁRIO</p>
+<p style="margin: 3px 0 0; font-size: 16px; font-weight: 500; font-style: italic; color: #8a6f75">[nome do titular da conta]</p>
+</div>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 11px 8px 11px 16px; border-bottom: 1px solid #f0e4d8">
+<div style="flex: 1; min-width: 0">
+<p style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; color: #6e5359">IBAN</p>
+<p style="margin: 3px 0 0; font-size: 16px; font-weight: 500; font-style: italic; color: #8a6f75">[IBAN de doações]</p>
+</div>
+<button type="button" aria-label="Copiar IBAN" style="width: 44px; height: 44px; flex: none; border-radius: 10px; border: 1px solid #e6d6c6; background: #fff7e9; color: #5c323e; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" style="stroke-width: 1.8px; stroke-linecap: round; stroke-linejoin: round"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V6a2 2 0 0 1 2-2h9"></path></svg>
+</button>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 11px 8px 11px 16px; border-bottom: 1px solid #f0e4d8">
+<div style="flex: 1; min-width: 0">
+<p style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; color: #6e5359">VALOR</p>
+<p style="margin: 3px 0 0; font-size: 17px; font-weight: 600">10,00 €</p>
+</div>
+<button type="button" aria-label="Copiar valor" style="width: 44px; height: 44px; flex: none; border-radius: 10px; border: 1px solid #e6d6c6; background: #fff7e9; color: #5c323e; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" style="stroke-width: 1.8px; stroke-linecap: round; stroke-linejoin: round"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V6a2 2 0 0 1 2-2h9"></path></svg>
+</button>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 11px 8px 11px 16px">
+<div style="flex: 1; min-width: 0">
+<p style="margin: 0; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; color: #6e5359">DESCRITIVO</p>
+<p style="margin: 3px 0 0; font-size: 17px; font-weight: 600; letter-spacing: 0.08em">ATOS-7K3F</p>
+</div>
+<button type="button" aria-label="Copiar descritivo" style="width: 44px; height: 44px; flex: none; border-radius: 10px; border: 1px solid #e6d6c6; background: #fff7e9; color: #5c323e; display: flex; align-items: center; justify-content: center; cursor: pointer">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" style="stroke-width: 1.8px; stroke-linecap: round; stroke-linejoin: round"><rect x="9" y="9" width="11" height="11" rx="2"></rect><path d="M5 15V6a2 2 0 0 1 2-2h9"></path></svg>
+</button>
+</div>
+</div>
+
+<p style="margin: 14px 0 0; font-size: 13px; line-height: 1.5; color: #6e5359">A referência ajuda-nos a confirmar a tua contribuição. Não precisas de enviar comprovativo.</p>
+
+<div style="margin-top: auto">
+<a href="Agradecimento.dc.html" style="display: flex; align-items: center; justify-content: center; gap: 10px; height: 54px; border-radius: 999px; background: #5c323e; color: #fff7e9; font-size: 16px; font-weight: 600; text-decoration: none">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true" style="stroke-width: 2.2px; stroke-linecap: round; stroke-linejoin: round"><path d="M5 12.5l4.5 4.5L19 7.5"></path></svg>
+Já fiz a doação</a>
+<a href="#" style="display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; margin-top: 6px; font-size: 13.5px; font-weight: 500; text-decoration: none">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1f9e4f" aria-hidden="true" style="stroke-width: 2px; stroke-linecap: round; stroke-linejoin: round"><path d="M21 12a8.5 8.5 0 0 1-12.4 7.5L3 21l1.6-5.3A8.5 8.5 0 1 1 21 12z"></path></svg>
+Tive um problema — falar no WhatsApp</a>
+</div>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
