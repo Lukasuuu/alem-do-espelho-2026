@@ -12,7 +12,13 @@
  * página do evento NUNCA cai por causa da vaquinha.
  */
 import { getSupabase } from "@/lib/supabase";
-import { estaEncerrada, type TotaisComEstado, type TotaisVaquinha } from "@/lib/vaquinha";
+import {
+  MENSAGENS_VAQUINHA,
+  erroDaVaquinha,
+  estaEncerrada,
+  type TotaisComEstado,
+  type TotaisVaquinha,
+} from "@/lib/vaquinha";
 
 export async function lerTotaisVaquinha(): Promise<TotaisComEstado | null> {
   try {
@@ -33,5 +39,97 @@ export async function lerTotaisVaquinha(): Promise<TotaisComEstado | null> {
   } catch (erro) {
     console.error("[vaquinha] leitura dos totais indisponível:", erro);
     return null;
+  }
+}
+
+/* ── V5 — as RPCs de admin (0014), chamadas só daqui ─────────────────────────
+   A chave admin vive numa env server-only da Vercel e NUNCA chega ao browser:
+   estas funções correm em rotas /api ou em componentes de servidor. O .trim() é
+   obrigatório — a chave veio de uma env var e um espaço acidental no fim mudaria
+   o sha256 que a base compara, em silêncio. */
+
+function chaveAdmin(): string | null {
+  const k = process.env.VAQUINHA_ADMIN_CHAVE?.trim();
+  if (!k) {
+    console.error("[vaquinha] VAQUINHA_ADMIN_CHAVE ausente — a página do voluntário não funciona");
+    return null;
+  }
+  return k;
+}
+
+export type DoacaoAdmin = {
+  id: string;
+  referencia: string;
+  valor_cents: number;
+  metodo: string;
+  estado: string;
+  criada_em: string;
+  declarada_em: string | null;
+  decidida_em: string | null;
+  nota: string | null;
+};
+
+export type ListaAdmin = { doacoes: DoacaoAdmin[]; totais: TotaisComEstado };
+
+/** Lista para o voluntário: as `declarada` primeiro, depois as recentes. */
+export async function lerDoacoesAdmin(limite = 50): Promise<ListaAdmin | null> {
+  const chave = chaveAdmin();
+  if (!chave) return null;
+  try {
+    const { data, error } = await getSupabase()
+      .rpc("admin_listar_doacoes", { p_chave: chave, p_limite: limite })
+      .abortSignal(AbortSignal.timeout(4000));
+    if (error) {
+      console.error("[vaquinha] admin_listar_doacoes falhou:", error.message);
+      return null;
+    }
+    const r = data as { ok: boolean; doacoes: DoacaoAdmin[]; totais: TotaisVaquinha };
+    return {
+      doacoes: r.doacoes ?? [],
+      totais: { ...r.totais, encerrada: estaEncerrada(r.totais, new Date()) },
+    };
+  } catch (erro) {
+    console.error("[vaquinha] lista do voluntário indisponível:", erro);
+    return null;
+  }
+}
+
+/** Confirma ou anula. `p_nota` é opcional; a base guarda-a e carimba decidida_em. */
+export async function decidirDoacaoAdmin(
+  id: string,
+  estado: "confirmada" | "anulada",
+  nota: string | null
+): Promise<{ ok: true; referencia: string; estado: string; totais: TotaisComEstado } | { ok: false; mensagem: string }> {
+  const chave = chaveAdmin();
+  if (!chave) return { ok: false, mensagem: MENSAGENS_VAQUINHA.servidor };
+  try {
+    const { data, error } = await getSupabase()
+      .rpc("admin_decidir_doacao", {
+        p_chave: chave,
+        p_id: id,
+        p_estado: estado,
+        p_nota: nota,
+      })
+      .abortSignal(AbortSignal.timeout(4000));
+    if (error) {
+      const conhecido = erroDaVaquinha(error.message);
+      console.error("[vaquinha] admin_decidir_doacao falhou:", error.message);
+      return { ok: false, mensagem: conhecido?.mensagem ?? MENSAGENS_VAQUINHA.servidor };
+    }
+    const r = data as {
+      ok: boolean;
+      referencia: string;
+      estado: string;
+      totais: TotaisVaquinha;
+    };
+    return {
+      ok: true,
+      referencia: r.referencia,
+      estado: r.estado,
+      totais: { ...r.totais, encerrada: estaEncerrada(r.totais, new Date()) },
+    };
+  } catch (erro) {
+    console.error("[vaquinha] decisão indisponível:", erro);
+    return { ok: false, mensagem: MENSAGENS_VAQUINHA.servidor };
   }
 }

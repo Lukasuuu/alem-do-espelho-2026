@@ -153,3 +153,30 @@ patrocinadoras ocultas (`visivel:false`) não se tocam.
 - [ ] A `VitrinePatrocinadoras` continua visível e o «Quero Patrocinar» não.
 - [ ] Os três textos do hero conferidos (o «durante» e o «depois» forçados por
       `VAQUINHA_RELOGIO_ISO`, que é ignorado em produção).
+
+
+## 8. V5 — a página do voluntário (construída a 14/10)
+
+`/alem-do-espelho-2026/vaquinha/confirmar` — `noindex, nofollow`, fora de qualquer link público e sem
+chrome do site. Desenhada para **telemóvel**: é alguém a conferir a app do MB Way e o extrato.
+
+**Dois segredos diferentes, de propósito:**
+
+| | Onde vive | Para que serve |
+|---|---|---|
+| Palavra-passe do voluntário | só o **sha256** na env `VAQUINHA_VOLUNTARIO_HASH` (server-only; a palavra-passe em claro não existe em lado nenhum) | entrar no ecrã |
+| Chave admin | env `VAQUINHA_ADMIN_CHAVE` (server-only) | falar com as RPCs de admin (`admin_listar_doacoes`, `admin_decidir_doacao`) |
+
+Ou seja: saber a palavra-passe dá acesso ao ecrã, **não à chave** — o browser nunca vê a chave, e são as
+rotas de servidor que chamam as RPCs. O cookie é httpOnly + Secure + SameSite=Strict e o seu valor é
+**derivado** do hash (não é a palavra-passe nem o hash). Login com limite de tentativas por IP — aqui o
+limite faz sentido, ao contrário das rotas públicas da vaquinha.
+
+A fila são as `declarada` primeiro; as já decididas ficam abaixo, para poder corrigir um engano.
+Confirmar é um toque; anular pede confirmação e aceita nota. A lista atualiza a cada 15 s, e para com o
+separador escondido.
+
+**Se a leitura falhar, o painel diz que falhou** — nunca «não há nada por confirmar», que faria o
+voluntário fechar a página com doações à espera.
+
+O **D5** decide A QUEM se entrega a palavra-passe; não muda nada do que está construído.

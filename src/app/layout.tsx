@@ -10,7 +10,9 @@ const descricao = `A 2ª edição do Além do Espelho acontece a ${site.data.ext
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
-    default: `${site.nome} · ${site.subtitulo} | Inscrições abertas`,
+    // Sem fase no título por omissão: «| Inscrições abertas» caduca a 17/10 e
+    // este é o título das páginas que não definem o seu. Não afirma nada.
+    default: `${site.nome} · ${site.subtitulo}`,
     template: `%s | ${site.nome}`,
   },
   description: descricao,
