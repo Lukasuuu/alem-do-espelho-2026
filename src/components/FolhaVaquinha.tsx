@@ -778,8 +778,13 @@ function BotaoPartilhar() {
             try {
               await navigator.share(dados);
             } catch (erro) {
-              // Fechar a folha sem escolher lança AbortError: não é erro.
-              if ((erro as Error)?.name !== "AbortError") console.error("[vaquinha] partilha falhou:", erro);
+              // Dois casos benignos, ambos silenciosos: AbortError = fechou a
+              // folha nativa sem escolher; InvalidStateError = tocou duas vezes e
+              // já havia uma partilha a decorrer (aconteceu na janela de teste).
+              const nome = (erro as Error)?.name;
+              if (nome !== "AbortError" && nome !== "InvalidStateError") {
+                console.error("[vaquinha] partilha falhou:", erro);
+              }
             }
             return;
           }
