@@ -89,7 +89,9 @@ export const MENSAGENS_VAQUINHA = {
   inativa: "A vaquinha está fechada neste momento.",
   encerrada: "A vaquinha já encerrou. Obrigada a quem participou!",
   valorMinimo: "O valor mínimo é 5 €.",
-  valorMaximo: "Valor acima do limite — fala connosco no WhatsApp.",
+  /** Diz QUAL é o limite. É esta que o 422 do servidor devolve e a que o cartão
+      mostra por baixo do input — tem de acompanhar VALOR_MAX_CENTS (1000 €). */
+  valorMaximo: "O valor máximo é 1000 €. Para mais, fala connosco no WhatsApp.",
   metodo: "Escolhe uma forma de contribuir.",
   demasiadosPedidos: "Demasiados pedidos seguidos. Aguarda um momento e tenta novamente.",
   naoEncontrada: "Não encontrámos esta contribuição.",

@@ -125,9 +125,11 @@ export default function CartaoVaquinha({ totaisIniciais, onContribuir }: Props) 
    */
   const acimaDoMaximo = outro && valorEfetivo > VALOR_MAX_CENTS;
   const rotuloCta = outro
-    ? valorEfetivo >= VALOR_MIN_CENTS
-      ? `Contribuir com ${euros(valorEfetivo)}`
-      : `Indica um valor a partir de ${euros(VALOR_MIN_CENTS)}`
+    ? acimaDoMaximo
+      ? `Indica um valor até ${euros(VALOR_MAX_CENTS)}`
+      : valorEfetivo >= VALOR_MIN_CENTS
+        ? `Contribuir com ${euros(valorEfetivo)}`
+        : `Indica um valor a partir de ${euros(VALOR_MIN_CENTS)}`
     : `Contribuir com ${euros(valorCents)}`;
 
   return (
