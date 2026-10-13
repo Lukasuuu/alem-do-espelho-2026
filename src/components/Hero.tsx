@@ -16,7 +16,7 @@ type Props = {
   /** Totais do primeiro render do cartão, lidos no servidor. */
   totaisVaquinha: TotaisVaquinha | null;
   /** Abre a folha da vaquinha com o valor escolhido no cartão (V4). */
-  onContribuir: (valorCents: number) => void;
+  onContribuir: (valorCents: number, elapsedMs: number) => void;
 };
 
 export default function Hero({ abrirModal, vaquinhaAberta, totaisVaquinha, onContribuir }: Props) {

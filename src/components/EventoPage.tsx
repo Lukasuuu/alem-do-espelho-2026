@@ -64,8 +64,13 @@ export default function EventoPage({
     posseToken: string;
   } | null>(null);
   const [parabensDados, setParabensDados] = useState<{ comprovativoOk: boolean } | null>(null);
-  // Vaquinha: o valor escolhido no cartão abre a folha (null = fechada).
-  const [vaquinhaValorCents, setVaquinhaValorCents] = useState<number | null>(null);
+  // Vaquinha: o valor escolhido no cartão abre a folha (null = fechada). O
+  // elapsedMs vem do cartão (tempo desde que a página carregou) e segue no corpo
+  // do /iniciar para a armadilha anti-bot.
+  const [vaquinhaPedido, setVaquinhaPedido] = useState<{
+    valorCents: number;
+    elapsedMs: number;
+  } | null>(null);
 
   // Override de teste (lista|inscricao) — constante por build, lido no client.
   const fase = faseForcada();
@@ -158,7 +163,7 @@ export default function EventoPage({
           abrirModal={abrirFluxo}
           vaquinhaAberta={vaquinhaAberta}
           totaisVaquinha={totaisVaquinha}
-          onContribuir={setVaquinhaValorCents}
+          onContribuir={(valorCents, elapsedMs) => setVaquinhaPedido({ valorCents, elapsedMs })}
         />
         {/* R6 — banner oficial + barra de horário no verde (herda id="o-evento"
             da faixa de chips que substituiu; destino do link EVENTO da navbar). */}
@@ -195,11 +200,12 @@ export default function EventoPage({
         comprovativoOk={parabensDados?.comprovativoOk ?? true}
         ctaWhatsApp={linkWhatsApp(SALON_WHATSAPP, MENSAGEM_INSCRICAO)}
       />
-      {vaquinhaValorCents !== null && (
+      {vaquinhaPedido && (
         <FolhaVaquinha
           aberto
-          fechar={() => setVaquinhaValorCents(null)}
-          valorCents={vaquinhaValorCents}
+          fechar={() => setVaquinhaPedido(null)}
+          valorCents={vaquinhaPedido.valorCents}
+          elapsedMs={vaquinhaPedido.elapsedMs}
         />
       )}
     </>

@@ -16,8 +16,16 @@ import {
 type Props = {
   /** Totais do primeiro render, lidos no servidor (page.tsx). null = sem base. */
   totaisIniciais: TotaisVaquinha | null;
-  /** V4 liga aqui a abertura da folha de doação. Sem isto, o botão fica inerte. */
-  onContribuir?: (valorCents: number) => void;
+  /**
+   * Abre a folha de doação. O `elapsedMs` é o tempo desde que ESTE cartão montou
+   * (ou seja, desde que a página carregou) e vai no corpo do /iniciar para a
+   * armadilha anti-bot: quem escreve um script carrega a página e dispara logo,
+   * uma pessoa tem o cartão à frente muito antes de decidir. Medir desde a
+   * abertura da folha era agressivo de mais — quem decide depressa escolhia o
+   * método em menos de 2,5 s e levava com «não conseguimos validar esta
+   * submissão», sem ter feito nada de errado.
+   */
+  onContribuir?: (valorCents: number, elapsedMs: number) => void;
 };
 
 const INTERVALO_POLL_MS = 15_000;
@@ -42,6 +50,8 @@ export default function CartaoVaquinha({ totaisIniciais, onContribuir }: Props) 
   const [valorCents, setValorCents] = useState<number>(1000); // 10 € como na prévia
   const [outro, setOutro] = useState(false);
   const [outroTxt, setOutroTxt] = useState("");
+  /** Quando este cartão montou — base do elapsedMs anti-bot (ver Props). */
+  const montadoEm = useRef<number>(Date.now());
 
   // ── Atualização ao vivo: 15 s, só com o separador visível ────────────────
   // cache: "no-store" é obrigatório: a Vercel reescreve o Cache-Control de
@@ -305,7 +315,7 @@ export default function CartaoVaquinha({ totaisIniciais, onContribuir }: Props) 
 
       <button
         type="button"
-        onClick={() => onContribuir?.(valorEfetivo)}
+        onClick={() => onContribuir?.(valorEfetivo, Date.now() - montadoEm.current)}
         disabled={outro && (valorEfetivo < VALOR_MIN_CENTS || acimaDoMaximo)}
         className="mt-4 flex h-[54px] w-full items-center justify-center gap-2.5 rounded-full bg-vinho text-base font-semibold text-creme-neon transition-colors duration-300 hover:bg-vinho-claro disabled:cursor-not-allowed disabled:opacity-60 md:mt-[18px]"
       >

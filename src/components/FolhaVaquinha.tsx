@@ -29,6 +29,13 @@ type Props = {
   fechar: () => void;
   /** Valor escolhido no cartão, em cêntimos. */
   valorCents: number;
+  /**
+   * Tempo desde que a página carregou, medido pelo cartão. Vai no corpo do
+   * /iniciar para a armadilha anti-bot — NÃO desde a abertura desta folha: quem
+   * decide depressa escolheria o método em menos de 2,5 s e era tratado como
+   * robô. Sem este valor, cai no tempo desta folha (comportamento antigo).
+   */
+  elapsedMs?: number;
   /** Chamado quando a declaração corre bem, com os totais já atualizados. */
   onDeclarada?: (totais: TotaisVaquinha | null) => void;
 };
@@ -77,7 +84,13 @@ const PARTILHA_DOMINIO = site.url.replace(/^https?:\/\//, "").toUpperCase();
  * Só se abre a confirmação de saída depois de /iniciar (ecrã de dados): quem
  * fecha na escolha do método ainda não começou nada e sai sem pergunta.
  */
-export default function FolhaVaquinha({ aberto, fechar, valorCents, onDeclarada }: Props) {
+export default function FolhaVaquinha({
+  aberto,
+  fechar,
+  valorCents,
+  elapsedMs,
+  onDeclarada,
+}: Props) {
   const [passo, setPasso] = useState<Passo>("metodos");
   const [pedido, setPedido] = useState<Pedido | null>(null);
   const [totais, setTotais] = useState<TotaisVaquinha | null>(null);
@@ -182,9 +195,10 @@ export default function FolhaVaquinha({ aberto, fechar, valorCents, onDeclarada 
           valorCents,
           metodo,
           idemKey: idemRef.current[metodo],
-          // Anti-bot: o campo invisível vai vazio e o tempo é o desta folha.
+          // Anti-bot: campo invisível vazio + tempo desde o carregamento da
+          // página (do cartão). Ver a nota do prop elapsedMs.
           website: "",
-          elapsedMs: Date.now() - aberturaEm.current,
+          elapsedMs: elapsedMs ?? Date.now() - aberturaEm.current,
         }),
       });
       const dados = (await r.json()) as {
