@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { site } from "@/lib/site";
 import MotionProvider from "@/components/MotionProvider";
 import SaltarParaInscricao from "@/components/SaltarParaInscricao";
-import { inscricoesEncerradas } from "@/lib/vaquinha-fase";
+import { estadoEvento, inscricoesEncerradas } from "@/lib/vaquinha-fase";
 import "./globals.css";
 
 const descricao = `A 2ª edição do Além do Espelho acontece a ${site.data.extenso}, no ${site.local.nome}, em ${site.local.cidade}. Um dia de desenvolvimento pessoal feminino, autoestima e networking para mulheres que querem voltar a encontrar-se. As inscrições estão abertas — 100 lugares, garantidos por ordem de pagamento.`;
@@ -57,11 +57,26 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-const dadosEstruturados = {
+/**
+ * D7: com as inscrições fechadas, os dados estruturados NÃO podem continuar a
+ * dizer que estão abertas nem que há lugares — é o que o Google mostra nos
+ * resultados enriquecidos de eventos, e passaria a ser falso a partir de sábado.
+ * Calculado dentro do componente (por pedido), não numa constante de módulo.
+ */
+function dadosEstruturadosVaquinha() {
+  const encerradas = inscricoesEncerradas();
+  const estado = estadoEvento();
+  const descricaoEvento =
+    estado === "antes"
+      ? descricao
+      : estado === "durante"
+        ? `O ${site.nome} está a acontecer hoje, no ${site.local.nome}, em ${site.local.cidade}. As inscrições estão encerradas. Agora, juntos por Angola.`
+        : `A 2ª edição do ${site.nome} aconteceu a ${site.data.extenso}, no ${site.local.nome}, em ${site.local.cidade}. Obrigada a todas as que estiveram connosco. Agora, juntos por Angola.`;
+  return {
   "@context": "https://schema.org",
   "@type": "Event",
   name: `${site.nome} · ${site.subtitulo}`,
-  description: descricao,
+  description: descricaoEvento,
   startDate: site.data.iso,
   endDate: site.data.fim,
   eventStatus: "https://schema.org/EventScheduled",
@@ -86,10 +101,11 @@ const dadosEstruturados = {
     "@type": "Offer",
     price: "40",
     priceCurrency: "EUR",
-    availability: "https://schema.org/InStock",
-    url: `${site.url}/alem-do-espelho-2026`,
-  },
-};
+    availability: encerradas ? "https://schema.org/SoldOut" : "https://schema.org/InStock",
+      url: `${site.url}/alem-do-espelho-2026`,
+    },
+  };
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -97,7 +113,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body suppressHydrationWarning>
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(dadosEstruturados) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(dadosEstruturadosVaquinha()) }}
         />
         {/* D7: é o layout que decide — o skip-link aponta para onde há algo
             para fazer. */}
