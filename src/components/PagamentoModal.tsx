@@ -125,9 +125,13 @@ const TITULO_MODAL = "pagamento-titulo";
  *     leva ao passo "recuperacao" se o checkout fechar; MB Way e transferência
  *     com dados para copiar; o cartão do link expõe ainda o QR do mesmo link,
  *     num cartão branco e sem gerador de QR);
- *  3. "Já fiz o pagamento": no link SumUp é uma DECLARAÇÃO que vai direto ao
- *     sucesso (decisão E — a SumUp tem registo próprio); nos outros métodos
- *     leva ao comprovativo (upload validado no servidor);
+ *  3. O botão principal dos ecrãs de dados: no link SumUp é «Já fiz o
+ *     pagamento» e é uma DECLARAÇÃO que vai direto ao sucesso (decisão E — a
+ *     SumUp confirma o pagamento por si; pedir comprovativo a quem pagou por
+ *     cartão seria ACRESCENTAR um passo); no MB Way, na transferência e no
+ *     painel de recuperação é «Enviar comprovativo» e abre já o comprovativo
+ *     (13/10/2026 — antes dizia «Já fiz o pagamento» e o passo era o mesmo,
+ *     só o rótulo não dizia o que ia acontecer);
  *  4. sucesso → onComprovativoSucesso (o pai fecha e mostra o PARABÉNS, que
  *     dispara o email "recebemos a tua inscrição" — directiva §3). Upload
  *     falhou ou a pessoa prefere o WhatsApp → onComprovativoFalha (o pai mostra
@@ -357,13 +361,13 @@ export default function PagamentoModal({
   }
 
   /**
-   * "Já fiz o pagamento" (MB Way, transferência e passo de recuperação): leva
-   * ao comprovativo. O PATCH /api/inscricao/metodo já respondeu OK antes de
-   * este botão ser clicável (metodo !== null ⟺ gravado). Os emails vivem na
+   * «Enviar comprovativo» (MB Way, transferência e painel de recuperação): abre
+   * o passo do comprovativo. O PATCH /api/inscricao/metodo já respondeu OK antes
+   * de este botão ser clicável (metodo !== null ⟺ gravado). Os emails vivem na
    * fila da base (R15): o de instruções já foi enfileirado server-side pelo
    * PATCH; o de "comprovativo recebido" é enfileirado pela rota de upload —
    * NENHUM dispara daqui. No passo do link SumUp o botão NÃO passa por aqui:
-   * é uma declaração direta ao sucesso.
+   * é «Já fiz o pagamento» e é uma declaração direta ao sucesso.
    */
   function declararPagamento() {
     setPasso("comprovativo");
@@ -817,7 +821,7 @@ export default function PagamentoModal({
                           : "border-creme/25 text-creme/80 hover:border-creme/50 hover:bg-creme/5"
                       }`}
                     >
-                      Já fiz o pagamento
+                      Enviar comprovativo
                       <ChevronRight className="h-4 w-4" aria-hidden />
                     </button>
                   </div>
@@ -836,7 +840,7 @@ export default function PagamentoModal({
                     whatsappHref={linkWhatsAppComprovativo(nome, inscricaoId.slice(0, 8))}
                     rotuloWhatsapp="Anexar comprovativo"
                     aoDeclararPagamento={declararPagamento}
-                    textoBotaoDeclarar="Já fiz o pagamento"
+                    textoBotaoDeclarar="Enviar comprovativo"
                     textoPassoFinal="Depois de pagar, envia o comprovativo para garantirmos o teu lugar."
                   />
                 )}
@@ -850,7 +854,7 @@ export default function PagamentoModal({
                     whatsappHref={linkWhatsAppComprovativo(nome, inscricaoId.slice(0, 8))}
                     rotuloWhatsapp="Anexar comprovativo"
                     aoDeclararPagamento={declararPagamento}
-                    textoBotaoDeclarar="Já fiz a transferência"
+                    textoBotaoDeclarar="Enviar comprovativo"
                     referencia={`${primeiroNome} · Além do Espelho 2026`}
                   />
                 )}
@@ -858,35 +862,13 @@ export default function PagamentoModal({
                 {/* ── PASSO: comprovativo (cabeçalho e voltar estão na zona fixa) ── */}
                 {passo === "comprovativo" && (
                   <div>
-                    {/* Parabéns curto + aviso do email (spec Lucas, 06/09) — no
-                        topo, antes de qualquer talk de upload: a pagante chega
-                        aqui logo depois de pagar e o que muda de vida é o
-                        email que vai receber, não o ficheiro. */}
-                    <p
-                      className={`mt-4 text-[0.9375rem] font-medium ${
-                        claro ? "text-vinho" : "text-creme"
-                      }`}
-                    >
-                      🎉 Pagamento declarado — falta só a prova.
-                    </p>
-                    <p
-                      className={`mt-3 rounded-sm border px-4 py-3 text-[0.875rem] leading-relaxed ${
-                        claro
-                          ? "border-dourado-claro/40 bg-dourado-claro/[0.07] text-carvao/80"
-                          : "border-dourado-claro/30 bg-dourado-claro/[0.07] text-creme/85"
-                      }`}
-                    >
-                      Vais receber um email com o comprovativo da tua inscrição.
-                    </p>
-
-                    <p
-                      className={`mt-4 text-[0.9375rem] leading-relaxed ${
-                        claro ? "text-carvao/75" : "text-creme/75"
-                      }`}
-                    >
-                      Anexa o comprovativo do pagamento (captura de ecrã, recibo ou PDF) para
-                      validarmos o teu lugar. Fica guardado em segurança e só nós o vemos.
-                    </p>
+                    {/* 13/10/2026 (Lucas): este passo fica SÓ com o título, a área
+                        de upload e o botão de enviar. Saíram daqui o "🎉 pagamento
+                        declarado", o aviso do email e a explicação dos formatos —
+                        o parabéns e o aviso do email vivem no ecrã final, e os
+                        formatos aceites já são ditos pelo próprio
+                        PaymentProofUpload ("PNG · JPG · WEBP · HEIC · PDF · máx.
+                        8 MB"). O alerta de rejeição fica: é funcional, não decoração. */}
 
                     {motivoRejeicao && (
                       <div
