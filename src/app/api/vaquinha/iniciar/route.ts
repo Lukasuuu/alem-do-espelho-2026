@@ -7,8 +7,17 @@ import { MENSAGENS_VAQUINHA, erroDaVaquinha, iniciarDoacaoSchema } from "@/lib/v
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Tempo mínimo plausível entre abrir o cartão e contribuir (igual à inscrição). */
-const TEMPO_MINIMO_MS = 2_500;
+/**
+ * Tempo mínimo plausível. Muito mais baixo do que os 2,5 s da inscrição, e de
+ * propósito: aqui são DOIS toques num cartão que já está à frente da pessoa
+ * (escolher o valor, escolher o método), não um formulário com campos para
+ * preencher. Medido na janela de teste: um percurso automático — mais rápido do
+ * que qualquer pessoa — levava 1,5 s desde o carregamento da página, portanto
+ * qualquer limiar acima disto rejeitava gente a sério com «não conseguimos
+ * validar esta submissão». 800 ms continua a apanhar o script que carrega a
+ * página e dispara logo; quem toca duas vezes não é travado.
+ */
+const TEMPO_MINIMO_MS = 800;
 
 type Resposta =
   | {
