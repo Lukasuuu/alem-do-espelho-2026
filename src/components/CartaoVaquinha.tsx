@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import LocalImage from "./LocalImage";
 import {
+  MENSAGENS_VAQUINHA,
   VALORES_RAPIDOS,
+  VALOR_MAX_CENTS,
   VALOR_MIN_CENTS,
   formatarEuros,
   type TotaisVaquinha,
@@ -116,6 +118,12 @@ export default function CartaoVaquinha({ totaisIniciais, onContribuir }: Props) 
 
   const nOutro = parseInt(outroTxt, 10);
   const valorEfetivo = outro ? (Number.isFinite(nOutro) ? nOutro * 100 : 0) : valorCents;
+  /**
+   * O teto valida-se aqui também, e não só na RPC: sem isto o botão deixava
+   * seguir um valor que o servidor ia recusar, e a pessoa só descobria depois de
+   * escolher o método. A mensagem é a MESMA do servidor (valor_maximo).
+   */
+  const acimaDoMaximo = outro && valorEfetivo > VALOR_MAX_CENTS;
   const rotuloCta = outro
     ? valorEfetivo >= VALOR_MIN_CENTS
       ? `Contribuir com ${euros(valorEfetivo)}`
@@ -269,20 +277,33 @@ export default function CartaoVaquinha({ totaisIniciais, onContribuir }: Props) 
             type="number"
             inputMode="numeric"
             min={5}
+            max={VALOR_MAX_CENTS / 100}
             step={1}
             placeholder="25"
             value={outroTxt}
             onChange={(e) => setOutroTxt(e.target.value)}
+            aria-invalid={acimaDoMaximo}
+            aria-describedby={acimaDoMaximo ? "vaquinha-outro-erro" : undefined}
             className="h-[46px] min-w-0 flex-1 rounded-xl border border-areia bg-white px-3.5 text-base text-vinho placeholder:text-vinho/40 md:h-11 md:w-[120px] md:flex-none"
           />
           <span className="text-base">€</span>
         </div>
       )}
 
+      {acimaDoMaximo && (
+        <p
+          id="vaquinha-outro-erro"
+          role="alert"
+          className="mt-2 text-[0.8125rem] font-medium leading-relaxed text-vinho-profundo"
+        >
+          {MENSAGENS_VAQUINHA.valorMaximo}
+        </p>
+      )}
+
       <button
         type="button"
         onClick={() => onContribuir?.(valorEfetivo)}
-        disabled={outro && valorEfetivo < VALOR_MIN_CENTS}
+        disabled={outro && (valorEfetivo < VALOR_MIN_CENTS || acimaDoMaximo)}
         className="mt-4 flex h-[54px] w-full items-center justify-center gap-2.5 rounded-full bg-vinho text-base font-semibold text-creme-neon transition-colors duration-300 hover:bg-vinho-claro disabled:cursor-not-allowed disabled:opacity-60 md:mt-[18px]"
       >
         {rotuloCta}

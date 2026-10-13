@@ -85,7 +85,7 @@ export function textoContribuicoes(n: number): string {
  */
 export const MENSAGENS_VAQUINHA = {
   naoConfigurada: "A vaquinha ainda não está pronta. Tenta novamente daqui a pouco.",
-  naoAbriu: "A vaquinha ainda não abriu. Volta ao início do evento.",
+  naoAbriu: "A vaquinha abre no dia do evento, às 09h30.",
   inativa: "A vaquinha está fechada neste momento.",
   encerrada: "A vaquinha já encerrou. Obrigada a quem participou!",
   valorMinimo: "O valor mínimo é 5 €.",
