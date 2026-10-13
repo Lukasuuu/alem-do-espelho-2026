@@ -10,6 +10,7 @@
  */
 
 import { EVENTO_ISO } from "../../supabase/functions/_shared/config";
+import { MBWAY_NUMERO, MBWAY_NUMERO_COPIAR, validarIban } from "@/lib/pagamento";
 import { z } from "zod";
 
 /**
@@ -33,30 +34,55 @@ export const VALOR_MIN_CENTS = 500;
 export const VALOR_MAX_CENTS = 100000;
 
 /**
- * D4 — dados de recebimento das doações. AINDA POR DECIDIR (Lucas/Vitória).
+ * D4 — dados de recebimento das doações (fechado a 13/10/2026).
  *
- * A vaquinha só tem MB Way e transferência: não há link de pagamento (o D3
- * desapareceu na revisão 2 de 13/10), por isso não existe aqui nenhum URL de
- * SumUp — e nunca se reutilizaria o da inscrição, que é de 40 € fixos.
+ * MB Way: o MESMO número da inscrição. Vem importado de lib/pagamento.ts e não
+ * repetido aqui — já divergiu uma vez no projeto e não volta a divergir. São
+ * dois valores de propósito: o que se MOSTRA (+351 928 400 069) e o que se COPIA
+ * (só os 9 dígitos), porque é isso que o campo da app MB Way aceita.
  *
- * Ficam a null de propósito, em vez de herdarem os da inscrição: o dinheiro da
- * vaquinha pode ir para outra conta (D2), e uma instrução de pagamento errada é
- * pior do que uma instrução ausente — alguém transfere para o sítio errado.
- * Enquanto algum estiver a null, pagamentoConfigurado() é false e o fluxo NÃO
- * pode mostrar instruções: o checklist de pré-go-live falha aqui de propósito.
+ * Transferência: conta PRÓPRIA da vaquinha, que não é a SumUp da inscrição. O
+ * BIC não entra no ecrã — dentro da zona SEPA basta o IBAN. O nome fica
+ * «Vitória Gomes», como o Revolut o mostra; os bancos da zona euro confirmam o
+ * nome contra o IBAN e avisam quem transfere se não bater.
+ *
+ * A vaquinha só tem estes dois métodos: não há link de pagamento (o D3
+ * desapareceu na revisão 2 de 13/10).
  */
-export const VAQUINHA_PAGAMENTO: {
-  mbwayNumero: string | null;
-  transferencia: { iban: string; beneficiario: string } | null;
-} = {
-  mbwayNumero: null,
-  transferencia: null,
-};
+export const VAQUINHA_PAGAMENTO = {
+  mbway: {
+    mostrar: MBWAY_NUMERO,
+    copiar: MBWAY_NUMERO_COPIAR,
+  },
+  transferencia: {
+    beneficiario: "Vitória Gomes",
+    iban: "PT50356000019001883341386", // guardado sem espaços
+  },
+} as const;
 
-/** true só quando o D4 está preenchido (porta do V6 e dos ecrãs do V4). */
+// Mesmo tripwire da TRANSFERENCIA da inscrição (lib/pagamento.ts): um IBAN
+// inválido em código parte o build/consola em vez de mandar alguém transferir
+// para o lado errado. A vaquinha é dinheiro de uma causa solidária — falha alto.
+if (!validarIban(VAQUINHA_PAGAMENTO.transferencia.iban)) {
+  throw new Error(
+    `[vaquinha] IBAN de doações inválido em src/lib/vaquinha.ts: "${VAQUINHA_PAGAMENTO.transferencia.iban}". Corrige antes de avançar.`
+  );
+}
+
+/**
+ * D2 — frase de transparência (fechado a 13/10/2026, confirmada pela Vitória).
+ * Vive ao lado do VAQUINHA_PAGAMENTO para o D2 e o D4 estarem no mesmo sítio:
+ * é a mesma pergunta — quem recebe este dinheiro.
+ */
+export const VAQUINHA_TRANSPARENCIA =
+  "Os valores são recebidos por Vitória Gomes, organizadora do Além do Espelho, e entregues na totalidade à ONG Atos.";
+
+/** true com D4 preenchido (porta do checklist de pré-go-live). */
 export function pagamentoConfigurado(): boolean {
   const p = VAQUINHA_PAGAMENTO;
-  return Boolean(p.mbwayNumero && p.transferencia?.iban && p.transferencia?.beneficiario);
+  return Boolean(
+    p.mbway.mostrar && p.mbway.copiar && p.transferencia.beneficiario && p.transferencia.iban
+  );
 }
 
 /**

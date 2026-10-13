@@ -6,6 +6,7 @@ import LocalImage from "./LocalImage";
 import {
   MENSAGENS_VAQUINHA,
   VALORES_RAPIDOS,
+  VAQUINHA_TRANSPARENCIA,
   VALOR_MAX_CENTS,
   VALOR_MIN_CENTS,
   formatarEuros,
@@ -313,15 +314,8 @@ export default function CartaoVaquinha({ totaisIniciais, onContribuir }: Props) 
       </button>
 
       <p className="mt-3 text-center text-[0.75rem] italic leading-[1.45] text-tinta-suave">
-        {PENDENTE_TRANSPARENCIA}
+        {VAQUINHA_TRANSPARENCIA}
       </p>
     </div>
   );
 }
-
-/**
- * D2 (em aberto com a Vitória): quem recebe o dinheiro e como chega à ONG Atos.
- * Enquanto não existir, o cartão NÃO pode inventar uma frase de transparência —
- * mostra esta marca, que o checklist de pré-go-live recusa.
- */
-const PENDENTE_TRANSPARENCIA = "[Frase de transparência: quem recebe os valores e como chegam à ONG Atos]";

@@ -8,6 +8,7 @@ import { focaveis } from "./Modal";
 import LocalImage from "./LocalImage";
 import ConfirmacaoSaidaModal from "./ConfirmacaoSaidaModal";
 import { SALON_WHATSAPP } from "@/lib/campanha";
+import { formatarIban } from "@/lib/pagamento";
 import { linkWhatsApp, site } from "@/lib/site";
 import { destravarScroll, travarScroll } from "@/lib/scroll-lock";
 import {
@@ -33,6 +34,23 @@ type Props = {
 };
 
 const TITULO_ID = "vaquinha-titulo";
+
+/**
+ * UUID v4. `crypto.randomUUID` NÃO existe em iOS anterior ao 15.4 — e o público
+ * do evento é sobretudo telemóvel — por isso há o caminho de recurso com
+ * `getRandomValues` (que existe em todo o lado onde há Web Crypto).
+ */
+function uuidV4(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  const b = new Uint8Array(16);
+  crypto.getRandomValues(b);
+  b[6] = (b[6] & 0x0f) | 0x40; // versão 4
+  b[8] = (b[8] & 0x3f) | 0x80; // variante RFC 4122
+  const h = Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+}
 
 /** Texto partilhado — verbatim do LEIA-ME (revisão 5) e sem a referência nem o
     valor doado: o que se partilha é a causa, não a contribuição de quem dá. */
@@ -71,6 +89,17 @@ export default function FolhaVaquinha({ aberto, fechar, valorCents, onDeclarada 
   const painelRef = useRef<HTMLDivElement>(null);
   const abridorRef = useRef<HTMLElement | null>(null);
   const aberturaEm = useRef<number>(0);
+  /**
+   * Chave anti duplo clique POR MÉTODO, uma por cada abertura da folha.
+   * Gerada no primeiro toque e reutilizada nas tentativas seguintes: se a
+   * resposta do /iniciar se perder e a pessoa tocar outra vez, a RPC devolve a
+   * MESMA linha em vez de criar uma segunda doação. Voltar ao mesmo método
+   * devolve, então, a mesma referência.
+   */
+  const idemRef = useRef<{ mbway: string; transferencia: string }>({
+    mbway: "",
+    transferencia: "",
+  });
   const [montado, setMontado] = useState(false);
 
   useEffect(() => setMontado(true), []);
@@ -85,6 +114,7 @@ export default function FolhaVaquinha({ aberto, fechar, valorCents, onDeclarada 
     setMarcando(false);
     setSairPendente(false);
     aberturaEm.current = Date.now();
+    idemRef.current = { mbway: "", transferencia: "" }; // chaves novas por abertura
   }, [aberto]);
 
   /** Fechar passa pela confirmação só depois de haver pedido criado. */
@@ -140,6 +170,10 @@ export default function FolhaVaquinha({ aberto, fechar, valorCents, onDeclarada 
   async function escolher(metodo: "mbway" | "transferencia") {
     setErro(null);
     setMarcando(true);
+    // A chave do método: criada no 1.º toque, reutilizada nas tentativas
+    // seguintes (ver idemRef) — é o que impede uma segunda doação quando a
+    // resposta se perde.
+    if (!idemRef.current[metodo]) idemRef.current[metodo] = uuidV4();
     try {
       const r = await fetch("/api/vaquinha/iniciar", {
         method: "POST",
@@ -147,8 +181,7 @@ export default function FolhaVaquinha({ aberto, fechar, valorCents, onDeclarada 
         body: JSON.stringify({
           valorCents,
           metodo,
-          // Chave anti duplo clique, gerada aqui e por cada tentativa.
-          idemKey: crypto.randomUUID(),
+          idemKey: idemRef.current[metodo],
           // Anti-bot: o campo invisível vai vazio e o tempo é o desta folha.
           website: "",
           elapsedMs: Date.now() - aberturaEm.current,
@@ -427,9 +460,8 @@ export default function FolhaVaquinha({ aberto, fechar, valorCents, onDeclarada 
                       <div className="mt-4 rounded-xl border border-selo-borda bg-white">
                         {linhaDados(
                           "Número MB Way",
-                          VAQUINHA_PAGAMENTO.mbwayNumero ?? "[número de doações]",
-                          (VAQUINHA_PAGAMENTO.mbwayNumero ?? "").replace(/\s/g, ""),
-                          { italico: !VAQUINHA_PAGAMENTO.mbwayNumero }
+                          VAQUINHA_PAGAMENTO.mbway.mostrar,
+                          VAQUINHA_PAGAMENTO.mbway.copiar
                         )}
                         {linhaDados("Valor", formatarEurosComCentimos(valorCents), String(valorCents / 100))}
                         {linhaDados("Referência — escreve na mensagem", pedido?.referencia ?? "—", pedido?.referencia ?? "", {
@@ -467,15 +499,15 @@ export default function FolhaVaquinha({ aberto, fechar, valorCents, onDeclarada 
                       <div className="mt-3.5 rounded-xl border border-selo-borda bg-white">
                         {linhaDados(
                           "Beneficiário",
-                          VAQUINHA_PAGAMENTO.transferencia?.beneficiario ?? "[nome do titular da conta]",
-                          VAQUINHA_PAGAMENTO.transferencia?.beneficiario ?? "",
-                          { italico: !VAQUINHA_PAGAMENTO.transferencia, tamanho: "text-base" }
+                          VAQUINHA_PAGAMENTO.transferencia.beneficiario,
+                          VAQUINHA_PAGAMENTO.transferencia.beneficiario,
+                          { tamanho: "text-base" }
                         )}
                         {linhaDados(
                           "IBAN",
-                          VAQUINHA_PAGAMENTO.transferencia?.iban ?? "[IBAN de doações]",
-                          (VAQUINHA_PAGAMENTO.transferencia?.iban ?? "").replace(/\s/g, ""),
-                          { italico: !VAQUINHA_PAGAMENTO.transferencia, tamanho: "text-base" }
+                          formatarIban(VAQUINHA_PAGAMENTO.transferencia.iban),
+                          VAQUINHA_PAGAMENTO.transferencia.iban,
+                          { tamanho: "text-base" }
                         )}
                         {linhaDados("Valor", formatarEurosComCentimos(valorCents), String(valorCents / 100), {
                           tamanho: "text-[1.0625rem]",

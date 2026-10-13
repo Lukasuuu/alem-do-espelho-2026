@@ -88,13 +88,21 @@ Para ver a vaquinha no preview antes de 17/10: `NEXT_PUBLIC_VAQUINHA_OVERRIDE=ab
 
 ---
 
-## 6. Ainda em aberto — com a Vitória
+## 6. Fechado e em aberto
+
+**Fechado a 13/10/2026:**
+
+| # | Decisão | Onde vive |
+|---|---|---|
+| **D2** | Frase de transparência: «Os valores são recebidos por Vitória Gomes, organizadora do Além do Espelho, e entregues na totalidade à ONG Atos.» | `VAQUINHA_TRANSPARENCIA` em `src/lib/vaquinha.ts` |
+| **D4** | MB Way: o mesmo número da inscrição (importado de `lib/pagamento.ts` — 9 dígitos a copiar, não o número formatado). Transferência: conta própria da vaquinha, beneficiário «Vitória Gomes», IBAN `PT50…1386` (mostrado com `formatarIban`, copiado sem espaços, com o tripwire `validarIban`). Sem BIC no ecrã: dentro da zona SEPA basta o IBAN. | `VAQUINHA_PAGAMENTO` em `src/lib/vaquinha.ts` |
+
+**Ainda em aberto — com a Vitória:**
 
 | | Bloqueia |
 |---|---|
-| **D2** — quem recebe o dinheiro e a frase de transparência | V6 (texto no cartão) |
-| **D4** — número MB Way, IBAN e titular para doações | V6 — sem isto os ecrãs de dados não vão para produção |
 | **D5** — quem confirma as doações no dia (voluntário) | V5 (acesso à página) |
-| **D6** — hora de fecho da vaquinha, ou aberta | 0014b (pode ficar `null` e mudar-se depois por SQL) |
+| **D6** — hora de fecho da vaquinha, ou aberta | nada: fica `null` e muda-se por SQL, sem deploy |
 
-Constrói com estes valores lidos de um único sítio. Enquanto faltarem, o checklist do V6 falha — nunca mostrar placeholders em produção.
+Enquanto o D5 e o D6 não fecharem, o checklist de pré-go-live acusa-os. Nunca mostrar placeholders em produção.
+
