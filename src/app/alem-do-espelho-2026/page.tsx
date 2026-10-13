@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { permanentRedirect } from "next/navigation";
 import { site } from "@/lib/site";
 import { isDepoisDoCorte, inscricaoAtiva } from "@/lib/cutover";
+import { VAQUINHA_INICIO_ISO } from "@/lib/vaquinha";
+import { vaquinhaIniciada } from "@/lib/vaquinha-fase";
+import { lerTotaisVaquinha } from "@/lib/vaquinha-servidor";
 import EventoPage from "@/components/EventoPage";
 
 /**
@@ -62,5 +65,18 @@ export default async function Page() {
   // Date.now() no client — seria repetir o hydration mismatch já corrigido.
   const faseInscricaoAtiva = inscricaoAtiva();
 
-  return <EventoPage faseInscricaoAtiva={faseInscricaoAtiva} />;
+  // Vaquinha: a fase decide-se aqui, com o relógio do servidor e o override
+  // isolado (lib/vaquinha-fase) — o cliente não recalcula com Date.now() no
+  // render. Os totais só se leem quando o cartão vai mesmo aparecer: antes disso
+  // seria uma ida à base por request para nada.
+  const vaquinhaAberta = vaquinhaIniciada(VAQUINHA_INICIO_ISO);
+  const totaisVaquinha = vaquinhaAberta ? await lerTotaisVaquinha() : null;
+
+  return (
+    <EventoPage
+      faseInscricaoAtiva={faseInscricaoAtiva}
+      vaquinhaAberta={vaquinhaAberta}
+      totaisVaquinha={totaisVaquinha}
+    />
+  );
 }

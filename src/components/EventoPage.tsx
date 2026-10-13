@@ -18,6 +18,7 @@ import { definirAberturaModal } from "@/lib/modal";
 import { faseForcada } from "@/lib/fase";
 import { FIM_CAMPANHA_ISO, MENSAGEM_INSCRICAO, SALON_WHATSAPP } from "@/lib/campanha";
 import { linkWhatsApp } from "@/lib/site";
+import type { TotaisVaquinha } from "@/lib/vaquinha";
 
 const fimCampanhaMs = new Date(FIM_CAMPANHA_ISO).getTime();
 
@@ -35,9 +36,19 @@ const fimCampanhaMs = new Date(FIM_CAMPANHA_ISO).getTime();
  * relógio + override) e apenas encadeado aqui até à secção de patrocinadores —
  * o client não recalcula com Date.now().
  */
-type Props = { faseInscricaoAtiva: boolean };
+type Props = {
+  faseInscricaoAtiva: boolean;
+  /** Decidido no servidor (relógio + NEXT_PUBLIC_VAQUINHA_OVERRIDE). */
+  vaquinhaAberta: boolean;
+  /** Totais do primeiro render do cartão, também lidos no servidor. */
+  totaisVaquinha: TotaisVaquinha | null;
+};
 
-export default function EventoPage({ faseInscricaoAtiva }: Props) {
+export default function EventoPage({
+  faseInscricaoAtiva,
+  vaquinhaAberta,
+  totaisVaquinha,
+}: Props) {
   const [waitlistAberto, setWaitlistAberto] = useState(false);
   const [inscricaoAberto, setInscricaoAberto] = useState(false);
   const [pagamentoAberto, setPagamentoAberto] = useState(false);
@@ -140,7 +151,7 @@ export default function EventoPage({ faseInscricaoAtiva }: Props) {
       {/* faseInscricaoAtiva controla também o link PATROCINADORES da navbar. */}
       <Header abrirModal={abrirFluxo} faseInscricaoAtiva={faseInscricaoAtiva} />
       <main>
-        <Hero abrirModal={abrirFluxo} />
+        <Hero abrirModal={abrirFluxo} vaquinhaAberta={vaquinhaAberta} totaisVaquinha={totaisVaquinha} />
         {/* R6 — banner oficial + barra de horário no verde (herda id="o-evento"
             da faixa de chips que substituiu; destino do link EVENTO da navbar). */}
         <BannerOficial />

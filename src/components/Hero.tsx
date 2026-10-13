@@ -1,16 +1,27 @@
 "use client";
 
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
+import { useState } from "react";
 import { site } from "@/lib/site";
+import type { TotaisVaquinha } from "@/lib/vaquinha";
+import CartaoVaquinha from "./CartaoVaquinha";
 import Countdown from "./Countdown";
 
 type Props = {
   abrirModal: () => void;
+  /** Decidido no servidor: o evento já começou (ou o override de teste forçou). */
+  vaquinhaAberta: boolean;
+  /** Totais do primeiro render do cartão, lidos no servidor. */
+  totaisVaquinha: TotaisVaquinha | null;
 };
 
-export default function Hero({ abrirModal }: Props) {
+export default function Hero({ abrirModal, vaquinhaAberta, totaisVaquinha }: Props) {
+  // Estado inicial vindo do SERVIDOR (sem mismatch de hidratação); depois da
+  // montagem pode virar por conta própria quando o cronómetro chega a zero.
+  const [vaquinha, setVaquinha] = useState(vaquinhaAberta);
+
   const surgir = (delay: number) => ({
     initial: { opacity: 0, y: 24 },
     animate: { opacity: 1, y: 0 },
@@ -71,15 +82,43 @@ export default function Hero({ abrirModal }: Props) {
             lugares, garantidos por ordem de pagamento.
           </motion.p>
 
-          {/* Contagem regressiva para o dia do evento (lugares + preço da inscrição) */}
-          <motion.div {...surgir(0.4)} className="mt-8">
-            <Countdown
-              tom="claro"
-              alvo={site.data.iso}
-              rotulo="Faltam"
-              suporte={`${site.vagas} lugares · inscrição 40€`}
-              mensagemEncerrado="O dia chegou — vemo-nos lá!"
-            />
+          {/* Cronómetro → cartão da vaquinha. O estado inicial decide-se no
+              SERVIDOR (page.tsx), para servidor e cliente renderizarem o mesmo
+              HTML; com a página aberta, o onEncerrado do cronómetro faz a troca
+              ao vivo, sem reload (fade + leve subida, ~400 ms).
+
+              min-h reserva a altura do CRONÓMETRO, para a troca ao vivo não
+              colapsar o bloco. Não se reserva a altura do cartão: ~600 px de
+              buraco no hero durante três dias seria pior do que o CTA descer
+              uma vez quando o cartão entra. */}
+          <motion.div {...surgir(0.4)} className="mt-8 min-h-[7.5rem]">
+            <AnimatePresence mode="wait" initial={false}>
+              {vaquinha ? (
+                <motion.div
+                  key="vaquinha"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <CartaoVaquinha totaisIniciais={totaisVaquinha} />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="cronometro"
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                >
+                  <Countdown
+                    tom="claro"
+                    alvo={site.data.iso}
+                    rotulo="Faltam"
+                    suporte={`${site.vagas} lugares · inscrição 40€`}
+                    mensagemEncerrado="O dia chegou — vemo-nos lá!"
+                    onEncerrado={() => setVaquinha(true)}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
 
           <motion.div {...surgir(0.5)} className="mt-11">
