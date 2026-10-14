@@ -32,7 +32,7 @@ Commita a pasta num caminho limpo. Apaga cópias duplicadas e `.zip` em `docs/va
 | Meta | **5000 €** |
 | Métodos | **Só MB Way e Transferência.** Não há link SumUp na vaquinha (o D3 desaparece) |
 | Contagem | **Nunca** mostrar número de contribuições, em lado nenhum |
-| Número grande / "Arrecadado" | **Só o confirmado.** As declaradas aparecem apenas como segmento às riscas na barra, sem texto |
+| Número grande / "Arrecadado" | **O arrecadado** (D8, 14/10): confirmado **+ declaradas até ao limite de confiança**. Acima desse limite a declarada aparece só como segmento às riscas, sem texto |
 | Fluxo | Método → dados + **«Já fiz a doação»** no mesmo ecrã → agradecimento. **Sem comprovativo** (não reutilizar o `PaymentProofUpload`) |
 | Partilha | Rota própria `/alem-do-espelho-2026/vaquinha` com metadados e imagem OG próprios; um único botão "Partilhar a vaquinha" com `navigator.share` (detalhe no LEIA-ME) |
 | Selo | **Símbolo da Atos sem a palavra**, como na prévia aprovada. Não é preciso mostrar alternativas |
@@ -43,7 +43,8 @@ Commita a pasta num caminho limpo. Apaga cópias duplicadas e `.zip` em `docs/va
 
 - `iniciarDoacaoSchema.metodo` → `z.enum(["mbway", "transferencia"])`.
 - `totalNaBarra()` deixa de ser o número mostrado. **Número = `confirmado_cents`**; a barra desenha `confirmado_cents` e `a_confirmar_cents` como dois segmentos separados.
-- `TotaisVaquinha` perde `n_contribuicoes`.
+- `TotaisVaquinha` perde `n_contribuicoes` (e, desde a 0014c, ganha `arrecadado_cents` e
+  `limite_confianca_cents` — ver a secção 9).
 - `pagamentoConfigurado()` verifica só o D4: número MB Way, IBAN e titular.
 - Polling do cliente com `fetch(..., { cache: "no-store" })`, a cada 15 s, parado com o separador escondido.
 
@@ -76,6 +77,7 @@ O chat aplica pelo conector, verifica corpo a corpo contra o ficheiro do commit,
 1. Pasta da referência confirmada e commitada (secção 0).
 2. Correções ao V2 (secção 2).
 3. 0014b escrita → chat aplica → resultado das verificações.
+3b. **0014c** (D8) escrita a 14/10 → mostrar ao Lucas → só depois o chat aplica.
 4. **V3** — cartão no lugar do cronómetro + troca no zero, igual a `01` e `02`.
 5. **V4** — modal de doação (`03`–`06`) + rota `/vaquinha` com OG (`07`).
 6. **V5** — página do voluntário para confirmar/anular.
@@ -99,13 +101,14 @@ Para ver a vaquinha no preview antes de 17/10: `NEXT_PUBLIC_VAQUINHA_OVERRIDE=ab
 
 | **D6** | A vaquinha fica aberta **até 18 de novembro** (antes da viagem a Angola): `fim = 2026-11-19T00:00:00+00:00`, ou seja, aberta durante todo o dia 18/11 em Lisboa. O prazo é **lido do `fim`** e mostrado no cartão («Até 18 de novembro», `fim − 1 ms` em Europe/Lisbon) — se a data mudar por SQL, o cartão acompanha sem deploy. Passou de um dia para um mês, e daí o estado «encerrada» no cartão. | `vaquinha_config.fim` |
 
-**Ainda em aberto — com a Vitória:**
+**Fechado a 14/10/2026:**
 
-| | Bloqueia |
-|---|---|
-| **D5** — quem confirma as doações **até 18/11** (já não é só no dia do evento) | V5 (acesso à página) |
+| # | Decisão | Onde vive |
+|---|---|---|
+| **D5** | Quem confirma as doações (até 18/11) é a **Vitória**, sozinha, pelo telemóvel. O acesso é um **link pessoal**, não uma palavra-passe | `VAQUINHA_ACESSO_HASH` (Vercel) + secção 8 |
+| **D8** | **Confiança em quem doa**: a declarada conta logo no arrecadado, até ao limite de confiança (100 €); acima dele só nas riscas até a Vitória confirmar | `vaquinha_config.limite_confianca_cents` + secção 9 |
 
-Enquanto o D5 não fechar, o checklist de pré-go-live acusa-o. Nunca mostrar placeholders em produção.
+**Nada em aberto.** O checklist de pré-go-live já não acusa o D5 nem o D8.
 
 ## 7. D7 — as inscrições fecham quando a vaquinha abre (13/10)
 
@@ -160,23 +163,78 @@ patrocinadoras ocultas (`visivel:false`) não se tocam.
 `/alem-do-espelho-2026/vaquinha/confirmar` — `noindex, nofollow`, fora de qualquer link público e sem
 chrome do site. Desenhada para **telemóvel**: é alguém a conferir a app do MB Way e o extrato.
 
-**Dois segredos diferentes, de propósito:**
+**Acesso por LINK PESSOAL — sem palavra-passe (14/10, com o D5 fechado).** A palavra-passe humana e a
+env `VAQUINHA_VOLUNTARIO_HASH` **morreram**: uma palavra-passe escolhida por nós é uma coisa a mais para
+guardar, para dizer a alguém e para trocar. O link é:
+
+```
+https://essenceofbeautysalon.com/alem-do-espelho-2026/vaquinha/confirmar?acesso=<token>
+```
 
 | | Onde vive | Para que serve |
 |---|---|---|
-| Palavra-passe do voluntário | só o **sha256** na env `VAQUINHA_VOLUNTARIO_HASH` (server-only; a palavra-passe em claro não existe em lado nenhum) | entrar no ecrã |
-| Chave admin | env `VAQUINHA_ADMIN_CHAVE` (server-only) | falar com as RPCs de admin (`admin_listar_doacoes`, `admin_decidir_doacao`) |
+| Token do link | em claro, **só no ficheiro do Lucas** (`Desktop\vaquinha-link-vitoria.txt`, fora do repositório) | abrir o ecrã |
+| sha256 do token | env `VAQUINHA_ACESSO_HASH` (server-only, Production + Preview de `feat/vaquinha`) | o servidor comparar |
+| Chave admin | env `VAQUINHA_ADMIN_CHAVE` (server-only) | falar com as RPCs de admin (`admin_listar_doacoes`, `admin_decidir_doacao`, `admin_procurar_doacao`) |
 
-Ou seja: saber a palavra-passe dá acesso ao ecrã, **não à chave** — o browser nunca vê a chave, e são as
-rotas de servidor que chamam as RPCs. O cookie é httpOnly + Secure + SameSite=Strict e o seu valor é
-**derivado** do hash (não é a palavra-passe nem o hash). Login com limite de tentativas por IP — aqui o
-limite faz sentido, ao contrário das rotas públicas da vaquinha.
+O token tem 32 bytes aleatórios (256 bits): não se adivinha, e por isso **não há limite de tentativas**
+aqui — um limite por IP não acrescenta nada a 256 bits de entropia. Saber o token dá acesso ao ecrã,
+**não à chave**; o browser nunca vê a chave, e são as rotas de servidor que chamam as RPCs.
 
-A fila são as `declarada` primeiro; as já decididas ficam abaixo, para poder corrigir um engano.
-Confirmar é um toque; anular pede confirmação e aceita nota. A lista atualiza a cada 15 s, e para com o
-separador escondido.
+O **primeiro acesso** grava o cookie (httpOnly + Secure + SameSite=**Lax** — Strict não seguia no salto
+vindo do WhatsApp) e redireciona para o URL limpo, sem o token. O cookie é **derivado** do hash (não é o
+token nem o hash) e morre a **20/11/2026**. Sem token e sem cookie, a página **dá 404** — um formulário de
+entrada só diria a quem lá chegasse que ali há uma ferramenta de administração.
 
-**Se a leitura falhar, o painel diz que falhou** — nunca «não há nada por confirmar», que faria o
-voluntário fechar a página com doações à espera.
+Se o link se perder, gera-se outro: 32 bytes aleatórios em base64url (o token), sha256 em hex para a env,
+e o link escrito num ficheiro fora do repositório. Na máquina do Lucas isso é o gerador
+`_artefactos/vaquinha-v5/gerar-acesso.mjs` (que se recusa a correr sem `--forcar`, para não invalidar um
+link já entregue) — está em `_artefactos/`, que é gitignored, porque escreve o token em claro.
 
-O **D5** decide A QUEM se entrega a palavra-passe; não muda nada do que está construído.
+**O painel, por ordem:** «Procurar referência» no topo (para quem pagou e não carregou no botão — a linha
+ficou `iniciada` — ou para uma referência lida em voz alta; procura em qualquer estado e com qualquer
+idade, ver a 0014c); por baixo, as declaradas **acima do limite de confiança** (as únicas que a barra
+ainda não conta — é a fila de trabalho); e depois as recentes, para poder corrigir um engano. Confirmar é
+um toque; anular pede confirmação e aceita nota. A lista atualiza a cada 15 s, e para com o separador
+escondido.
+
+**Se a leitura falhar, o painel diz que falhou** — nunca «não há nada por confirmar», que faria a Vitória
+fechar a página com doações à espera.
+
+---
+
+## 9. D8 — confiança em quem doa (14/10)
+
+**O problema que isto resolve:** o modelo anterior («só o confirmado conta») partia de uma premissa
+errada para este evento. O site **não sabe** quem pagou — só a conta da Vitória sabe — e não se lhe pode
+pedir que confira tudo antes de o número mexer. Com o modelo antigo, alguém que doasse 20 € e carregasse
+em «Já fiz a doação» via a barra parada, e a vaquinha ficava a mentir por baixo.
+
+**O modelo:**
+
+| Estado | Conta? | Onde aparece |
+|---|---|---|
+| `iniciada` | não | em lado nenhum |
+| `declarada`, valor **≤ limite de confiança** | **sim, logo** | sólido, no número grande |
+| `declarada`, valor **> limite** | não (ainda) | riscas na barra, sem texto |
+| `confirmada` (Vitória) | sim | sólido |
+| `anulada` | não | em lado nenhum |
+
+**A salvaguarda:** uma declaração de 500 € sem confirmação seria uma afirmação grande de mais para o
+site fazer sozinho, por isso acima do limite fica nas riscas até a Vitória confirmar. O limite é a coluna
+`vaquinha_config.limite_confianca_cents` (**default 10000** = 100 €, `check > 0`): muda-se por SQL, sem
+deploy, e o site acompanha — vai na resposta de `vaquinha_totais()`, e é de lá que a frase do
+agradecimento o lê.
+
+**O travão de emergência:** `contar_pendentes = false` deixa de ser «esconde as pendentes» e passa a ser
+isto — nesse estado conta **só o confirmado** e não há riscas nenhumas. É a resposta a um ataque de
+declarações falsas: uma linha de SQL e o cartão volta ao modelo antigo, sem deploy.
+
+**O que a pessoa vê depois de doar** (`FolhaVaquinha`): até ao limite, «A tua contribuição de X € já conta
+na barra.»; acima, «A tua contribuição de X € entra na barra assim que a Vitória confirmar o
+recebimento.» A nota «o valor arrecadado atualiza quando confirmarmos o recebimento» **saiu** — era
+verdade no modelo antigo e deixou de ser.
+
+**Quem confirma:** a Vitória (D5), sozinha, pelo telemóvel, na página da secção 8 — e é por isso que o
+painel abre com a procura por referência: quem pagou e não carregou no botão fica `iniciada`, e a Vitória
+encontra-a pela referência e confirma.

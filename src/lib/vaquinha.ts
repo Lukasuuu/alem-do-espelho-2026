@@ -141,6 +141,8 @@ export const MENSAGENS_VAQUINHA = {
   acessoNegado: "Não conseguimos confirmar esta contribuição.",
   anulada: "Esta contribuição foi anulada.",
   demasiadoRapida: "Conclui primeiro o pagamento na tua app e depois carrega em «Já fiz a doação».",
+  /** Painel (V5): procura por referência. */
+  referenciaCurta: "Escreve a referência que queres procurar.",
   invalido: "Confere os dados e tenta novamente.",
   servidor: "Não conseguimos registar a tua contribuição agora. Tenta daqui a pouco.",
   bot: "Não conseguimos validar esta submissão.",
@@ -165,12 +167,59 @@ export const ERRO_VAQUINHA: Record<string, { status: number; mensagem: string }>
   acesso_negado: { status: 403, mensagem: MENSAGENS_VAQUINHA.acessoNegado },
   doacao_anulada: { status: 409, mensagem: MENSAGENS_VAQUINHA.anulada },
   declaracao_demasiado_rapida: { status: 409, mensagem: MENSAGENS_VAQUINHA.demasiadoRapida },
+  referencia_obrigatoria: { status: 422, mensagem: MENSAGENS_VAQUINHA.referenciaCurta },
 };
 
-/** Totais como a RPC os devolve (vaquinha_totais — 0014 e 0014b). */
+/**
+ * Fecho da frase do agradecimento (D8, 14/10).
+ *
+ * O que muda entre os dois casos é o que a pessoa vê: abaixo do limite de
+ * confiança a contribuição já está na barra (e tem de lá estar mesmo — é a
+ * confiança que o D8 decidiu); acima do limite só entra quando a Vitória
+ * confirmar, e a frase não pode prometer o contrário do que a barra mostra.
+ * O valor vai à frente da frase, na mesma linha, e é o componente que o põe.
+ */
+export const AGRADECIMENTO_VAQUINHA = {
+  contaLogo: "já conta na barra.",
+  aguardaConfirmacao: "entra na barra assim que a Vitória confirmar o recebimento.",
+} as const;
+
+/** A parte variável da frase do agradecimento, conforme o valor declarado. */
+export function fraseAgradecimento(
+  valorCents: number,
+  limiteCents: number = LIMITE_CONFIANCA_PADRAO_CENTS
+): string {
+  return valorCents > limiteCents
+    ? AGRADECIMENTO_VAQUINHA.aguardaConfirmacao
+    : AGRADECIMENTO_VAQUINHA.contaLogo;
+}
+
+/**
+ * Limite de confiança, em cêntimos, em vigor enquanto a RPC não responder.
+ *
+ * A autoridade é a COLUNA `vaquinha_config.limite_confianca_cents`, que vem na
+ * resposta de `vaquinha_totais()` (D8, 0014c) — é isso que faz o limite mudar
+ * por SQL sem deploy. Esta constante só existe para o caso em que não há
+ * resposta nenhuma (base em baixo, RPC ainda por aplicar): sem valor, a frase
+ * do agradecimento não se podia escrever.
+ */
+export const LIMITE_CONFIANCA_PADRAO_CENTS = 10000; // 100 €
+
+/**
+ * Totais como a RPC os devolve (vaquinha_totais — 0014 / 0014b / 0014c).
+ *
+ * `arrecadado_cents` (D8) é o número que o site mostra e a parte SÓLIDA da
+ * barra: é o confirmado MAIS as declaradas até ao limite de confiança — quem
+ * carrega em «Já fiz a doação» está a dizer que pagou, e acredita-se. Acima do
+ * limite a declarada só aparece nas riscas (`a_confirmar_cents`) até a Vitória
+ * confirmar. `confirmado_cents` fica na resposta porque o painel da Vitória
+ * mostra-o por partes.
+ */
 export type TotaisVaquinha = {
   confirmado_cents: number;
+  arrecadado_cents: number;
   a_confirmar_cents: number;
+  limite_confianca_cents: number;
   meta_cents: number | null;
   ativa: boolean;
   inicio: string | null;

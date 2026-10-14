@@ -36,15 +36,18 @@ const INTERVALO_POLL_MS = 15_000;
  * evento começar. Reproduz docs/vaquinha/referencia-visual/01 e 02 (aprovadas:
  * «tem de ficar exatamente assim»).
  *
- * Três coisas que este componente NUNCA faz, por decisão de 13/10:
+ * Três coisas que este componente NUNCA faz:
  *  1. mostrar quantas contribuições houve (nem existe na resposta da RPC);
- *  2. afirmar mais do que é verdade — o número grande é SÓ o confirmado;
- *  3. somar a escolha de alguém à barra. O que entra como "a confirmar" é o que
- *     a pessoa DECLAROU («Já fiz a doação»), não o valor que escolheu ver.
+ *  2. somar a ESCOLHA de alguém à barra — o que conta é a DECLARAÇÃO («Já fiz
+ *     a doação»), nunca o valor que a pessoa viu no ecrã antes de pagar;
+ *  3. afirmar mais do que a regra permite. O número grande é o `arrecadado_cents`
+ *     que o servidor calcula (D8, 14/10): confirmado + declaradas até ao limite
+ *     de confiança. Acima desse limite a declarada fica só nas riscas até a
+ *     Vitória confirmar.
  *
- * O segundo segmento da barra (riscas) é o declarado por confirmar. Desaparece
- * quando `contar_pendentes` está em false — e quem decide isso é o servidor, que
- * nesse caso devolve a_confirmar_cents = 0.
+ * O segundo segmento da barra (riscas) é o declarado ACIMA do limite. Desaparece
+ * quando `contar_pendentes` está em false — o travão de emergência do D8 — e
+ * quem decide isso é o servidor, que nesse caso devolve a_confirmar_cents = 0.
  */
 export default function CartaoVaquinha({ totaisIniciais, onContribuir }: Props) {
   const [totais, setTotais] = useState<TotaisComEstado | null>(totaisIniciais);
@@ -111,13 +114,20 @@ export default function CartaoVaquinha({ totaisIniciais, onContribuir }: Props) 
   }
 
   const meta = totais?.meta_cents ?? 0;
-  const confirmado = totais?.confirmado_cents ?? 0;
+  /**
+   * O número grande (D8, 0014c). O `?? confirmado_cents` é rede de segurança
+   * para o intervalo entre o deploy do site e a aplicação da 0014c: com a RPC
+   * antiga o campo novo não vem, e sem isto o cartão escrevia «NaN €» e o
+   * `scaleX` ia a NaN. Com a RPC antiga o site cai no modelo antigo (só o
+   * confirmado) em vez de partir — e em produção a 0014c é aplicada antes.
+   */
+  const arrecadado = totais?.arrecadado_cents ?? totais?.confirmado_cents ?? 0;
   const aConfirmar = totais?.contar_pendentes ? (totais?.a_confirmar_cents ?? 0) : 0;
-  const pctConfirmado = meta > 0 ? Math.min(1, confirmado / meta) : 0;
-  const pctPendente = meta > 0 ? Math.min(1 - pctConfirmado, aConfirmar / meta) : 0;
-  /** A percentagem do aria é SÓ a do confirmado: o segmento às riscas não é
+  const pctArrecadado = meta > 0 ? Math.min(1, arrecadado / meta) : 0;
+  const pctPendente = meta > 0 ? Math.min(1 - pctArrecadado, aConfirmar / meta) : 0;
+  /** A percentagem do aria é SÓ a do arrecadado: o segmento às riscas não está
       arrecadado, e somá-lo fazia o anúncio dizer mais do que a barra mostra. */
-  const pctConfirmadoInt = Math.round(pctConfirmado * 100);
+  const pctArrecadadoInt = Math.round(pctArrecadado * 100);
 
   const carregando = totais === null;
   /** Decidido no servidor (fim != null && agora >= fim), nunca com o relógio do
@@ -195,39 +205,39 @@ export default function CartaoVaquinha({ totaisIniciais, onContribuir }: Props) 
         Cada contribuição chega às mulheres apoiadas pela ONG Atos, em Angola.
       </p>
 
-      {/* ── Valor: SÓ o confirmado. Sem contagem de contribuições. ── */}
+      {/* ── Valor: o arrecadado (D8). Sem contagem de contribuições. ── */}
       <div className="mt-[18px] flex flex-wrap items-baseline gap-x-[10px] gap-y-1 md:mt-5">
         <span className="display text-[2.875rem] font-semibold leading-none md:text-[3.375rem]">
-          {eurosTotais(confirmado)}
+          {eurosTotais(arrecadado)}
         </span>
         <span className="text-[0.84375rem] text-tinta-suave md:text-[0.875rem]">
           arrecadados de {eurosTotais(meta)}
         </span>
       </div>
 
-      {/* ── Barra: sólido = confirmado, riscas = declarado por confirmar ──
+      {/* ── Barra: sólido = arrecadado, riscas = declarado acima do limite ──
           Anima-se com transform (scaleX), nunca com width. */}
       <div
         role="progressbar"
-        aria-valuenow={carregando ? undefined : Math.round(confirmado / 100)}
+        aria-valuenow={carregando ? undefined : Math.round(arrecadado / 100)}
         aria-valuemax={carregando ? undefined : Math.round(meta / 100)}
         aria-valuetext={
           carregando
             ? "A carregar os totais da vaquinha"
-            : `${euros(confirmado)} de ${euros(meta)}, ${pctConfirmadoInt} por cento`
+            : `${euros(arrecadado)} de ${euros(meta)}, ${pctArrecadadoInt} por cento`
         }
         className="relative mt-3 h-3 overflow-hidden rounded-full bg-blush md:mt-[14px]"
       >
         <span
           aria-hidden
           className="absolute inset-0 origin-left rounded-full bg-vinho transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
-          style={{ transform: `scaleX(${pctConfirmado})` }}
+          style={{ transform: `scaleX(${pctArrecadado})` }}
         />
         <span
           aria-hidden
           className="absolute inset-0 origin-left transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
           style={{
-            transform: `translateX(${pctConfirmado * 100}%) scaleX(${pctPendente})`,
+            transform: `translateX(${pctArrecadado * 100}%) scaleX(${pctPendente})`,
             backgroundImage:
               "repeating-linear-gradient(45deg, var(--color-rosa) 0 3.5px, var(--color-risca) 3.5px 7px)",
           }}
@@ -235,7 +245,7 @@ export default function CartaoVaquinha({ totaisIniciais, onContribuir }: Props) 
       </div>
       <div className="mt-[9px] flex justify-between text-[0.78125rem] text-tinta-suave md:text-[0.8125rem]">
         <span>
-          Arrecadado: <strong className="font-semibold text-vinho">{eurosTotais(confirmado)}</strong>
+          Arrecadado: <strong className="font-semibold text-vinho">{eurosTotais(arrecadado)}</strong>
         </span>
         <span className="text-right">
           Meta: <strong className="font-semibold text-vinho">{eurosTotais(meta)}</strong>

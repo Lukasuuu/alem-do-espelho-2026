@@ -94,6 +94,39 @@ export async function lerDoacoesAdmin(limite = 50): Promise<ListaAdmin | null> {
   }
 }
 
+/**
+ * Procura por referência (0014c) — QUALQUER estado, QUALQUER idade.
+ *
+ * É o caminho para os dois casos que a fila não apanha: quem pagou e não
+ * carregou no botão (a linha ficou 'iniciada') e uma referência lida em voz alta
+ * ou escrita à mão no descritivo. A normalização (maiúsculas, sem espaços nem
+ * hífenes) é da RPC — aqui só se garante que vai algo com que procurar.
+ *
+ * Devolve null quando não há chave ou a leitura falha (a rota responde 502); a
+ * lista vazia é uma resposta legítima e distinta disso.
+ */
+export async function procurarDoacaoAdmin(referencia: string): Promise<ListaAdmin | null> {
+  const chave = chaveAdmin();
+  if (!chave) return null;
+  try {
+    const { data, error } = await getSupabase()
+      .rpc("admin_procurar_doacao", { p_chave: chave, p_referencia: referencia })
+      .abortSignal(AbortSignal.timeout(4000));
+    if (error) {
+      console.error("[vaquinha] admin_procurar_doacao falhou:", error.message);
+      return null;
+    }
+    const r = data as { ok: boolean; doacoes: DoacaoAdmin[]; totais: TotaisVaquinha };
+    return {
+      doacoes: r.doacoes ?? [],
+      totais: { ...r.totais, encerrada: estaEncerrada(r.totais, new Date()) },
+    };
+  } catch (erro) {
+    console.error("[vaquinha] procura por referência indisponível:", erro);
+    return null;
+  }
+}
+
 /** Confirma ou anula. `p_nota` é opcional; a base guarda-a e carimba decidida_em. */
 export async function decidirDoacaoAdmin(
   id: string,

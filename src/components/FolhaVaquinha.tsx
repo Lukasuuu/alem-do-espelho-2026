@@ -12,11 +12,13 @@ import { formatarIban } from "@/lib/pagamento";
 import { linkWhatsApp, site } from "@/lib/site";
 import { destravarScroll, travarScroll } from "@/lib/scroll-lock";
 import {
+  LIMITE_CONFIANCA_PADRAO_CENTS,
   MENSAGEM_VAQUINHA_WHATSAPP,
   MENSAGENS_VAQUINHA,
   VAQUINHA_PAGAMENTO,
   formatarEuros,
   formatarEurosComCentimos,
+  fraseAgradecimento,
   type TotaisVaquinha,
 } from "@/lib/vaquinha";
 
@@ -249,10 +251,20 @@ export default function FolhaVaquinha({
   }
 
   const meta = totais?.meta_cents ?? 0;
-  const confirmado = totais?.confirmado_cents ?? 0;
+  /**
+   * A barra do agradecimento mostra o MESMO que o cartão (D8): o arrecadado —
+   * que acabou de incluir esta contribuição, quando ela está dentro do limite.
+   * Com o confirmado, a frase «já conta na barra» tinha por baixo uma barra que
+   * não mexia, que é exatamente a contradição que o D8 veio resolver.
+   * O `?? confirmado_cents` é a mesma rede de segurança do cartão (0014c ainda
+   * por aplicar → cai no modelo antigo em vez de «NaN €»).
+   */
+  const arrecadado = totais?.arrecadado_cents ?? totais?.confirmado_cents ?? 0;
   const aConfirmar = totais?.contar_pendentes ? (totais?.a_confirmar_cents ?? 0) : 0;
-  const pctC = meta > 0 ? Math.min(1, confirmado / meta) : 0;
+  const pctC = meta > 0 ? Math.min(1, arrecadado / meta) : 0;
   const pctP = meta > 0 ? Math.min(1 - pctC, aConfirmar / meta) : 0;
+  /** O limite vem da RPC (mudável por SQL); a constante é só o valor de recurso. */
+  const limiteConfianca = totais?.limite_confianca_cents ?? LIMITE_CONFIANCA_PADRAO_CENTS;
 
   const ctaRodape = (rotulo: string, aoClicar: () => void, comVisto = true) => (
     <button
@@ -562,9 +574,12 @@ export default function FolhaVaquinha({
                         className="w-[58px]"
                       />
                       <h3 className="display mt-2.5 text-[2.75rem] font-medium leading-none">Obrigada!</h3>
+                      {/* D8: abaixo do limite já conta; acima, só entra na barra
+                          quando a Vitória confirmar. A frase tem de dizer o que
+                          a barra faz — é a mesma promessa, por palavras. */}
                       <p className="mt-2 text-base leading-[1.45]">
-                        A tua contribuição de <strong>{formatarEuros(valorCents)}</strong> já aparece na
-                        barra.
+                        A tua contribuição de <strong>{formatarEuros(valorCents)}</strong>{" "}
+                        {fraseAgradecimento(valorCents, limiteConfianca)}
                       </p>
                       {pedido?.referencia && (
                         <p className="mt-2 inline-flex items-center gap-2 rounded-full bg-blush/30 px-3.5 py-1.5 text-[0.8125rem]">
@@ -576,7 +591,7 @@ export default function FolhaVaquinha({
                       <div className="mt-3.5 w-full rounded-xl border border-[#ecdccc] bg-white px-4 py-3 text-left">
                         <div className="flex items-baseline justify-between">
                           <span className="display text-[1.625rem] font-semibold leading-none">
-                            {formatarEuros(confirmado)}
+                            {formatarEuros(arrecadado)}
                           </span>
                           <span className="text-[0.78125rem] text-tinta-suave">
                             meta {formatarEuros(meta)}
@@ -598,9 +613,6 @@ export default function FolhaVaquinha({
                             }}
                           />
                         </div>
-                        <p className="mt-[7px] text-[0.75rem] leading-[1.4] text-tinta-suave">
-                          O valor arrecadado atualiza quando confirmarmos o recebimento.
-                        </p>
                       </div>
 
                       <div className="mt-4 w-full text-left">
