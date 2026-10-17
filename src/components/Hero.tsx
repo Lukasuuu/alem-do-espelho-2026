@@ -62,8 +62,20 @@ export default function Hero({
         <div className="order-2 lg:order-1">
           <motion.div {...surgir(0.05)} className="flex items-center gap-4">
             <span className="eyebrow text-dourado-claro/80">{site.edicao}</span>
-            <span className="h-px w-12 bg-creme/20" aria-hidden />
-            <span className="eyebrow text-creme/40">Inscrições abertas</span>
+            {/* O rótulo segue a MESMA fase do parágrafo por baixo. Estava fixo em
+                «Inscrições abertas» e, com as inscrições encerradas (410) e a
+                vaquinha aberta, o hero dizia as duas coisas ao mesmo tempo — o
+                «três sinais contraditórios no mesmo ecrã» que lib/vaquinha-fase.ts
+                manda evitar. Depois do evento fica só a edição, para não afirmar
+                nada que já não seja verdade. */}
+            {estadoEvento !== "depois" && (
+              <>
+                <span className="h-px w-12 bg-creme/20" aria-hidden />
+                <span className="eyebrow text-creme/40">
+                  {estadoEvento === "durante" ? "A acontecer hoje" : "Inscrições abertas"}
+                </span>
+              </>
+            )}
           </motion.div>
 
           <motion.h1 {...surgir(0.15)} className="display mt-7 tracking-[-0.01em] text-creme">
