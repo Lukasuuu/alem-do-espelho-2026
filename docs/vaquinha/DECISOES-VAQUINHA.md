@@ -2,6 +2,9 @@
 
 > 13/10/2026. Este ficheiro **substitui** todas as mensagens anteriores sobre a vaquinha.
 > Se algo aqui contradisser o código ou outra mensagem, vale este ficheiro — e diz ao Lucas.
+>
+> **Actualizado a 19/10/2026:** meta passa a **2000 €** (D1) e os dados de pagamento
+> da vaquinha mudam (D4) — ver a tabela e o D4 abaixo.
 > A especificação visual está em `docs/vaquinha/referencia-visual/` (lê o `LEIA-ME.md`).
 
 ---
@@ -29,7 +32,7 @@ Commita a pasta num caminho limpo. Apaga cópias duplicadas e `.zip` em `docs/va
 | Tema | Decisão |
 |---|---|
 | Título | **"Juntos por Angola"** (sem ponto final) |
-| Meta | **5000 €** |
+| Meta (D1) | **2000 €** — alterada a 19/10/2026 (era 5000 €). Vive em `vaquinha_config.meta_cents`; o cartão lê-a de `vaquinha_totais()`, não há valor no código |
 | Métodos | **Só MB Way e Transferência.** Não há link SumUp na vaquinha (o D3 desaparece) |
 | Contagem | **Nunca** mostrar número de contribuições, em lado nenhum |
 | Número grande / "Arrecadado" | **O arrecadado** (D8, 14/10): confirmado **+ declaradas até ao limite de confiança**. Acima desse limite a declarada aparece só como segmento às riscas, sem texto |
@@ -97,7 +100,7 @@ Para ver a vaquinha no preview antes de 17/10: `NEXT_PUBLIC_VAQUINHA_OVERRIDE=ab
 | # | Decisão | Onde vive |
 |---|---|---|
 | **D2** | Frase de transparência: «Os valores são recebidos por Vitória Gomes, organizadora do Além do Espelho, e entregues na totalidade à ONG Atos.» | `VAQUINHA_TRANSPARENCIA` em `src/lib/vaquinha.ts` |
-| **D4** | MB Way: o mesmo número da inscrição (importado de `lib/pagamento.ts` — 9 dígitos a copiar, não o número formatado). Transferência: conta própria da vaquinha, beneficiário «Vitória Gomes», IBAN `PT50…1386` (mostrado com `formatarIban`, copiado sem espaços, com o tripwire `validarIban`). Sem BIC no ecrã: dentro da zona SEPA basta o IBAN. | `VAQUINHA_PAGAMENTO` em `src/lib/vaquinha.ts` |
+| **D4** | **Revisto a 19/10/2026.** MB Way: passa a ser **próprio da vaquinha** — `+351 939 009 874` mostrado, `939009874` copiado (9 dígitos, não o número formatado). Deixa de vir de `lib/pagamento.ts`: a inscrição mantém o número dela, e há inscrições pendentes que ainda pagam por lá. Transferência: conta própria da vaquinha, beneficiário **«Vitória Silva da Conceição Gomes»** (nome completo — os bancos confirmam o nome contra o IBAN), IBAN `PT50…2994` (mostrado com `formatarIban`, copiado sem espaços, com o tripwire `validarIban`). Sem BIC no ecrã: dentro da zona SEPA basta o IBAN. | `VAQUINHA_PAGAMENTO` em `src/lib/vaquinha.ts` |
 
 | **D6** | A vaquinha fica aberta **até 18 de novembro** (antes da viagem a Angola): `fim = 2026-11-19T00:00:00+00:00`, ou seja, aberta durante todo o dia 18/11 em Lisboa. O prazo é **lido do `fim`** e mostrado no cartão («Até 18 de novembro», `fim − 1 ms` em Europe/Lisbon) — se a data mudar por SQL, o cartão acompanha sem deploy. Passou de um dia para um mês, e daí o estado «encerrada» no cartão. | `vaquinha_config.fim` |
 

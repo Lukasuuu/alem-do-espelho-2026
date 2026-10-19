@@ -10,7 +10,7 @@
  */
 
 import { EVENTO_ISO } from "../../supabase/functions/_shared/config";
-import { MBWAY_NUMERO, MBWAY_NUMERO_COPIAR, validarIban } from "@/lib/pagamento";
+import { validarIban } from "@/lib/pagamento";
 import { z } from "zod";
 
 /**
@@ -34,29 +34,35 @@ export const VALOR_MIN_CENTS = 500;
 export const VALOR_MAX_CENTS = 100000;
 
 /**
- * D4 — dados de recebimento das doações (fechado a 13/10/2026).
+ * D4 — dados de recebimento das doações (revisto a 19/10/2026).
  *
- * MB Way: o MESMO número da inscrição. Vem importado de lib/pagamento.ts e não
- * repetido aqui — já divergiu uma vez no projeto e não volta a divergir. São
- * dois valores de propósito: o que se MOSTRA (+351 928 400 069) e o que se COPIA
- * (só os 9 dígitos), porque é isso que o campo da app MB Way aceita.
+ * Mudança de 19/10: a conta e o MB Way da vaquinha deixaram de ser os da
+ * inscrição. Passam a ser constantes PRÓPRIAS, aqui — e não importadas de
+ * lib/pagamento.ts. É de propósito: a inscrição continua a receber no número
+ * dela, e há inscrições pendentes que ainda pagam por lá. São dois fluxos de
+ * dinheiro com destinos diferentes, e voltar a amarrá-los seria voltar a
+ * mandar dinheiro para o lado errado no dia em que um dos dois mudasse.
  *
- * Transferência: conta PRÓPRIA da vaquinha, que não é a SumUp da inscrição. O
- * BIC não entra no ecrã — dentro da zona SEPA basta o IBAN. O nome fica
- * «Vitória Gomes», como o Revolut o mostra; os bancos da zona euro confirmam o
- * nome contra o IBAN e avisam quem transfere se não bater.
+ * MB Way: dois valores de propósito — o que se MOSTRA (+351 939 009 874) e o
+ * que se COPIA (só os 9 dígitos), porque é isso que o campo da app MB Way aceita.
+ *
+ * Transferência: conta PRÓPRIA da vaquinha. O BIC não entra no ecrã — dentro da
+ * zona SEPA basta o IBAN. O titular vai com o NOME COMPLETO
+ * («Vitória Silva da Conceição Gomes»): os bancos confirmam o nome contra o
+ * IBAN e avisam quem transfere se não bater, por isso tem de ser o nome da
+ * conta, não a forma curta que o site usa para a anfitriã.
  *
  * A vaquinha só tem estes dois métodos: não há link de pagamento (o D3
  * desapareceu na revisão 2 de 13/10).
  */
 export const VAQUINHA_PAGAMENTO = {
   mbway: {
-    mostrar: MBWAY_NUMERO,
-    copiar: MBWAY_NUMERO_COPIAR,
+    mostrar: "+351 939 009 874",
+    copiar: "939009874",
   },
   transferencia: {
-    beneficiario: "Vitória Gomes",
-    iban: "PT50356000019001883341386", // guardado sem espaços
+    beneficiario: "Vitória Silva da Conceição Gomes",
+    iban: "PT50002300004583035862994", // guardado sem espaços
   },
 } as const;
 
