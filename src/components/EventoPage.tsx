@@ -20,6 +20,7 @@ import { faseForcada } from "@/lib/fase";
 import { FIM_CAMPANHA_ISO, MENSAGEM_INSCRICAO, SALON_WHATSAPP } from "@/lib/campanha";
 import { linkWhatsApp } from "@/lib/site";
 import type { TotaisComEstado } from "@/lib/vaquinha";
+import type { Cambio } from "@/lib/cambio";
 import type { EstadoEvento } from "@/lib/vaquinha-fase";
 
 const fimCampanhaMs = new Date(FIM_CAMPANHA_ISO).getTime();
@@ -48,6 +49,12 @@ type Props = {
   inscricoesEncerradas: boolean;
   /** Momento do evento — decide o texto do hero. Vem do servidor. */
   estadoEvento: EstadoEvento;
+  /**
+   * Câmbio EUR→GBP/BRL para os canais Wise e Pix da vaquinha. Lido no servidor
+   * (page.tsx); nunca chega a ser calculado no cliente, e vem sempre preenchido
+   * (taxa de recurso quando o BCE falha).
+   */
+  cambio: Cambio;
 };
 
 export default function EventoPage({
@@ -56,6 +63,7 @@ export default function EventoPage({
   totaisVaquinha,
   inscricoesEncerradas,
   estadoEvento,
+  cambio,
 }: Props) {
   const [waitlistAberto, setWaitlistAberto] = useState(false);
   const [inscricaoAberto, setInscricaoAberto] = useState(false);
@@ -233,6 +241,7 @@ export default function EventoPage({
           fechar={() => setVaquinhaPedido(null)}
           valorCents={vaquinhaPedido.valorCents}
           elapsedMs={vaquinhaPedido.elapsedMs}
+          cambio={cambio}
         />
       )}
     </>

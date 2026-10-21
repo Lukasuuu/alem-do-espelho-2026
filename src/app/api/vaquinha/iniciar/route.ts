@@ -2,7 +2,13 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { getSupabase } from "@/lib/supabase";
 import { hashIp, obterIp } from "@/lib/rate-limit";
-import { MENSAGENS_VAQUINHA, erroDaVaquinha, iniciarDoacaoSchema } from "@/lib/vaquinha";
+import { converterParaMoeda, obterCambio } from "@/lib/cambio";
+import {
+  MENSAGENS_VAQUINHA,
+  MOEDA_POR_METODO,
+  erroDaVaquinha,
+  iniciarDoacaoSchema,
+} from "@/lib/vaquinha";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -98,10 +104,37 @@ export async function POST(request: Request): Promise<NextResponse<Resposta>> {
     const supabase = getSupabase();
     const ip = obterIp(request.headers);
 
+    /**
+     * Moeda e conversão calculadas AQUI, não recebidas do cliente. O valor
+     * guardado em valor_moeda_cents é o que foi mostrado no ecrã; deixá-lo vir
+     * do browser seria confiar num número que só serve para reconciliar contas.
+     * O valor que conta (valor_cents) continua a ser os euros escolhidos.
+     *
+     * obterCambio() nunca lança: se o BCE estiver em baixo, devolve a taxa de
+     * recurso (com data = null) e a doação segue. O câmbio nunca bloqueia
+     * dinheiro a entrar.
+     */
+    const moeda = MOEDA_POR_METODO[dados.metodo];
+    let valorMoedaCents: number | null = null;
+    let cambioUsado: number | null = null;
+    let cambioData: string | null = null;
+    if (moeda !== "EUR") {
+      const cambio = await obterCambio();
+      cambioUsado = cambio.taxas[moeda];
+      valorMoedaCents = converterParaMoeda(dados.valorCents, cambioUsado);
+      cambioData = cambio.data; // null = taxa de recurso, sem data inventada
+    }
+
     const { data, error } = await supabase.rpc("iniciar_doacao", {
       p_valor_cents: dados.valorCents,
       p_metodo: dados.metodo,
       p_idem_key: dados.idemKey,
+      // Só têm efeito nos canais estrangeiros; nos canais em euros a própria
+      // RPC força estes campos a NULL (a moeda é do canal, não do cliente).
+      p_moeda: moeda,
+      p_valor_moeda_cents: valorMoedaCents,
+      p_cambio: cambioUsado,
+      p_cambio_data: cambioData,
       // Sinal de abuso apenas — a posse é o posse_token devolvido abaixo.
       p_ip_hash: hashIp(ip),
     });

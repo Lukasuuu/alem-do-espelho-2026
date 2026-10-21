@@ -34,7 +34,24 @@ export const VALOR_MIN_CENTS = 500;
 export const VALOR_MAX_CENTS = 100000;
 
 /**
- * D4 — dados de recebimento das doações (revisto a 19/10/2026).
+ * Canais de pagamento do fluxo automático. A MOEDA É DECIDIDA PELO CANAL — não
+ * pela pessoa que doa: ela escolhe o valor em euros (como sempre) e por onde
+ * paga; se escolher Wise ou Pix, o site mostra o valor convertido a título
+ * indicativo. O `valor_cents` guardado continua a ser em euros.
+ */
+export const METODOS_DOACAO = ["mbway", "transferencia", "wise_gbp", "pix_brl"] as const;
+export type MetodoDoacao = (typeof METODOS_DOACAO)[number];
+
+/** Canal → moeda em que o dinheiro sai. O euro é sempre a unidade de conta. */
+export const MOEDA_POR_METODO: Record<MetodoDoacao, "EUR" | "GBP" | "BRL"> = {
+  mbway: "EUR",
+  transferencia: "EUR",
+  wise_gbp: "GBP",
+  pix_brl: "BRL",
+};
+
+/**
+ * D4 — dados de recebimento das doações (revisto a 21/10/2026).
  *
  * Mudança de 19/10: a conta e o MB Way da vaquinha deixaram de ser os da
  * inscrição. Passam a ser constantes PRÓPRIAS, aqui — e não importadas de
@@ -43,17 +60,22 @@ export const VALOR_MAX_CENTS = 100000;
  * dinheiro com destinos diferentes, e voltar a amarrá-los seria voltar a
  * mandar dinheiro para o lado errado no dia em que um dos dois mudasse.
  *
- * MB Way: dois valores de propósito — o que se MOSTRA (+351 939 009 874) e o
- * que se COPIA (só os 9 dígitos), porque é isso que o campo da app MB Way aceita.
+ * Revisão de 21/10 (confirmada com a Vitória pelo Lucas): a conta em euros
+ * passou da anterior para a Revolut Bank UAB (Sucursal em Portugal). O BIC
+ * ficou VISÍVEL (decisão do Lucas): dentro da SEPA basta o IBAN, mas quem
+ * envia de fora da SEPA precisa dele. O MB Way, a frase de transparência, o
+ * contador e a meta NÃO mudaram nesta revisão.
  *
- * Transferência: conta PRÓPRIA da vaquinha. O BIC não entra no ecrã — dentro da
- * zona SEPA basta o IBAN. O titular vai com o NOME COMPLETO
- * («Vitória Silva da Conceição Gomes»): os bancos confirmam o nome contra o
- * IBAN e avisam quem transfere se não bater, por isso tem de ser o nome da
- * conta, não a forma curta que o site usa para a anfitriã.
+ * Titulares: cada conta vai com o nome TAL COMO ESTÁ REGISTADA nela, não com a
+ * forma curta que o site usa para a anfitriã. Os bancos confrontam o nome com
+ * o IBAN/chave e avisam quem transfere quando não bate — «Vitória Gomes» aqui
+ * seria um aviso a mais para quem está a doar.
  *
- * A vaquinha só tem estes dois métodos: não há link de pagamento (o D3
- * desapareceu na revisão 2 de 13/10).
+ * Canais estrangeiros (acrescentados a 21/10): Wise em GBP e Pix em BRL. A
+ * moeda é só o canal + uma conversão MOSTRADA; o valor da doação continua em
+ * euros (ver METODOS_DOACAO acima e lib/cambio.ts).
+ *
+ * A vaquinha não tem link de pagamento (o D3 desapareceu na revisão 2 de 13/10).
  */
 export const VAQUINHA_PAGAMENTO = {
   mbway: {
@@ -61,18 +83,44 @@ export const VAQUINHA_PAGAMENTO = {
     copiar: "939009874",
   },
   transferencia: {
+    /** Nome registado na conta Revolut — confirmado pelo Lucas a 21/10. */
     beneficiario: "Vitória Silva da Conceição Gomes",
-    iban: "PT50002300004583035862994", // guardado sem espaços
+    iban: "PT50356000019001883341386", // Revolut Bank UAB, guardado sem espaços
+    bic: "REVOPTP2",
+  },
+  wise: {
+    /** Grafia do registo da conta Wise (sem acentos), confirmada pelo Lucas. */
+    titular: "Vitoria Conceicao Gomes",
+    sortCode: "23-08-01",
+    conta: "14790433",
+    iban: "GB81TRWI23080114790433", // guardado sem espaços, como o português
+    bic: "TRWIGB2LXXX",
+  },
+  pix: {
+    /** Chave CPF (11 dígitos) — confirmada pelo Lucas a 21/10. */
+    chave: "16141333796",
+    titular: "Vitória Silva da Conceição Gomes",
+    agencia: "0001",
+    conta: "25314548-0",
+    banco: "0260 — Nu Pagamentos S.A.",
   },
 } as const;
 
 // Mesmo tripwire da TRANSFERENCIA da inscrição (lib/pagamento.ts): um IBAN
 // inválido em código parte o build/consola em vez de mandar alguém transferir
 // para o lado errado. A vaquinha é dinheiro de uma causa solidária — falha alto.
-if (!validarIban(VAQUINHA_PAGAMENTO.transferencia.iban)) {
-  throw new Error(
-    `[vaquinha] IBAN de doações inválido em src/lib/vaquinha.ts: "${VAQUINHA_PAGAMENTO.transferencia.iban}". Corrige antes de avançar.`
-  );
+// Cobre os DOIS IBANs do fluxo automático: o português (EUR) e o britânico (GBP).
+const IBANS_VAQUINHA = [
+  ["EUR (Revolut)", VAQUINHA_PAGAMENTO.transferencia.iban],
+  ["GBP (Wise)", VAQUINHA_PAGAMENTO.wise.iban],
+] as const;
+
+for (const [canal, iban] of IBANS_VAQUINHA) {
+  if (!validarIban(iban)) {
+    throw new Error(
+      `[vaquinha] IBAN de doações inválido (${canal}) em src/lib/vaquinha.ts: "${iban}". Corrige antes de avançar.`
+    );
+  }
 }
 
 /**
@@ -166,6 +214,9 @@ export const ERRO_VAQUINHA: Record<string, { status: number; mensagem: string }>
   valor_minimo: { status: 422, mensagem: MENSAGENS_VAQUINHA.valorMinimo },
   valor_maximo: { status: 422, mensagem: MENSAGENS_VAQUINHA.valorMaximo },
   invalid_metodo: { status: 422, mensagem: MENSAGENS_VAQUINHA.metodo },
+  // Canal estrangeiro com moeda/valor/câmbio incoerentes (0015). O cliente
+  // correto nunca chega aqui — a rota é que preenche estes campos.
+  moeda_invalida: { status: 422, mensagem: MENSAGENS_VAQUINHA.invalido },
   idem_key_obrigatoria: { status: 422, mensagem: MENSAGENS_VAQUINHA.invalido },
   demasiados_pedidos: { status: 429, mensagem: MENSAGENS_VAQUINHA.demasiadosPedidos },
   referencia_indisponivel: { status: 503, mensagem: MENSAGENS_VAQUINHA.servidor },
@@ -277,7 +328,7 @@ export const iniciarDoacaoSchema = z.object({
     .min(VALOR_MIN_CENTS, MENSAGENS_VAQUINHA.valorMinimo)
     .max(VALOR_MAX_CENTS, MENSAGENS_VAQUINHA.valorMaximo)
     .refine((v) => v % 100 === 0, { message: "Valor em euros inteiros." }),
-  metodo: z.enum(["mbway", "transferencia"], {
+  metodo: z.enum(METODOS_DOACAO, {
     errorMap: () => ({ message: MENSAGENS_VAQUINHA.metodo }),
   }),
   /** Gerado no cliente, um por tentativa: é a chave anti duplo clique. */

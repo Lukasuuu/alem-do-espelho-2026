@@ -5,6 +5,7 @@ import { isDepoisDoCorte, inscricaoAtiva } from "@/lib/cutover";
 import { VAQUINHA_INICIO_ISO } from "@/lib/vaquinha";
 import { estadoEvento, inscricoesEncerradas, vaquinhaIniciada } from "@/lib/vaquinha-fase";
 import { lerTotaisVaquinha } from "@/lib/vaquinha-servidor";
+import { CAMBIO_RECURSO, obterCambio } from "@/lib/cambio";
 import EventoPage from "@/components/EventoPage";
 import IrParaVaquinha from "@/components/IrParaVaquinha";
 
@@ -66,6 +67,10 @@ export default async function Page() {
 
   const vaquinhaAberta = vaquinhaIniciada(VAQUINHA_INICIO_ISO);
   const totaisVaquinha = vaquinhaAberta ? await lerTotaisVaquinha() : null;
+  // Câmbio dos canais Wise/Pix: lido no servidor, com cache de 6 h, e nunca
+  // bloqueia — obterCambio() devolve a taxa de recurso se o BCE falhar. Só se
+  // vai ao BCE quando o cartão vai mesmo aparecer.
+  const cambio = vaquinhaAberta ? await obterCambio() : CAMBIO_RECURSO;
 
   return (
     <>
@@ -76,6 +81,7 @@ export default async function Page() {
         totaisVaquinha={totaisVaquinha}
         inscricoesEncerradas={inscricoesEncerradas()}
         estadoEvento={estadoEvento()}
+        cambio={cambio}
       />
     </>
   );

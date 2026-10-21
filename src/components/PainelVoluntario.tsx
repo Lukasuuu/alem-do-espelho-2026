@@ -8,6 +8,7 @@ import {
   formatarEuros,
   type TotaisComEstado,
 } from "@/lib/vaquinha";
+import { dataCurta, formatarMoeda } from "@/lib/cambio";
 import type { DoacaoAdmin } from "@/lib/vaquinha-servidor";
 
 type Props = {
@@ -21,6 +22,8 @@ const INTERVALO_MS = 15_000;
 const ROTULO_METODO: Record<string, string> = {
   mbway: "MB Way",
   transferencia: "Transferência",
+  wise_gbp: "Wise (GBP)",
+  pix_brl: "Pix (BRL)",
 };
 
 const ROTULO_ESTADO: Record<string, string> = {
@@ -39,6 +42,11 @@ function quando(iso: string | null): string {
     minute: "2-digit",
     timeZone: "Europe/Lisbon",
   }).format(new Date(iso));
+}
+
+/** 5.6339 → "5,6339". O câmbio é informativo: 4 casas chegam para reconciliar. */
+function formatarTaxa(taxa: number | string): string {
+  return new Intl.NumberFormat("pt-PT", { maximumFractionDigits: 4 }).format(Number(taxa));
 }
 
 /**
@@ -221,6 +229,24 @@ export default function PainelVoluntario({ doacoesIniciais, totaisIniciais }: Pr
         {d.estado !== "declarada" && ` · ${ROTULO_ESTADO[d.estado] ?? d.estado}`}
         {d.nota && ` · ${d.nota}`}
       </p>
+
+      {/* Reconciliação: nos canais estrangeiros, o valor que a pessoa ENVIOU e o
+          câmbio que viu. Em euros não aparece nada — a linha de cima já é o valor
+          exato, e repeti-lo só faria ruído. */}
+      {(d.moeda === "GBP" || d.moeda === "BRL") && d.valor_moeda_cents != null && (
+        <p className="mt-1.5 rounded-[8px] bg-blush/30 px-2.5 py-1.5 text-[0.8125rem]">
+          <span className="font-semibold text-vinho">
+            Enviou {formatarMoeda(d.valor_moeda_cents, d.moeda)}
+          </span>
+          {d.cambio_usado != null && (
+            <span className="text-tinta-suave">
+              {" "}
+              · câmbio {formatarTaxa(d.cambio_usado)}
+              {d.cambio_data ? ` de ${dataCurta(d.cambio_data)}` : " (recurso)"}
+            </span>
+          )}
+        </p>
+      )}
 
       {d.estado === "declarada" || d.estado === "iniciada" ? (
         <div className="mt-3 flex gap-2">
