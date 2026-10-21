@@ -5,6 +5,7 @@ import { isDepoisDoCorte, inscricaoAtiva } from "@/lib/cutover";
 import { VAQUINHA_INICIO_ISO } from "@/lib/vaquinha";
 import { estadoEvento, inscricoesEncerradas, vaquinhaIniciada } from "@/lib/vaquinha-fase";
 import { lerTotaisVaquinha } from "@/lib/vaquinha-servidor";
+import { CAMBIO_RECURSO, obterCambio } from "@/lib/cambio";
 import EventoPage from "@/components/EventoPage";
 
 /**
@@ -71,6 +72,9 @@ export default async function Page() {
   // seria uma ida à base por request para nada.
   const vaquinhaAberta = vaquinhaIniciada(VAQUINHA_INICIO_ISO);
   const totaisVaquinha = vaquinhaAberta ? await lerTotaisVaquinha() : null;
+  // Câmbio dos canais Wise/Pix — servidor, cache de 6 h, com taxa de recurso
+  // quando o BCE falha (ver lib/cambio.ts).
+  const cambio = vaquinhaAberta ? await obterCambio() : CAMBIO_RECURSO;
 
   return (
     <EventoPage
@@ -79,6 +83,7 @@ export default async function Page() {
       totaisVaquinha={totaisVaquinha}
       inscricoesEncerradas={inscricoesEncerradas()}
       estadoEvento={estadoEvento()}
+      cambio={cambio}
     />
   );
 }

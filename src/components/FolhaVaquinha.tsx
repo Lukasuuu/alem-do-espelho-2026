@@ -19,10 +19,40 @@ import {
   formatarEuros,
   formatarEurosComCentimos,
   fraseAgradecimento,
+  type MetodoDoacao,
   type TotaisVaquinha,
 } from "@/lib/vaquinha";
+import {
+  converterParaMoeda,
+  formatarMoeda,
+  legendaCambio,
+  valorParaCopiar,
+  type Cambio,
+} from "@/lib/cambio";
 
-type Passo = "metodos" | "mbway" | "transferencia" | "agradecimento";
+type Passo = "metodos" | "mbway" | "transferencia" | "wise" | "pix" | "agradecimento";
+
+/** Canal → ecrã de dados. A folha separa os dois conceitos (canal ≠ ecrã). */
+const PASSO_POR_METODO: Record<MetodoDoacao, Passo> = {
+  mbway: "mbway",
+  transferencia: "transferencia",
+  wise_gbp: "wise",
+  pix_brl: "pix",
+};
+
+/**
+ * Cabeçalho de cada ecrã de dados. MB Way e transferência têm ícone próprio em
+ * /public/icone; Wise e Pix não têm (e um lockup de marca desenhado à mão seria
+ * pior do que o símbolo da moeda) — por isso o quadrado leva «£» / «R$».
+ */
+type PassoCanal = Exclude<Passo, "metodos" | "agradecimento">;
+
+const CANAL: Record<PassoCanal, { titulo: string; iconeSrc?: string; simbolo?: string }> = {
+  mbway: { titulo: "MB Way", iconeSrc: "/icone/mbway.webp" },
+  transferencia: { titulo: "Transferência", iconeSrc: "/icone/mb-transferencia.webp" },
+  wise: { titulo: "Wise", simbolo: "£" },
+  pix: { titulo: "Pix", simbolo: "R$" },
+};
 
 type Pedido = { id: string; referencia: string; posseToken: string };
 
@@ -40,6 +70,12 @@ type Props = {
   elapsedMs?: number;
   /** Chamado quando a declaração corre bem, com os totais já atualizados. */
   onDeclarada?: (totais: TotaisVaquinha | null) => void;
+  /**
+   * Câmbio EUR→GBP/BRL lido no SERVIDOR (page.tsx) e passado pela cadeia.
+   * Vem sempre preenchido — obterCambio() devolve a taxa de recurso quando o
+   * BCE falha —, por isso o ecrã nunca fica sem número.
+   */
+  cambio: Cambio;
 };
 
 const TITULO_ID = "vaquinha-titulo";
@@ -92,6 +128,7 @@ export default function FolhaVaquinha({
   valorCents,
   elapsedMs,
   onDeclarada,
+  cambio,
 }: Props) {
   const [passo, setPasso] = useState<Passo>("metodos");
   const [pedido, setPedido] = useState<Pedido | null>(null);
@@ -111,9 +148,11 @@ export default function FolhaVaquinha({
    * MESMA linha em vez de criar uma segunda doação. Voltar ao mesmo método
    * devolve, então, a mesma referência.
    */
-  const idemRef = useRef<{ mbway: string; transferencia: string }>({
+  const idemRef = useRef<Record<MetodoDoacao, string>>({
     mbway: "",
     transferencia: "",
+    wise_gbp: "",
+    pix_brl: "",
   });
   const [montado, setMontado] = useState(false);
 
@@ -129,7 +168,7 @@ export default function FolhaVaquinha({
     setMarcando(false);
     setSairPendente(false);
     aberturaEm.current = Date.now();
-    idemRef.current = { mbway: "", transferencia: "" }; // chaves novas por abertura
+    idemRef.current = { mbway: "", transferencia: "", wise_gbp: "", pix_brl: "" }; // chaves novas por abertura
   }, [aberto]);
 
   /** Fechar passa pela confirmação só depois de haver pedido criado. */
@@ -182,7 +221,7 @@ export default function FolhaVaquinha({
   }, [aberto, pedirFecho]);
 
   /** Escolher método → /iniciar cria a doação e devolve referência + token. */
-  async function escolher(metodo: "mbway" | "transferencia") {
+  async function escolher(metodo: MetodoDoacao) {
     setErro(null);
     setMarcando(true);
     // A chave do método: criada no 1.º toque, reutilizada nas tentativas
@@ -215,7 +254,7 @@ export default function FolhaVaquinha({
         return;
       }
       setPedido({ id: dados.id, referencia: dados.referencia ?? "", posseToken: dados.posseToken });
-      setPasso(metodo);
+      setPasso(PASSO_POR_METODO[metodo]);
     } catch {
       setErro(MENSAGENS_VAQUINHA.servidor);
     } finally {
@@ -265,6 +304,19 @@ export default function FolhaVaquinha({
   const pctP = meta > 0 ? Math.min(1 - pctC, aConfirmar / meta) : 0;
   /** O limite vem da RPC (mudável por SQL); a constante é só o valor de recurso. */
   const limiteConfianca = totais?.limite_confianca_cents ?? LIMITE_CONFIANCA_PADRAO_CENTS;
+
+  /** Cabeçalho do ecrã de dados (null nos ecrãs que não são de um canal). */
+  const canal = passo === "metodos" || passo === "agradecimento" ? null : CANAL[passo];
+
+  /** Valores indicativos nas moedas dos canais estrangeiros (arredondamento normal). */
+  const valorGbpCents = converterParaMoeda(valorCents, cambio.taxas.GBP);
+  const valorBrlCents = converterParaMoeda(valorCents, cambio.taxas.BRL);
+
+  /** 16141333796 → 161.413.337-96 (só apresentação; o botão copia os dígitos). */
+  const cpfFormatado = VAQUINHA_PAGAMENTO.pix.chave.replace(
+    /^(\d{3})(\d{3})(\d{3})(\d{2})$/,
+    "$1.$2.$3-$4"
+  );
 
   const ctaRodape = (rotulo: string, aoClicar: () => void, comVisto = true) => (
     <button
@@ -359,7 +411,7 @@ export default function FolhaVaquinha({
                   </div>
                 )}
 
-                {(passo === "mbway" || passo === "transferencia") && (
+                {canal && (
                   <>
                     <button
                       type="button"
@@ -375,15 +427,19 @@ export default function FolhaVaquinha({
                         className="display m-0 flex items-center gap-2.5 text-[1.625rem] font-medium leading-[1.1]"
                       >
                         <span className="flex h-[34px] w-[34px] items-center justify-center rounded-sm border border-[#eadccd] bg-white">
-                          <LocalImage
-                            src={passo === "mbway" ? "/icone/mbway.webp" : "/icone/mb-transferencia.webp"}
-                            alt=""
-                            width={256}
-                            height={256}
-                            className="h-[26px] w-[26px] object-contain"
-                          />
+                          {canal.iconeSrc ? (
+                            <LocalImage
+                              src={canal.iconeSrc}
+                              alt=""
+                              width={256}
+                              height={256}
+                              className="h-[26px] w-[26px] object-contain"
+                            />
+                          ) : (
+                            <span className="display text-[0.9375rem] font-semibold">{canal.simbolo}</span>
+                          )}
                         </span>
-                        {passo === "mbway" ? "MB Way" : "Transferência"}
+                        {canal.titulo}
                       </h2>
                       <span className="display whitespace-nowrap text-[1.625rem] font-semibold">
                         {formatarEurosComCentimos(valorCents)}
@@ -429,6 +485,20 @@ export default function FolhaVaquinha({
                         descricao="IBAN direto"
                         iconeSrc="/icone/mb-transferencia.webp"
                         onClick={() => escolher("transferencia")}
+                        disabled={marcando}
+                      />
+                      <CartaoMetodoVaquinha
+                        titulo="Wise"
+                        descricao="Do Reino Unido, em libras"
+                        simbolo="£"
+                        onClick={() => escolher("wise_gbp")}
+                        disabled={marcando}
+                      />
+                      <CartaoMetodoVaquinha
+                        titulo="Pix"
+                        descricao="Do Brasil, em reais"
+                        simbolo="R$"
+                        onClick={() => escolher("pix_brl")}
                         disabled={marcando}
                       />
 
@@ -535,6 +605,12 @@ export default function FolhaVaquinha({
                           VAQUINHA_PAGAMENTO.transferencia.iban,
                           { tamanho: "text-base" }
                         )}
+                        {linhaDados(
+                          "BIC/SWIFT",
+                          VAQUINHA_PAGAMENTO.transferencia.bic,
+                          VAQUINHA_PAGAMENTO.transferencia.bic,
+                          { tamanho: "text-[1.0625rem]" }
+                        )}
                         {linhaDados("Valor", formatarEurosComCentimos(valorCents), String(valorCents / 100), {
                           tamanho: "text-[1.0625rem]",
                         })}
@@ -545,6 +621,133 @@ export default function FolhaVaquinha({
                       </div>
 
                       <p className="mt-3.5 text-[0.8125rem] leading-[1.5] text-tinta-suave">
+                        A referência ajuda-nos a confirmar a tua contribuição. Não precisas de enviar
+                        comprovativo.
+                      </p>
+
+                      <div className="mt-auto pt-4">
+                        {ctaRodape("Já fiz a doação", declarar)}
+                        {erro && (
+                          <p
+                            role="alert"
+                            className="mt-2 text-center text-[0.8125rem] font-medium text-vinho-profundo"
+                          >
+                            {erro}
+                          </p>
+                        )}
+                        {linkWhats}
+                      </div>
+                    </>
+                  )}
+
+                  {passo === "wise" && (
+                    <>
+                      <p className="m-0 text-[0.90625rem] leading-[1.5]">
+                        Faz a transferência em libras com estes dados e põe a{" "}
+                        <strong>referência no descritivo</strong>.
+                      </p>
+
+                      <div className="mt-3.5 rounded-xl border border-selo-borda bg-white">
+                        {linhaDados(
+                          "Titular",
+                          VAQUINHA_PAGAMENTO.wise.titular,
+                          VAQUINHA_PAGAMENTO.wise.titular,
+                          { tamanho: "text-base" }
+                        )}
+                        {linhaDados(
+                          "IBAN",
+                          formatarIban(VAQUINHA_PAGAMENTO.wise.iban),
+                          VAQUINHA_PAGAMENTO.wise.iban,
+                          { tamanho: "text-base" }
+                        )}
+                        {linhaDados("BIC/SWIFT", VAQUINHA_PAGAMENTO.wise.bic, VAQUINHA_PAGAMENTO.wise.bic, {
+                          tamanho: "text-[1.0625rem]",
+                        })}
+                        {linhaDados("Sort code", VAQUINHA_PAGAMENTO.wise.sortCode, VAQUINHA_PAGAMENTO.wise.sortCode, {
+                          tamanho: "text-[1.0625rem]",
+                        })}
+                        {linhaDados("Nº de conta", VAQUINHA_PAGAMENTO.wise.conta, VAQUINHA_PAGAMENTO.wise.conta, {
+                          tamanho: "text-[1.0625rem]",
+                        })}
+                        {linhaDados(
+                          "Valor indicativo",
+                          formatarMoeda(valorGbpCents, "GBP"),
+                          valorParaCopiar(valorGbpCents),
+                          { tamanho: "text-[1.0625rem]" }
+                        )}
+                        {linhaDados("Descritivo", pedido?.referencia ?? "—", pedido?.referencia ?? "", {
+                          espacado: true,
+                          tamanho: "text-[1.0625rem]",
+                        })}
+                      </div>
+
+                      <p className="mt-3.5 rounded-[10px] bg-blush/30 px-3.5 py-3 text-[0.8125rem] leading-[1.5]">
+                        {legendaCambio(cambio, valorCents, "GBP")}
+                      </p>
+
+                      <p className="mt-3 text-[0.8125rem] leading-[1.5] text-tinta-suave">
+                        A referência ajuda-nos a confirmar a tua contribuição. Não precisas de enviar
+                        comprovativo.
+                      </p>
+
+                      <div className="mt-auto pt-4">
+                        {ctaRodape("Já fiz a doação", declarar)}
+                        {erro && (
+                          <p
+                            role="alert"
+                            className="mt-2 text-center text-[0.8125rem] font-medium text-vinho-profundo"
+                          >
+                            {erro}
+                          </p>
+                        )}
+                        {linkWhats}
+                      </div>
+                    </>
+                  )}
+
+                  {passo === "pix" && (
+                    <>
+                      <p className="m-0 text-[0.90625rem] leading-[1.5]">
+                        Envia por Pix com estes dados e escreve a{" "}
+                        <strong>referência na mensagem</strong>.
+                      </p>
+
+                      <div className="mt-3.5 rounded-xl border border-selo-borda bg-white">
+                        {linhaDados("Chave Pix (CPF)", cpfFormatado, VAQUINHA_PAGAMENTO.pix.chave, {
+                          tamanho: "text-[1.0625rem]",
+                        })}
+                        {linhaDados(
+                          "Titular",
+                          VAQUINHA_PAGAMENTO.pix.titular,
+                          VAQUINHA_PAGAMENTO.pix.titular,
+                          { tamanho: "text-base" }
+                        )}
+                        {linhaDados("Banco", VAQUINHA_PAGAMENTO.pix.banco, VAQUINHA_PAGAMENTO.pix.banco, {
+                          tamanho: "text-base",
+                        })}
+                        {linhaDados("Agência", VAQUINHA_PAGAMENTO.pix.agencia, VAQUINHA_PAGAMENTO.pix.agencia, {
+                          tamanho: "text-[1.0625rem]",
+                        })}
+                        {linhaDados("Conta", VAQUINHA_PAGAMENTO.pix.conta, VAQUINHA_PAGAMENTO.pix.conta, {
+                          tamanho: "text-[1.0625rem]",
+                        })}
+                        {linhaDados(
+                          "Valor indicativo",
+                          formatarMoeda(valorBrlCents, "BRL"),
+                          valorParaCopiar(valorBrlCents),
+                          { tamanho: "text-[1.0625rem]" }
+                        )}
+                        {linhaDados("Descritivo", pedido?.referencia ?? "—", pedido?.referencia ?? "", {
+                          espacado: true,
+                          tamanho: "text-[1.0625rem]",
+                        })}
+                      </div>
+
+                      <p className="mt-3.5 rounded-[10px] bg-blush/30 px-3.5 py-3 text-[0.8125rem] leading-[1.5]">
+                        {legendaCambio(cambio, valorCents, "BRL")}
+                      </p>
+
+                      <p className="mt-3 text-[0.8125rem] leading-[1.5] text-tinta-suave">
                         A referência ajuda-nos a confirmar a tua contribuição. Não precisas de enviar
                         comprovativo.
                       </p>
@@ -745,12 +948,16 @@ function CartaoMetodoVaquinha({
   titulo,
   descricao,
   iconeSrc,
+  simbolo,
   onClick,
   disabled,
 }: {
   titulo: string;
   descricao: string;
-  iconeSrc: string;
+  /** Ícone em /public/icone (MB Way, transferência). */
+  iconeSrc?: string;
+  /** Alternativa ao ícone quando não há um: «£», «R$». */
+  simbolo?: string;
   onClick: () => void;
   disabled?: boolean;
 }) {
@@ -762,7 +969,11 @@ function CartaoMetodoVaquinha({
       className="mt-3 flex min-h-[66px] w-full items-center gap-3 rounded-md border border-selo-borda bg-white p-3 text-left transition-colors duration-200 hover:border-vinho/40 disabled:cursor-wait disabled:opacity-60"
     >
       <span className="flex h-10 w-10 flex-none items-center justify-center rounded border border-[#eadccd] bg-creme-neon">
-        <LocalImage src={iconeSrc} alt="" width={256} height={256} className="h-[30px] w-[30px] object-contain" />
+        {iconeSrc ? (
+          <LocalImage src={iconeSrc} alt="" width={256} height={256} className="h-[30px] w-[30px] object-contain" />
+        ) : (
+          <span className="display text-[0.9375rem] font-semibold text-vinho">{simbolo}</span>
+        )}
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-[0.9375rem] font-semibold text-vinho">{titulo}</span>
