@@ -24,6 +24,9 @@
 -- anti duplo clique, travão dos 10 s, sinal grosso de abuso por ip_hash, RLS
 -- sem políticas, chave admin por sha256 do core, vaquinha_totais() e o modelo
 -- de confiança da 0014c.
+-- As RPCs de admin mudam SÓ para acrescentar os campos de moeda à resposta
+-- (secção 3): mesma assinatura, mesmos filtros, mesma chave, e continuam a
+-- nunca devolver posse_token nem ip_hash.
 --
 -- DOWN (rollback): PRIMEIRO apaga a assinatura de 8 argumentos, DEPOIS repõe a
 --   de 4 (pela 0014b) — pela ordem inversa ficariam duas funções:
@@ -42,6 +45,8 @@
 --     drop column if exists cambio_data;
 --   delete from public.migrations_aplicadas where nome = '0015_vaquinha_multimoeda';
 --   NOTA: o rollback SÓ é seguro se não existirem linhas com metodo wise_gbp/pix_brl.
+--   As duas RPCs de admin também têm de voltar ao corpo da 0014 (lista) e da
+--   0014c (procura) — sem isso continuariam a ler colunas que já não existem.
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- 1. MÉTODOS E COLUNAS NOVAS
@@ -251,7 +256,116 @@ $function$;
 drop function if exists public.iniciar_doacao(integer, text, uuid, text);
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- 3. GRANTS (nada por omissão: revoke all + grant explícito)
+-- 3. RPCs DE ADMIN — o painel da Vitória passa a ver a moeda
+-- ═══════════════════════════════════════════════════════════════════════════
+-- Sem isto, uma doação por Pix aparecia à Vitória como «10 €» quando a pessoa
+-- enviou R$62,41, e ela não tinha como reconciliar o extrato. As três colunas
+-- novas vão na MESMA forma de linha das duas RPCs de admin (o painel reutiliza
+-- o cartão), e são só de leitura: continuam a nunca devolver posse_token nem
+-- ip_hash.
+--
+-- Mesma assinatura das 0014/0014c, por isso CREATE OR REPLACE conserva os
+-- grants existentes; mesmo assim eles voltam a ser afirmados na secção 4.
+create or replace function public.admin_listar_doacoes(
+  p_chave  text,
+  p_limite integer default 50
+) returns jsonb
+language plpgsql security definer set search_path to ''
+as $function$
+declare
+  v_cfg      public.vaquinha_config%rowtype;
+  v_lista    jsonb;
+  v_limite   integer;
+begin
+  select * into v_cfg from public.vaquinha_config where id;
+  if not found or v_cfg.admin_chave_hash is null then
+    raise exception 'admin_nao_configurado' using errcode = '22023';
+  end if;
+  if p_chave is null
+     or encode(sha256(convert_to(p_chave, 'utf8')), 'hex') <> v_cfg.admin_chave_hash then
+    raise exception 'acesso_negado' using errcode = '42501';
+  end if;
+
+  v_limite := least(greatest(coalesce(p_limite, 50), 1), 200);
+
+  -- As 'declarada' primeiro (é a fila de trabalho do voluntário), depois as
+  -- recentes das últimas 24 h para ele poder corrigir uma decisão.
+  select coalesce(jsonb_agg(linha order by ordem, quando desc nulls last), '[]'::jsonb)
+    into v_lista
+    from (
+      select jsonb_build_object(
+               'id', d.id, 'referencia', d.referencia, 'valor_cents', d.valor_cents,
+               'metodo', d.metodo, 'estado', d.estado,
+               'moeda', d.moeda, 'valor_moeda_cents', d.valor_moeda_cents,
+               'cambio_usado', d.cambio_usado, 'cambio_data', d.cambio_data,
+               'criada_em', d.criada_em, 'declarada_em', d.declarada_em,
+               'decidida_em', d.decidida_em, 'nota', d.nota) as linha,
+             case when d.estado = 'declarada' then 0 else 1 end as ordem,
+             coalesce(d.declarada_em, d.criada_em) as quando
+        from public.doacoes d
+       where d.estado = 'declarada'
+          or d.criada_em > now() - interval '24 hours'
+       order by ordem, quando desc nulls last
+       limit v_limite
+    ) t;
+
+  return jsonb_build_object('ok',true,'doacoes',v_lista,'totais',public.vaquinha_totais());
+end;
+$function$;
+
+-- Procura por referência (0014c): a MESMA forma de linha, com os campos de
+-- moeda, para o cartão do resultado mostrar o valor enviado.
+create or replace function public.admin_procurar_doacao(
+  p_chave      text,
+  p_referencia text,
+  p_limite     integer default 20
+) returns jsonb
+language plpgsql security definer set search_path to ''
+as $function$
+declare
+  v_cfg    public.vaquinha_config%rowtype;
+  v_termo  text;
+  v_lista  jsonb;
+  v_limite integer;
+begin
+  select * into v_cfg from public.vaquinha_config where id;
+  if not found or v_cfg.admin_chave_hash is null then
+    raise exception 'admin_nao_configurado' using errcode = '22023';
+  end if;
+  if p_chave is null
+     or encode(sha256(convert_to(p_chave, 'utf8')), 'hex') <> v_cfg.admin_chave_hash then
+    raise exception 'acesso_negado' using errcode = '42501';
+  end if;
+
+  -- Normalização: `ATOS-83P2` / `atos 83p2` / `83P2` → `ATOS83P2` / `83P2`.
+  v_termo := regexp_replace(upper(coalesce(p_referencia, '')), '[^A-Z0-9]', '', 'g');
+  if v_termo = '' then
+    raise exception 'referencia_obrigatoria' using errcode = '22023';
+  end if;
+
+  v_limite := least(greatest(coalesce(p_limite, 20), 1), 100);
+
+  select coalesce(jsonb_agg(jsonb_build_object(
+           'id', d.id, 'referencia', d.referencia, 'valor_cents', d.valor_cents,
+           'metodo', d.metodo, 'estado', d.estado,
+           'moeda', d.moeda, 'valor_moeda_cents', d.valor_moeda_cents,
+           'cambio_usado', d.cambio_usado, 'cambio_data', d.cambio_data,
+           'criada_em', d.criada_em, 'declarada_em', d.declarada_em,
+           'decidida_em', d.decidida_em, 'nota', d.nota)
+         order by d.criada_em desc), '[]'::jsonb)
+    into v_lista
+    from public.doacoes d
+   where replace(d.referencia, '-', '') like '%' || v_termo || '%'
+   limit v_limite;
+
+  return jsonb_build_object(
+    'ok', true, 'termo', v_termo, 'doacoes', v_lista,
+    'totais', public.vaquinha_totais());
+end;
+$function$;
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- 4. GRANTS (nada por omissão: revoke all + grant explícito)
 -- ═══════════════════════════════════════════════════════════════════════════
 revoke all on function
   public.iniciar_doacao(integer, text, uuid, text, integer, numeric, date, text)
@@ -261,11 +375,23 @@ grant execute on function
   public.iniciar_doacao(integer, text, uuid, text, integer, numeric, date, text)
   to anon, authenticated, service_role;
 
+-- As duas de admin mantêm a assinatura e por isso conservam os grants; são
+-- reafirmados para o ficheiro continuar a ser a lista completa do que fica.
+revoke all on function public.admin_listar_doacoes(text, integer)
+  from public, anon, authenticated;
+revoke all on function public.admin_procurar_doacao(text, text, integer)
+  from public, anon, authenticated;
+
+grant execute on function public.admin_listar_doacoes(text, integer)
+  to anon, authenticated, service_role;
+grant execute on function public.admin_procurar_doacao(text, text, integer)
+  to anon, authenticated, service_role;
+
 -- ═══════════════════════════════════════════════════════════════════════════
--- 4. LEDGER
+-- 5. LEDGER
 -- ═══════════════════════════════════════════════════════════════════════════
 insert into public.migrations_aplicadas (nome, origem, nota) values
-  ('0015_vaquinha_multimoeda','sql_editor','Canais wise_gbp e pix_brl. Euro continua a unidade de conta (valor_cents); colunas moeda/valor_moeda_cents/cambio_usado/cambio_data guardam o que foi mostrado. iniciar_doacao substituida na assinatura de 8 argumentos; a de 4 foi apagada (sem sobrecarga).')
+  ('0015_vaquinha_multimoeda','sql_editor','Canais wise_gbp e pix_brl. Euro continua a unidade de conta (valor_cents); colunas moeda/valor_moeda_cents/cambio_usado/cambio_data guardam o que foi mostrado. iniciar_doacao substituida na assinatura de 8 argumentos; a de 4 foi apagada (sem sobrecarga). admin_listar_doacoes e admin_procurar_doacao devolvem os campos de moeda para o painel reconciliar.')
 on conflict (nome) do nothing;
 
 -- O PostgREST guarda em cache as assinaturas: sem este aviso, a rota podia
@@ -273,7 +399,7 @@ on conflict (nome) do nothing;
 notify pgrst, 'reload schema';
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- 5. VERIFICAÇÃO (correr depois de aplicar — nenhuma escreve nada)
+-- 6. VERIFICAÇÃO (correr depois de aplicar — nenhuma escreve nada)
 -- ═══════════════════════════════════════════════════════════════════════════
 -- 5.1 UMA só assinatura de iniciar_doacao, SECURITY DEFINER:
 --
@@ -330,7 +456,16 @@ notify pgrst, 'reload schema';
 --   -- Esperado: ERROR 'invalid_metodo'.
 -- rollback;
 --
--- 5.7 O contador e a meta não se mexeram (só se os seus valores não mudarem
+-- 6.7 O contador e a meta não se mexeram (só se os seus valores não mudarem
 --     durante a janela; comparar com o valor lido antes de aplicar):
 --
 -- select public.vaquinha_totais();
+--
+-- 6.8 As duas RPCs de admin devolvem os campos de moeda (verificação estática,
+--     sem precisar da chave admin):
+--
+-- select pg_get_functiondef('public.admin_listar_doacoes(text,integer)'::regprocedure)
+--          like '%valor_moeda_cents%' as lista_ok,
+--        pg_get_functiondef('public.admin_procurar_doacao(text,text,integer)'::regprocedure)
+--          like '%valor_moeda_cents%' as procura_ok;
+--   Esperado: true e true.

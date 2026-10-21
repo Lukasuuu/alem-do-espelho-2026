@@ -63,6 +63,14 @@ export type DoacaoAdmin = {
   valor_cents: number;
   metodo: string;
   estado: string;
+  /** 'EUR' | 'GBP' | 'BRL'. Opcional: a RPC anterior à 0015 não devolve. */
+  moeda?: string | null;
+  /** Valor indicativo MOSTRADO no ecrã, na moeda do canal. Nunca é o valor da doação. */
+  valor_moeda_cents?: number | null;
+  /** Taxa EUR→moeda usada no ecrã. Informativa, para reconciliação. */
+  cambio_usado?: number | string | null;
+  /** Data de referência do BCE; null = foi usada a taxa de recurso. */
+  cambio_data?: string | null;
   criada_em: string;
   declarada_em: string | null;
   decidida_em: string | null;
