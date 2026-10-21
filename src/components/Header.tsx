@@ -170,7 +170,7 @@ export default function Header({
         className={`transition-all duration-500 ${
           descolado
             ? "border-b border-creme/10 bg-musgo/90 py-2 backdrop-blur-xl"
-            : "border-b border-transparent bg-transparent py-4"
+            : "border-b border-transparent bg-gradient-to-b from-musgo/80 to-transparent py-4"
         }`}
       >
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 sm:px-8">
