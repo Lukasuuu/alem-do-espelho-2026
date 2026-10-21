@@ -256,6 +256,21 @@ $function$;
 
 -- A antiga assinatura de 4 argumentos desaparece: sem isto ficariam DUAS
 -- funções com o mesmo nome (sobrecarga) e as chamadas ambíguas.
+
+-- NOTA DE PRODUÇÃO (21/10/2026): nesta base de dados este DROP NÃO foi executado.
+-- O event trigger `pgrst_drop_watch` do Supabase faz com que qualquer DROP FUNCTION
+-- não devolva resposta pelo transporte MCP (o servidor executa, a resposta não volta).
+-- Em produção a assinatura antiga foi RENOMEADA na mesma transação:
+--     alter function public.iniciar_doacao(integer, text, uuid, text)
+--       rename to iniciar_doacao_v4_obsoleta;
+--     revoke all on function public.iniciar_doacao_v4_obsoleta(integer, text, uuid, text)
+--       from public, anon, authenticated;
+-- Estado final equivalente: uma só função chamável `public.iniciar_doacao`, a de 8 argumentos.
+-- Limpeza pendente, a correr pelo SQL editor do Supabase quando for conveniente:
+--     drop function if exists public.iniciar_doacao_v4_obsoleta(integer, text, uuid, text);
+--     drop function if exists public.zz_apagar_probe_doacao(integer, text, uuid, text, integer, numeric, date, text);
+--     drop function if exists public.zz_apagar_probe_trivial(integer);
+-- Numa base de dados nova este DROP funciona normalmente e deve ficar aqui.
 drop function if exists public.iniciar_doacao(integer, text, uuid, text);
 
 -- ═══════════════════════════════════════════════════════════════════════════
