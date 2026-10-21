@@ -48,6 +48,9 @@
 --   As duas RPCs de admin também têm de voltar ao corpo da 0014 (lista) e da
 --   0014c (procura) — sem isso continuariam a ler colunas que já não existem.
 
+-- Uma transação só: entre o CREATE da assinatura nova e o DROP da antiga as duas funções coexistem, e a chamada antiga (4 argumentos nomeados) encaixa nas duas — o Postgres devolve «function iniciar_doacao is not unique».
+begin;
+
 -- ═══════════════════════════════════════════════════════════════════════════
 -- 1. MÉTODOS E COLUNAS NOVAS
 -- ═══════════════════════════════════════════════════════════════════════════
@@ -396,12 +399,16 @@ on conflict (nome) do nothing;
 
 -- O PostgREST guarda em cache as assinaturas: sem este aviso, a rota podia
 -- continuar a ver a função antiga até ao próximo reload.
+-- O NOTIFY é transacional: só chega ao PostgREST neste COMMIT, já com a
+-- assinatura antiga apagada — nunca a meio do bloco.
 notify pgrst, 'reload schema';
+
+commit;
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- 6. VERIFICAÇÃO (correr depois de aplicar — nenhuma escreve nada)
 -- ═══════════════════════════════════════════════════════════════════════════
--- 5.1 UMA só assinatura de iniciar_doacao, SECURITY DEFINER:
+-- 6.1 UMA só assinatura de iniciar_doacao, SECURITY DEFINER:
 --
 -- select p.proname, pg_get_function_identity_arguments(p.oid) as args, p.prosecdef
 --   from pg_proc p join pg_namespace n on n.oid = p.pronamespace
@@ -409,7 +416,7 @@ notify pgrst, 'reload schema';
 --   Esperado: 1 linha, args = "integer, text, uuid, text, integer, numeric,
 --             date, text", prosecdef = true.
 --
--- 5.2 O CHECK novo e as colunas:
+-- 6.2 O CHECK novo e as colunas:
 --
 -- select pg_get_constraintdef(oid) from pg_constraint
 --  where conrelid = 'public.doacoes'::regclass and conname = 'doacoes_metodo_check';
@@ -420,7 +427,7 @@ notify pgrst, 'reload schema';
 --   Esperado: CHECK (metodo = ANY (ARRAY['mbway','transferencia','wise_gbp','pix_brl']))
 --             e moeda not null default 'EUR'.
 --
--- 5.3 As linhas que já existem são euros e não têm conversão (no momento da
+-- 6.3 As linhas que já existem são euros e não têm conversão (no momento da
 --     migração não pode haver outra coisa: o CHECK antigo só aceitava os dois
 --     canais em euros):
 --
@@ -429,7 +436,7 @@ notify pgrst, 'reload schema';
 --   from public.doacoes;
 --   Esperado: 0 e 0.
 --
--- 5.4 Uma doação em euros ainda entra — com a chamada ANTIGA, só com 3
+-- 6.4 Uma doação em euros ainda entra — com a chamada ANTIGA, só com 3
 --     argumentos, que é como o código em produção a faz (os restantes ficam no
 --     default). É o teste que prova a retrocompatibilidade da migração:
 --
@@ -438,14 +445,14 @@ notify pgrst, 'reload schema';
 --   -- Esperado: status 'criada', moeda 'EUR', valor_moeda_cents null.
 -- rollback;
 --
--- 5.5 Um Pix grava euros + o valor mostrado:
+-- 6.5 Um Pix grava euros + o valor mostrado:
 --
 -- begin;
 --   select public.iniciar_doacao(1000, 'pix_brl', gen_random_uuid(), 'BRL', 6200, 6.2, date '2026-10-21');
 --   -- Esperado: valor_cents 1000, moeda 'BRL', valor_moeda_cents 6200.
 -- rollback;
 --
--- 5.6 Recusas: moeda trocada, valor mostrado ausente e método antigo ('link'):
+-- 6.6 Recusas: moeda trocada, valor mostrado ausente e método antigo ('link'):
 --
 -- begin;
 --   select public.iniciar_doacao(1000, 'pix_brl', gen_random_uuid(), 'EUR', 6200, 6.2, date '2026-10-21');
